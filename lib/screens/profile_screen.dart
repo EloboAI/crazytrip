@@ -3,6 +3,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../models/user_profile.dart';
+import '../widgets/stat_card.dart';
+import '../widgets/menu_item_card.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -101,7 +103,7 @@ class ProfileScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _QuickStatCard(
+                      child: QuickStatCard(
                         value: profile.totalDiscoveries.toString(),
                         label: 'Discoveries',
                         icon: Icons.explore,
@@ -109,7 +111,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.s),
                     Expanded(
-                      child: _QuickStatCard(
+                      child: QuickStatCard(
                         value: '${profile.currentXP}',
                         label: 'Total XP',
                         icon: Icons.stars,
@@ -117,7 +119,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.s),
                     Expanded(
-                      child: _QuickStatCard(
+                      child: QuickStatCard(
                         value: '${profile.streak}',
                         label: 'Day Streak',
                         icon: Icons.local_fire_department,
@@ -134,43 +136,43 @@ class ProfileScreen extends StatelessWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: AppSpacing.s),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                     subtitle: 'Update your information',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
                     subtitle: 'App preferences and privacy',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.notifications_outlined,
                     title: 'Notifications',
                     subtitle: 'Manage notifications',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.favorite_outline,
                     title: 'Saved Discoveries',
                     subtitle: 'Your bookmarked places',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.share_outlined,
                     title: 'Invite Friends',
                     subtitle: 'Share Crazy Trip with others',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.info_outline,
                     title: 'About',
                     subtitle: 'Learn more about Crazy Trip',
                     onTap: () {},
                   ),
-                  _MenuItem(
+                  MenuItemCard(
                     icon: Icons.help_outline,
                     title: 'Help & Support',
                     subtitle: 'Get assistance',
@@ -245,102 +247,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickStatCard extends StatelessWidget {
-  final String value;
-  final String label;
-  final IconData icon;
-
-  const _QuickStatCard({
-    required this.value,
-    required this.label,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: AppColors.primaryColor,
-              size: AppSpacing.iconMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: AppTextStyles.titleLarge.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _MenuItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Row(
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: AppSpacing.m),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: AppTextStyles.titleMedium),
-                    Text(
-                      subtitle,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-            ],
-          ),
         ),
       ),
     );
