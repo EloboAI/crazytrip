@@ -1,2 +1,3 @@
 # crazytrip
-social app 
+
+A new Flutter project.
