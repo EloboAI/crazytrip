@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.crazytrip"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion  // Comentado temporalmente
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
