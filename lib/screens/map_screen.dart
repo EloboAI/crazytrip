@@ -40,7 +40,7 @@ class MapScreen extends StatelessWidget {
                     style: AppTextStyles.headlineSmall.copyWith(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onBackground.withOpacity(0.5),
+                      ).colorScheme.onSurface.withOpacity(0.5),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),

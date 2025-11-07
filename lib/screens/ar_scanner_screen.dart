@@ -3,6 +3,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
+enum CameraMode { scan, reel }
+
 class ARScannerScreen extends StatefulWidget {
   const ARScannerScreen({super.key});
 
@@ -14,6 +16,8 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _scanController;
   bool _isScanning = false;
+  CameraMode _mode = CameraMode.scan;
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -86,20 +90,94 @@ class _ARScannerScreenState extends State<ARScannerScreen>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.m),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  _GlassButton(
-                    icon: Icons.close,
-                    onTap: () {
-                      // Close AR scanner
-                    },
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _GlassButton(
+                        icon: Icons.close,
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      // Mode Switcher
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.arOverlayBackground,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ModeButton(
+                              icon: Icons.document_scanner,
+                              label: 'SCAN',
+                              isActive: _mode == CameraMode.scan,
+                              onTap: () {
+                                setState(() {
+                                  _mode = CameraMode.scan;
+                                  _isRecording = false;
+                                });
+                              },
+                            ),
+                            Container(
+                              width: 1,
+                              height: 30,
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                            _ModeButton(
+                              icon: Icons.videocam,
+                              label: 'REEL',
+                              isActive: _mode == CameraMode.reel,
+                              onTap: () {
+                                setState(() {
+                                  _mode = CameraMode.reel;
+                                  _isScanning = false;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      _GlassButton(
+                        icon: Icons.flash_off,
+                        onTap: () {
+                          // Toggle flash
+                        },
+                      ),
+                    ],
                   ),
-                  _GlassButton(
-                    icon: Icons.flash_off,
-                    onTap: () {
-                      // Toggle flash
-                    },
+                  const SizedBox(height: AppSpacing.m),
+                  // Mode Description
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.arOverlayBackground,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _mode == CameraMode.scan ? Icons.info_outline : Icons.video_library,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          _mode == CameraMode.scan
+                              ? 'Apunta a objetos para identificarlos'
+                              : 'Graba reels para compartir',
+                          style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -160,7 +238,11 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        _isScanning = !_isScanning;
+                        if (_mode == CameraMode.scan) {
+                          _isScanning = !_isScanning;
+                        } else {
+                          _isRecording = !_isRecording;
+                        }
                       });
                     },
                     child: Container(
@@ -168,16 +250,29 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       height: 80,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
+                        border: Border.all(
+                          color:
+                              _mode == CameraMode.scan
+                                  ? Colors.white
+                                  : Colors.red,
+                          width: 4,
+                        ),
                       ),
                       child: Container(
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          shape:
+                              _mode == CameraMode.scan
+                                  ? BoxShape.circle
+                                  : (_isRecording ? BoxShape.rectangle : BoxShape.circle),
                           color:
-                              _isScanning
-                                  ? AppColors.primaryColor
-                                  : Colors.white,
+                              _mode == CameraMode.scan
+                                  ? (_isScanning ? AppColors.primaryColor : Colors.white)
+                                  : (_isRecording ? Colors.red : Colors.red.withOpacity(0.8)),
+                          borderRadius:
+                              _mode == CameraMode.reel && _isRecording
+                                  ? BorderRadius.circular(8)
+                                  : null,
                         ),
                       ),
                     ),
@@ -187,9 +282,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
                   // Instructions
                   Text(
-                    _isScanning
-                        ? 'Point at objects to identify'
-                        : 'Tap to scan',
+                    _mode == CameraMode.scan
+                        ? (_isScanning ? 'Identificando...' : 'Toca para escanear')
+                        : (_isRecording ? 'Grabando reel...' : 'Toca para grabar'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white.withOpacity(0.8),
                     ),
@@ -272,6 +367,51 @@ class _GlassButton extends StatelessWidget {
           border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: Icon(icon, color: Colors.white, size: AppSpacing.iconMedium),
+      ),
+    );
+  }
+}
+
+class _ModeButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _ModeButton({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.m,
+          vertical: AppSpacing.s,
+        ),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryColor.withOpacity(0.8) : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: Colors.white,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

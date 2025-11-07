@@ -33,7 +33,7 @@ class SectionHeader extends StatelessWidget {
             child: Text(
               title,
               style: AppTextStyles.titleLarge.copyWith(
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

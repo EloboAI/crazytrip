@@ -36,7 +36,7 @@ class EmptyState extends StatelessWidget {
             Text(
               title,
               style: AppTextStyles.headlineSmall.copyWith(
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),

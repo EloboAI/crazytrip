@@ -234,7 +234,7 @@ class _AchievementCard extends StatelessWidget {
                 color:
                     achievement.isUnlocked
                         ? null
-                        : Theme.of(context).colorScheme.surfaceVariant,
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
               child: Center(
@@ -285,7 +285,7 @@ class _AchievementCard extends StatelessWidget {
                               value: achievement.progressPercentage,
                               minHeight: 6,
                               backgroundColor:
-                                  Theme.of(context).colorScheme.surfaceVariant,
+                                  Theme.of(context).colorScheme.surfaceContainerHighest,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 AppColors.primaryColor,
                               ),

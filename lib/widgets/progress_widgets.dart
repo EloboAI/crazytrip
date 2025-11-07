@@ -39,9 +39,9 @@ class ProgressRing extends StatelessWidget {
               strokeWidth: strokeWidth,
               backgroundColor:
                   backgroundColor ??
-                  Theme.of(context).colorScheme.surfaceVariant,
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(
-                backgroundColor ?? Theme.of(context).colorScheme.surfaceVariant,
+                backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
           ),

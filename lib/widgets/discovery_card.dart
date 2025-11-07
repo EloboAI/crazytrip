@@ -9,12 +9,14 @@ class DiscoveryCard extends StatelessWidget {
   final Discovery discovery;
   final VoidCallback? onTap;
   final VoidCallback? onShare;
+  final VoidCallback? onCrazyDexTap;
 
   const DiscoveryCard({
     super.key,
     required this.discovery,
     this.onTap,
     this.onShare,
+    this.onCrazyDexTap,
   });
 
   @override
@@ -43,11 +45,59 @@ class DiscoveryCard extends StatelessWidget {
                     top: Radius.circular(AppSpacing.radiusMedium),
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    discovery.imageUrl,
-                    style: const TextStyle(fontSize: 48),
-                  ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Text(
+                        discovery.imageUrl,
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                    // CrazyDex Badge
+                    if (discovery.crazyDexItemsAvailable > 0)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: onCrazyDexTap,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.catching_pokemon,
+                                  size: 16,
+                                  color: AppColors.primaryColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${discovery.crazyDexItemsCollected}/${discovery.crazyDexItemsAvailable}',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               // Content Section - FIXED: Wrapped in Expanded
@@ -162,12 +212,14 @@ class DiscoveryCard extends StatelessWidget {
 class CompactDiscoveryCard extends StatelessWidget {
   final Discovery discovery;
   final VoidCallback? onTap;
+  final VoidCallback? onCrazyDexTap;
   final bool showLock;
 
   const CompactDiscoveryCard({
     super.key,
     required this.discovery,
     this.onTap,
+    this.onCrazyDexTap,
     this.showLock = false,
   });
 
@@ -216,6 +268,51 @@ class CompactDiscoveryCard extends StatelessWidget {
                             Icons.lock,
                             color: Colors.white,
                             size: 32,
+                          ),
+                        ),
+                      ),
+                    // CrazyDex Badge
+                    if (discovery.crazyDexItemsAvailable > 0)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: onCrazyDexTap,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.catching_pokemon,
+                                  size: 12,
+                                  color: AppColors.primaryColor,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${discovery.crazyDexItemsCollected}/${discovery.crazyDexItemsAvailable}',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

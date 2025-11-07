@@ -5,6 +5,7 @@ import '../theme/app_text_styles.dart';
 import '../models/user_profile.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/menu_item_card.dart';
+import 'crazydex_collection_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -136,6 +137,19 @@ class ProfileScreen extends StatelessWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: AppSpacing.s),
+                  MenuItemCard(
+                    icon: Icons.catching_pokemon,
+                    title: 'Mi CrazyDex',
+                    subtitle: 'Tu colección completa de descubrimientos',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CrazyDexCollectionScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   MenuItemCard(
                     icon: Icons.person_outline,
                     title: 'Edit Profile',

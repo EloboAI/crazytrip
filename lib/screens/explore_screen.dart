@@ -8,6 +8,7 @@ import '../widgets/discovery_card.dart';
 import '../widgets/section_header.dart';
 import 'promotions_screen.dart';
 import 'create_content_screen.dart';
+import 'discovery_crazydex_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -152,7 +153,7 @@ class ExploreScreen extends StatelessWidget {
                   Text(
                     'Explore',
                     style: AppTextStyles.headlineMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -161,7 +162,7 @@ class ExploreScreen extends StatelessWidget {
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onBackground.withOpacity(0.7),
+                      ).colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -202,6 +203,16 @@ class ExploreScreen extends StatelessWidget {
                           ),
                         );
                       },
+                      onCrazyDexTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    DiscoveryCrazyDexScreen(discovery: discovery),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -234,6 +245,18 @@ class ExploreScreen extends StatelessWidget {
                   return CompactDiscoveryCard(
                     discovery: discovery,
                     showLock: true,
+                    onCrazyDexTap: discovery.crazyDexItemsAvailable > 0
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        DiscoveryCrazyDexScreen(discovery: discovery),
+                              ),
+                            );
+                          }
+                        : null,
                   );
                 }, childCount: nearbyDiscoveries.length),
               ),
