@@ -25,6 +25,11 @@ class _PromotionsScreenState extends State<PromotionsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -154,9 +159,11 @@ class _PromotionsScreenState extends State<PromotionsScreen>
       ),
       selected: isSelected,
       onSelected: (selected) {
-        setState(() {
-          _selectedTypeFilter = selected ? type : null;
-        });
+        if (mounted) {
+          setState(() {
+            _selectedTypeFilter = selected ? type : null;
+          });
+        }
       },
       backgroundColor: Theme.of(context).colorScheme.surface,
       selectedColor: AppColors.primaryColor.withOpacity(0.2),
