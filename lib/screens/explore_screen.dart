@@ -3,11 +3,145 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../models/discovery.dart';
+import '../models/promotion.dart';
 import '../widgets/discovery_card.dart';
 import '../widgets/section_header.dart';
+import 'promotions_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
+
+  Widget _buildPromotionsBanner(BuildContext context) {
+    final activePromotions = PromotionFilters.getActive(getMockPromotions());
+    final promotionCount = activePromotions.length;
+
+    return Container(
+      margin: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.streakColor,
+            AppColors.secondaryColor,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.streakColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PromotionsScreen(),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            child: Row(
+              children: [
+                // Fire animation icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '🔥',
+                      style: TextStyle(fontSize: 32),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.m),
+                // Text content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Promociones',
+                            style: AppTextStyles.titleLarge.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'NUEVO',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.streakColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$promotionCount concursos activos ahora',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.white.withOpacity(0.95),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.emoji_events,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Premios y descuentos exclusivos',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Arrow
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +178,11 @@ class ExploreScreen extends StatelessWidget {
                 ],
               ),
               toolbarHeight: 80,
+            ),
+
+            // Promotions Banner
+            SliverToBoxAdapter(
+              child: _buildPromotionsBanner(context),
             ),
 
             // Recent Discoveries Section
