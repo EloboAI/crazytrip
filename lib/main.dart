@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'theme/app_theme.dart';
+import 'screens/main_screen.dart';
 
 void main() {
-  runApp(const MainApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set preferred orientations
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  runApp(const CrazyTripApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class CrazyTripApp extends StatelessWidget {
+  const CrazyTripApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      title: 'Crazy Trip',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light, // Default to light theme
+      home: const MainScreen(),
     );
   }
 }
