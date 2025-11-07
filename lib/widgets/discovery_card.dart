@@ -92,11 +92,19 @@ class DiscoveryCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Chip(
-                              label: Text(discovery.category),
-                              labelStyle: AppTextStyles.labelSmall,
+                              label: Text(
+                                discovery.category,
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.tertiaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               backgroundColor: AppColors.tertiaryColor
-                                  .withOpacity(0.2),
-                              side: BorderSide.none,
+                                  .withOpacity(0.15),
+                              side: BorderSide(
+                                color: AppColors.tertiaryColor,
+                                width: 1.5,
+                              ),
                               padding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,
                             ),
