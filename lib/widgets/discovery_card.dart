@@ -9,11 +9,7 @@ class DiscoveryCard extends StatelessWidget {
   final Discovery discovery;
   final VoidCallback? onTap;
 
-  const DiscoveryCard({
-    super.key,
-    required this.discovery,
-    this.onTap,
-  });
+  const DiscoveryCard({super.key, required this.discovery, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +76,8 @@ class DiscoveryCard extends StatelessWidget {
                                 child: Text(
                                   discovery.location,
                                   style: AppTextStyles.bodySmall.copyWith(
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color:
+                                        Theme.of(context).colorScheme.outline,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -97,7 +94,8 @@ class DiscoveryCard extends StatelessWidget {
                             child: Chip(
                               label: Text(discovery.category),
                               labelStyle: AppTextStyles.labelSmall,
-                              backgroundColor: AppColors.tertiaryColor.withOpacity(0.2),
+                              backgroundColor: AppColors.tertiaryColor
+                                  .withOpacity(0.2),
                               side: BorderSide.none,
                               padding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,

@@ -57,7 +57,7 @@ class ExploreScreen extends StatelessWidget {
             // Recent Discoveries Horizontal List
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 200,
+                height: 224,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
@@ -93,7 +93,10 @@ class ExploreScreen extends StatelessWidget {
                 ),
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final discovery = nearbyDiscoveries[index];
-                  return CompactDiscoveryCard(discovery: discovery, showLock: true);
+                  return CompactDiscoveryCard(
+                    discovery: discovery,
+                    showLock: true,
+                  );
                 }, childCount: nearbyDiscoveries.length),
               ),
             ),
@@ -101,4 +104,5 @@ class ExploreScreen extends StatelessWidget {
         ),
       ),
     );
+  }
 }
