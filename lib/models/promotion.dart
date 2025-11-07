@@ -137,7 +137,7 @@ List<Promotion> getMockPromotions() {
       requirements: [
         'Visitar 10 lugares históricos',
         'Escanear con AR cada ubicación',
-        'Completar antes del 30 de noviembre'
+        'Completar antes del 30 de noviembre',
       ],
       imageUrl: '🏛️',
       type: PromotionType.challenge,
@@ -158,7 +158,7 @@ List<Promotion> getMockPromotions() {
       requirements: [
         'Escanear lugares de categoría Naturaleza',
         'Solo válido sábado y domingo',
-        'Sin límite de escaneos'
+        'Sin límite de escaneos',
       ],
       imageUrl: '🌲',
       type: PromotionType.event,
@@ -180,7 +180,7 @@ List<Promotion> getMockPromotions() {
         'Visitar un lugar de arte',
         'Tomar una foto creativa',
         'Compartir con #CrazyTripArt',
-        'El jurado seleccionará al ganador'
+        'El jurado seleccionará al ganador',
       ],
       imageUrl: '🎨',
       type: PromotionType.contest,
@@ -202,7 +202,7 @@ List<Promotion> getMockPromotions() {
         'Nivel 10 o superior',
         'Mostrar perfil de Crazy Trip',
         'Válido una vez por semana',
-        'No acumulable con otras ofertas'
+        'No acumulable con otras ofertas',
       ],
       imageUrl: '☕',
       type: PromotionType.discount,
@@ -226,7 +226,7 @@ List<Promotion> getMockPromotions() {
         'Descubrir 50 lugares nuevos',
         'Solo lugares no visitados previamente',
         'Primer usuario en completar gana',
-        'Válido todo diciembre'
+        'Válido todo diciembre',
       ],
       imageUrl: '✈️',
       type: PromotionType.contest,
@@ -248,7 +248,7 @@ List<Promotion> getMockPromotions() {
         'Visitar 5 parques específicos',
         'Escanear el código QR especial',
         'Completar entre el 15-25 dic',
-        'Recibir insignia exclusiva'
+        'Recibir insignia exclusiva',
       ],
       imageUrl: '❄️',
       type: PromotionType.event,
@@ -271,7 +271,7 @@ List<Promotion> getMockPromotions() {
       requirements: [
         'Visitar 5 lugares históricos',
         'Durante la semana de Halloween',
-        'Escanear de noche (después de 6pm)'
+        'Escanear de noche (después de 6pm)',
       ],
       imageUrl: '🎃',
       type: PromotionType.challenge,
@@ -292,7 +292,7 @@ List<Promotion> getMockPromotions() {
       requirements: [
         'Visitar 3 parques naturales',
         'Leer información educativa',
-        'Completar quiz de sostenibilidad'
+        'Completar quiz de sostenibilidad',
       ],
       imageUrl: '🌍',
       type: PromotionType.event,
@@ -317,12 +317,16 @@ class PromotionFilters {
   }
 
   static List<Promotion> getByType(
-      List<Promotion> promotions, PromotionType type) {
+    List<Promotion> promotions,
+    PromotionType type,
+  ) {
     return promotions.where((p) => p.type == type).toList();
   }
 
   static List<Promotion> getByCategory(
-      List<Promotion> promotions, String category) {
+    List<Promotion> promotions,
+    String category,
+  ) {
     return promotions.where((p) => p.category == category).toList();
   }
 }

@@ -53,9 +53,8 @@ class _PromotionsScreenState extends State<PromotionsScreen>
 
     // Filter by type if selected
     if (_selectedTypeFilter != null) {
-      filtered = filtered
-          .where((promo) => promo.type == _selectedTypeFilter)
-          .toList();
+      filtered =
+          filtered.where((promo) => promo.type == _selectedTypeFilter).toList();
     }
 
     return filtered;
@@ -133,11 +132,7 @@ class _PromotionsScreenState extends State<PromotionsScreen>
               Icons.local_offer,
             ),
             const SizedBox(width: AppSpacing.xs),
-            _buildFilterChip(
-              PromotionType.event,
-              'Eventos',
-              Icons.celebration,
-            ),
+            _buildFilterChip(PromotionType.event, 'Eventos', Icons.celebration),
             const SizedBox(width: AppSpacing.xs),
             _buildFilterChip(
               PromotionType.challenge,
@@ -155,11 +150,7 @@ class _PromotionsScreenState extends State<PromotionsScreen>
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
+        children: [Icon(icon, size: 16), const SizedBox(width: 4), Text(label)],
       ),
       selected: isSelected,
       onSelected: (selected) {
@@ -209,9 +200,10 @@ class _PromotionsScreenState extends State<PromotionsScreen>
       return EmptyState(
         icon: emptyIcon,
         title: emptyMessage,
-        message: _selectedTypeFilter != null
-            ? 'Intenta cambiar los filtros para ver más resultados'
-            : 'Vuelve pronto para nuevas oportunidades',
+        message:
+            _selectedTypeFilter != null
+                ? 'Intenta cambiar los filtros para ver más resultados'
+                : 'Vuelve pronto para nuevas oportunidades',
       );
     }
 
@@ -351,7 +343,9 @@ class _PromotionsScreenState extends State<PromotionsScreen>
                   Container(
                     width: 1,
                     height: 50,
-                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -375,7 +369,9 @@ class _PromotionsScreenState extends State<PromotionsScreen>
                   Container(
                     width: 1,
                     height: 50,
-                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -450,190 +446,184 @@ class _PromotionsScreenState extends State<PromotionsScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppSpacing.radiusLarge),
-              ),
-            ),
-            child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(AppSpacing.l),
-              children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppSpacing.radiusLarge),
                   ),
                 ),
-                // Header
-                Row(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(AppSpacing.l),
                   children: [
-                    Text(
-                      promotion.imageUrl,
-                      style: const TextStyle(fontSize: 48),
-                    ),
-                    const SizedBox(width: AppSpacing.m),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            promotion.title,
-                            style: AppTextStyles.headlineSmall,
-                          ),
-                          const SizedBox(height: 4),
-                          Chip(
-                            label: Text(promotion.type.displayName),
-                            avatar: Text(promotion.type.emoji),
-                            backgroundColor:
-                                AppColors.primaryColor.withOpacity(0.1),
-                          ),
-                        ],
+                    // Drag Handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.m),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // Status & Time
-                _buildDetailRow(
-                  icon: Icons.access_time,
-                  label: 'Estado',
-                  value: promotion.statusText,
-                  color: promotion.isExpired
-                      ? Colors.grey
-                      : AppColors.tertiaryColor,
-                ),
-                const SizedBox(height: AppSpacing.m),
-                // Location
-                _buildDetailRow(
-                  icon: Icons.location_on,
-                  label: 'Ubicación',
-                  value: promotion.location,
-                ),
-                const SizedBox(height: AppSpacing.m),
-                // Prize
-                _buildDetailRow(
-                  icon: Icons.emoji_events,
-                  label: 'Premio',
-                  value: promotion.prize,
-                  color: AppColors.goldColor,
-                ),
-                if (promotion.xpReward > 0) ...[
-                  const SizedBox(height: AppSpacing.m),
-                  _buildDetailRow(
-                    icon: Icons.star,
-                    label: 'XP Reward',
-                    value: '+${promotion.xpReward} XP',
-                    color: AppColors.xpColor,
-                  ),
-                ],
-                if (!promotion.isUpcoming) ...[
-                  const SizedBox(height: AppSpacing.m),
-                  _buildDetailRow(
-                    icon: Icons.people,
-                    label: 'Participantes',
-                    value: '${promotion.participantCount} personas',
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.l),
-                // Description
-                Text(
-                  'Descripción',
-                  style: AppTextStyles.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  promotion.description,
-                  style: AppTextStyles.bodyMedium,
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // Requirements
-                Text(
-                  'Requisitos',
-                  style: AppTextStyles.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.s),
-                ...promotion.requirements.map((req) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Header
+                    Row(
                       children: [
-                        const Icon(
-                          Icons.check_circle,
-                          size: 20,
-                          color: AppColors.tertiaryColor,
+                        Text(
+                          promotion.imageUrl,
+                          style: const TextStyle(fontSize: 48),
                         ),
-                        const SizedBox(width: AppSpacing.xs),
+                        const SizedBox(width: AppSpacing.m),
                         Expanded(
-                          child: Text(
-                            req,
-                            style: AppTextStyles.bodyMedium,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                promotion.title,
+                                style: AppTextStyles.headlineSmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Chip(
+                                label: Text(promotion.type.displayName),
+                                avatar: Text(promotion.type.emoji),
+                                backgroundColor: AppColors.primaryColor
+                                    .withOpacity(0.1),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  );
-                }),
-                const SizedBox(height: AppSpacing.xl),
-                // Action Button
-                if (!promotion.isExpired)
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '¡Te has unido a "${promotion.title}"!',
-                          ),
-                          behavior: SnackBarBehavior.floating,
+                    const SizedBox(height: AppSpacing.l),
+                    // Status & Time
+                    _buildDetailRow(
+                      icon: Icons.access_time,
+                      label: 'Estado',
+                      value: promotion.statusText,
+                      color:
+                          promotion.isExpired
+                              ? Colors.grey
+                              : AppColors.tertiaryColor,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    // Location
+                    _buildDetailRow(
+                      icon: Icons.location_on,
+                      label: 'Ubicación',
+                      value: promotion.location,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    // Prize
+                    _buildDetailRow(
+                      icon: Icons.emoji_events,
+                      label: 'Premio',
+                      value: promotion.prize,
+                      color: AppColors.goldColor,
+                    ),
+                    if (promotion.xpReward > 0) ...[
+                      const SizedBox(height: AppSpacing.m),
+                      _buildDetailRow(
+                        icon: Icons.star,
+                        label: 'XP Reward',
+                        value: '+${promotion.xpReward} XP',
+                        color: AppColors.xpColor,
+                      ),
+                    ],
+                    if (!promotion.isUpcoming) ...[
+                      const SizedBox(height: AppSpacing.m),
+                      _buildDetailRow(
+                        icon: Icons.people,
+                        label: 'Participantes',
+                        value: '${promotion.participantCount} personas',
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.l),
+                    // Description
+                    Text('Descripción', style: AppTextStyles.titleMedium),
+                    const SizedBox(height: AppSpacing.s),
+                    Text(
+                      promotion.description,
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.l),
+                    // Requirements
+                    Text('Requisitos', style: AppTextStyles.titleMedium),
+                    const SizedBox(height: AppSpacing.s),
+                    ...promotion.requirements.map((req) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              size: 20,
+                              color: AppColors.tertiaryColor,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(req, style: AppTextStyles.bodyMedium),
+                            ),
+                          ],
                         ),
                       );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.m,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMedium),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.add_circle),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Participar Ahora',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                    }),
+                    const SizedBox(height: AppSpacing.xl),
+                    // Action Button
+                    if (!promotion.isExpired)
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '¡Te has unido a "${promotion.title}"!',
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.m,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusMedium,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_circle),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              'Participar Ahora',
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
     );
   }
 
@@ -653,16 +643,12 @@ class _PromotionsScreenState extends State<PromotionsScreen>
         const SizedBox(width: AppSpacing.xs),
         Text(
           '$label: ',
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
         ),
         Expanded(
           child: Text(
             value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: color,
-            ),
+            style: AppTextStyles.bodyMedium.copyWith(color: color),
           ),
         ),
       ],

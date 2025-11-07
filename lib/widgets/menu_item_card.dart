@@ -27,20 +27,26 @@ class MenuItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      elevation: highlighted ? AppSpacing.elevationMedium : AppSpacing.elevationLow,
+      elevation:
+          highlighted ? AppSpacing.elevationMedium : AppSpacing.elevationLow,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
         child: Container(
-          decoration: highlighted
-              ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                    width: 2,
-                  ),
-                )
-              : null,
+          decoration:
+              highlighted
+                  ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.radiusMedium,
+                    ),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  )
+                  : null,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.m),
             child: Row(
@@ -60,7 +66,10 @@ class MenuItemCard extends StatelessWidget {
                           Text(
                             title,
                             style: AppTextStyles.titleMedium.copyWith(
-                              fontWeight: highlighted ? FontWeight.bold : FontWeight.normal,
+                              fontWeight:
+                                  highlighted
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                             ),
                           ),
                           if (badge != null) ...[

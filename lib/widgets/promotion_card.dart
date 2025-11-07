@@ -55,8 +55,9 @@ class PromotionCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.9),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusPill,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -153,8 +154,9 @@ class PromotionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(AppSpacing.s),
                     decoration: BoxDecoration(
                       color: AppColors.xpColor.withOpacity(0.1),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSmall),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusSmall,
+                      ),
                       border: Border.all(
                         color: AppColors.xpColor.withOpacity(0.3),
                       ),
@@ -210,21 +212,23 @@ class PromotionCard extends StatelessWidget {
                                 ? Icons.check_circle
                                 : Icons.access_time,
                             size: AppSpacing.iconXSmall,
-                            color: promotion.isExpired
-                                ? Colors.grey
-                                : (promotion.daysRemaining <= 3
-                                    ? AppColors.errorColor
-                                    : AppColors.tertiaryColor),
+                            color:
+                                promotion.isExpired
+                                    ? Colors.grey
+                                    : (promotion.daysRemaining <= 3
+                                        ? AppColors.errorColor
+                                        : AppColors.tertiaryColor),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             promotion.statusText,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: promotion.isExpired
-                                  ? Colors.grey
-                                  : (promotion.daysRemaining <= 3
-                                      ? AppColors.errorColor
-                                      : AppColors.tertiaryColor),
+                              color:
+                                  promotion.isExpired
+                                      ? Colors.grey
+                                      : (promotion.daysRemaining <= 3
+                                          ? AppColors.errorColor
+                                          : AppColors.tertiaryColor),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -262,10 +266,7 @@ class PromotionCard extends StatelessWidget {
   List<Color> _getGradientColors(PromotionType type) {
     switch (type) {
       case PromotionType.contest:
-        return [
-          AppColors.goldColor,
-          AppColors.goldColor.withOpacity(0.7),
-        ];
+        return [AppColors.goldColor, AppColors.goldColor.withOpacity(0.7)];
       case PromotionType.discount:
         return AppColors.primaryGradient;
       case PromotionType.event:
@@ -281,11 +282,7 @@ class CompactPromotionCard extends StatelessWidget {
   final Promotion promotion;
   final VoidCallback? onTap;
 
-  const CompactPromotionCard({
-    super.key,
-    required this.promotion,
-    this.onTap,
-  });
+  const CompactPromotionCard({super.key, required this.promotion, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -362,18 +359,20 @@ class CompactPromotionCard extends StatelessWidget {
                         Icon(
                           Icons.access_time,
                           size: 14,
-                          color: promotion.daysRemaining <= 3
-                              ? AppColors.errorColor
-                              : AppColors.tertiaryColor,
+                          color:
+                              promotion.daysRemaining <= 3
+                                  ? AppColors.errorColor
+                                  : AppColors.tertiaryColor,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             promotion.statusText,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: promotion.daysRemaining <= 3
-                                  ? AppColors.errorColor
-                                  : AppColors.tertiaryColor,
+                              color:
+                                  promotion.daysRemaining <= 3
+                                      ? AppColors.errorColor
+                                      : AppColors.tertiaryColor,
                               fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
@@ -387,11 +386,7 @@ class CompactPromotionCard extends StatelessWidget {
                     if (promotion.xpReward > 0)
                       Row(
                         children: [
-                          Icon(
-                            Icons.star,
-                            size: 14,
-                            color: AppColors.xpColor,
-                          ),
+                          Icon(Icons.star, size: 14, color: AppColors.xpColor),
                           const SizedBox(width: 4),
                           Text(
                             '+${promotion.xpReward} XP',
@@ -415,10 +410,7 @@ class CompactPromotionCard extends StatelessWidget {
   List<Color> _getGradientColors(PromotionType type) {
     switch (type) {
       case PromotionType.contest:
-        return [
-          AppColors.goldColor,
-          AppColors.goldColor.withOpacity(0.7),
-        ];
+        return [AppColors.goldColor, AppColors.goldColor.withOpacity(0.7)];
       case PromotionType.discount:
         return AppColors.primaryGradient;
       case PromotionType.event:

@@ -19,10 +19,7 @@ class ExploreScreen extends StatelessWidget {
       margin: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.streakColor,
-            AppColors.secondaryColor,
-          ],
+          colors: [AppColors.streakColor, AppColors.secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -41,9 +38,7 @@ class ExploreScreen extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const PromotionsScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const PromotionsScreen()),
             );
           },
           borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
@@ -60,10 +55,7 @@ class ExploreScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
-                    child: Text(
-                      '🔥',
-                      style: TextStyle(fontSize: 32),
-                    ),
+                    child: Text('🔥', style: TextStyle(fontSize: 32)),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.m),
@@ -130,11 +122,7 @@ class ExploreScreen extends StatelessWidget {
                   ),
                 ),
                 // Arrow
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
               ],
             ),
           ),
@@ -181,9 +169,7 @@ class ExploreScreen extends StatelessWidget {
             ),
 
             // Promotions Banner
-            SliverToBoxAdapter(
-              child: _buildPromotionsBanner(context),
-            ),
+            SliverToBoxAdapter(child: _buildPromotionsBanner(context)),
 
             // Recent Discoveries Section
             const SliverToBoxAdapter(
