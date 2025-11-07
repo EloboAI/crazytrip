@@ -30,13 +30,17 @@ class MapScreen extends StatelessWidget {
                   Icon(
                     Icons.map,
                     size: 120,
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.3),
                   ),
                   const SizedBox(height: AppSpacing.m),
                   Text(
                     'Interactive Map View',
                     style: AppTextStyles.headlineSmall.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onBackground.withOpacity(0.5),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -65,7 +69,9 @@ class MapScreen extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusPill,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
@@ -146,7 +152,9 @@ class MapScreen extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -210,10 +218,7 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
 
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-  });
+  const _FilterChip({required this.label, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -227,10 +232,16 @@ class _FilterChip extends StatelessWidget {
         selectedColor: AppColors.primaryColor.withOpacity(0.2),
         checkmarkColor: AppColors.primaryColor,
         labelStyle: AppTextStyles.labelMedium.copyWith(
-          color: isSelected ? AppColors.primaryColor : Theme.of(context).colorScheme.onSurface,
+          color:
+              isSelected
+                  ? AppColors.primaryColor
+                  : Theme.of(context).colorScheme.onSurface,
         ),
         side: BorderSide(
-          color: isSelected ? AppColors.primaryColor : Theme.of(context).colorScheme.outline,
+          color:
+              isSelected
+                  ? AppColors.primaryColor
+                  : Theme.of(context).colorScheme.outline,
         ),
       ),
     );

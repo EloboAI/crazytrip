@@ -37,11 +37,11 @@ class ProgressRing extends StatelessWidget {
             child: CircularProgressIndicator(
               value: 1.0,
               strokeWidth: strokeWidth,
-              backgroundColor: backgroundColor ??
+              backgroundColor:
+                  backgroundColor ??
                   Theme.of(context).colorScheme.surfaceVariant,
               valueColor: AlwaysStoppedAnimation<Color>(
-                backgroundColor ??
-                    Theme.of(context).colorScheme.surfaceVariant,
+                backgroundColor ?? Theme.of(context).colorScheme.surfaceVariant,
               ),
             ),
           ),
@@ -111,10 +111,7 @@ class LevelBadge extends StatelessWidget {
 class StreakCounter extends StatefulWidget {
   final int streakDays;
 
-  const StreakCounter({
-    super.key,
-    required this.streakDays,
-  });
+  const StreakCounter({super.key, required this.streakDays});
 
   @override
   State<StreakCounter> createState() => _StreakCounterState();
@@ -133,9 +130,10 @@ class _StreakCounterState extends State<StreakCounter>
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -158,9 +156,7 @@ class _StreakCounterState extends State<StreakCounter>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        border: Border.all(
-          color: AppColors.streakColor.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.streakColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

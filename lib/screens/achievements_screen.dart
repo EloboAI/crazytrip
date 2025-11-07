@@ -32,8 +32,10 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   Widget build(BuildContext context) {
     final profile = UserProfile.getMockProfile();
     final achievements = Achievement.getMockAchievements();
-    final unlockedAchievements = achievements.where((a) => a.isUnlocked).toList();
-    final inProgressAchievements = achievements.where((a) => !a.isUnlocked).toList();
+    final unlockedAchievements =
+        achievements.where((a) => a.isUnlocked).toList();
+    final inProgressAchievements =
+        achievements.where((a) => !a.isUnlocked).toList();
     final leaderboard = LeaderboardEntry.getMockLeaderboard();
 
     return Scaffold(
@@ -81,7 +83,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusPill,
+                          ),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.3),
                           ),
@@ -114,7 +118,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                       value: profile.levelProgress,
                       minHeight: 8,
                       backgroundColor: Colors.white.withOpacity(0.3),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -127,7 +133,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.2),
                   ),
                 ),
               ),
@@ -159,16 +167,20 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                         style: AppTextStyles.titleMedium,
                       ),
                       const SizedBox(height: AppSpacing.s),
-                      ...unlockedAchievements.map((achievement) =>
-                          _AchievementCard(achievement: achievement)),
+                      ...unlockedAchievements.map(
+                        (achievement) =>
+                            _AchievementCard(achievement: achievement),
+                      ),
                       const SizedBox(height: AppSpacing.l),
                       Text(
                         'In Progress (${inProgressAchievements.length})',
                         style: AppTextStyles.titleMedium,
                       ),
                       const SizedBox(height: AppSpacing.s),
-                      ...inProgressAchievements.map((achievement) =>
-                          _AchievementCard(achievement: achievement)),
+                      ...inProgressAchievements.map(
+                        (achievement) =>
+                            _AchievementCard(achievement: achievement),
+                      ),
                     ],
                   ),
 
@@ -211,16 +223,18 @@ class _AchievementCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                gradient: achievement.isUnlocked
-                    ? LinearGradient(
-                        colors: AppColors.achievementGradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: achievement.isUnlocked
-                    ? null
-                    : Theme.of(context).colorScheme.surfaceVariant,
+                gradient:
+                    achievement.isUnlocked
+                        ? LinearGradient(
+                          colors: AppColors.achievementGradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                        : null,
+                color:
+                    achievement.isUnlocked
+                        ? null
+                        : Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
               child: Center(
@@ -228,9 +242,10 @@ class _AchievementCard extends StatelessWidget {
                   achievement.icon,
                   style: TextStyle(
                     fontSize: 28,
-                    color: achievement.isUnlocked
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.outline,
+                    color:
+                        achievement.isUnlocked
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.outline,
                   ),
                 ),
               ),
@@ -244,9 +259,10 @@ class _AchievementCard extends StatelessWidget {
                   Text(
                     achievement.name,
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: achievement.isUnlocked
-                          ? Theme.of(context).colorScheme.onSurface
-                          : Theme.of(context).colorScheme.outline,
+                      color:
+                          achievement.isUnlocked
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.outline,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -262,13 +278,14 @@ class _AchievementCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusSmall,
+                            ),
                             child: LinearProgressIndicator(
                               value: achievement.progressPercentage,
                               minHeight: 6,
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceVariant,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surfaceVariant,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 AppColors.primaryColor,
                               ),
@@ -346,9 +363,8 @@ class _LeaderboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      color: entry.isCurrentUser
-          ? AppColors.primaryColor.withOpacity(0.1)
-          : null,
+      color:
+          entry.isCurrentUser ? AppColors.primaryColor.withOpacity(0.1) : null,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.m),
         child: Row(
@@ -400,9 +416,10 @@ class _LeaderboardCard extends StatelessWidget {
                   Text(
                     entry.username,
                     style: AppTextStyles.titleMedium.copyWith(
-                      fontWeight: entry.isCurrentUser
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      fontWeight:
+                          entry.isCurrentUser
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                     ),
                   ),
                   Text(
@@ -497,21 +514,19 @@ class _StatsTab extends StatelessWidget {
         const SizedBox(height: AppSpacing.l),
 
         // Favorite Categories
-        Text(
-          'Favorite Categories',
-          style: AppTextStyles.titleMedium,
-        ),
+        Text('Favorite Categories', style: AppTextStyles.titleMedium),
         const SizedBox(height: AppSpacing.s),
         Wrap(
           spacing: AppSpacing.xs,
           runSpacing: AppSpacing.xs,
-          children: profile.favoriteCategories.map((category) {
-            return Chip(
-              label: Text(category),
-              backgroundColor: AppColors.tertiaryColor.withOpacity(0.2),
-              side: BorderSide.none,
-            );
-          }).toList(),
+          children:
+              profile.favoriteCategories.map((category) {
+                return Chip(
+                  label: Text(category),
+                  backgroundColor: AppColors.tertiaryColor.withOpacity(0.2),
+                  side: BorderSide.none,
+                );
+              }).toList(),
         ),
 
         const SizedBox(height: AppSpacing.l),
@@ -522,10 +537,7 @@ class _StatsTab extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.m),
             child: Row(
               children: [
-                const Icon(
-                  Icons.calendar_today,
-                  color: AppColors.primaryColor,
-                ),
+                const Icon(Icons.calendar_today, color: AppColors.primaryColor),
                 const SizedBox(width: AppSpacing.m),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,11 +583,7 @@ class _StatCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.m),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: AppSpacing.iconLarge,
-            ),
+            Icon(icon, color: color, size: AppSpacing.iconLarge),
             const SizedBox(height: AppSpacing.xs),
             Text(
               value,

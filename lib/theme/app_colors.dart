@@ -6,9 +6,15 @@ class AppColors {
   AppColors._();
 
   // Brand Colors - Vibrant adventure palette
-  static const Color primaryColor = Color(0xFF6B4EFF); // Vibrant purple for adventure
-  static const Color secondaryColor = Color(0xFFFF6B9D); // Energetic pink for discovery
-  static const Color tertiaryColor = Color(0xFF00C9A7); // Fresh teal for exploration
+  static const Color primaryColor = Color(
+    0xFF6B4EFF,
+  ); // Vibrant purple for adventure
+  static const Color secondaryColor = Color(
+    0xFFFF6B9D,
+  ); // Energetic pink for discovery
+  static const Color tertiaryColor = Color(
+    0xFF00C9A7,
+  ); // Fresh teal for exploration
   static const Color errorColor = Color(0xFFFF5449);
 
   // Light Theme Colors

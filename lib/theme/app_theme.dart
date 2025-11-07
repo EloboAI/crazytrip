@@ -28,7 +28,7 @@ class AppTheme {
       outline: AppColors.lightOutline,
     ),
     scaffoldBackgroundColor: AppColors.lightBackground,
-    
+
     // Typography
     textTheme: TextTheme(
       displayLarge: AppTextStyles.displayLarge,
@@ -176,21 +176,51 @@ class AppTheme {
 
     // Typography (same as light)
     textTheme: TextTheme(
-      displayLarge: AppTextStyles.displayLarge.copyWith(color: AppColors.darkOnBackground),
-      displayMedium: AppTextStyles.displayMedium.copyWith(color: AppColors.darkOnBackground),
-      displaySmall: AppTextStyles.displaySmall.copyWith(color: AppColors.darkOnBackground),
-      headlineLarge: AppTextStyles.headlineLarge.copyWith(color: AppColors.darkOnBackground),
-      headlineMedium: AppTextStyles.headlineMedium.copyWith(color: AppColors.darkOnBackground),
-      headlineSmall: AppTextStyles.headlineSmall.copyWith(color: AppColors.darkOnBackground),
-      titleLarge: AppTextStyles.titleLarge.copyWith(color: AppColors.darkOnBackground),
-      titleMedium: AppTextStyles.titleMedium.copyWith(color: AppColors.darkOnBackground),
-      titleSmall: AppTextStyles.titleSmall.copyWith(color: AppColors.darkOnBackground),
-      bodyLarge: AppTextStyles.bodyLarge.copyWith(color: AppColors.darkOnBackground),
-      bodyMedium: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkOnBackground),
-      bodySmall: AppTextStyles.bodySmall.copyWith(color: AppColors.darkOnBackground),
-      labelLarge: AppTextStyles.labelLarge.copyWith(color: AppColors.darkOnBackground),
-      labelMedium: AppTextStyles.labelMedium.copyWith(color: AppColors.darkOnBackground),
-      labelSmall: AppTextStyles.labelSmall.copyWith(color: AppColors.darkOnBackground),
+      displayLarge: AppTextStyles.displayLarge.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      displayMedium: AppTextStyles.displayMedium.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      displaySmall: AppTextStyles.displaySmall.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      headlineLarge: AppTextStyles.headlineLarge.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      headlineMedium: AppTextStyles.headlineMedium.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      headlineSmall: AppTextStyles.headlineSmall.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      titleLarge: AppTextStyles.titleLarge.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      titleMedium: AppTextStyles.titleMedium.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      titleSmall: AppTextStyles.titleSmall.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      bodyLarge: AppTextStyles.bodyLarge.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      bodyMedium: AppTextStyles.bodyMedium.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      bodySmall: AppTextStyles.bodySmall.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      labelLarge: AppTextStyles.labelLarge.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      labelMedium: AppTextStyles.labelMedium.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
+      labelSmall: AppTextStyles.labelSmall.copyWith(
+        color: AppColors.darkOnBackground,
+      ),
     ),
 
     // App Bar Theme

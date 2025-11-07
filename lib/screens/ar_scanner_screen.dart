@@ -42,10 +42,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.0,
-                colors: [
-                  AppColors.primaryColor.withOpacity(0.2),
-                  Colors.black,
-                ],
+                colors: [AppColors.primaryColor.withOpacity(0.2), Colors.black],
               ),
             ),
             child: Center(
@@ -126,7 +123,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.arOverlayBackground,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusPill,
+                        ),
                         border: Border.all(
                           color: AppColors.primaryColor.withOpacity(0.3),
                         ),
@@ -169,18 +168,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       height: 80,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 4,
-                        ),
+                        border: Border.all(color: Colors.white, width: 4),
                       ),
                       child: Container(
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _isScanning
-                              ? AppColors.primaryColor
-                              : Colors.white,
+                          color:
+                              _isScanning
+                                  ? AppColors.primaryColor
+                                  : Colors.white,
                         ),
                       ),
                     ),
@@ -203,13 +200,15 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   // Quick Stats
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.m),
-                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.arOverlayBackground,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusMedium,
                       ),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -258,10 +257,7 @@ class _GlassButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _GlassButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _GlassButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -273,15 +269,9 @@ class _GlassButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.arOverlayBackground,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: AppSpacing.iconMedium,
-        ),
+        child: Icon(icon, color: Colors.white, size: AppSpacing.iconMedium),
       ),
     );
   }
@@ -292,22 +282,14 @@ class _ARStat extends StatelessWidget {
   final String value;
   final String label;
 
-  const _ARStat({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
+  const _ARStat({required this.icon, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: AppColors.primaryColor,
-          size: AppSpacing.iconSmall,
-        ),
+        Icon(icon, color: AppColors.primaryColor, size: AppSpacing.iconSmall),
         const SizedBox(height: 4),
         Text(
           value,
@@ -331,19 +313,18 @@ class _ScanReticlePainter extends CustomPainter {
   final double progress;
   final bool isScanning;
 
-  _ScanReticlePainter({
-    required this.progress,
-    required this.isScanning,
-  });
+  _ScanReticlePainter({required this.progress, required this.isScanning});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = isScanning
-          ? AppColors.primaryColor.withOpacity(0.8)
-          : Colors.white.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+    final paint =
+        Paint()
+          ..color =
+              isScanning
+                  ? AppColors.primaryColor.withOpacity(0.8)
+                  : Colors.white.withOpacity(0.5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3;
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
@@ -402,9 +383,10 @@ class _ScanReticlePainter extends CustomPainter {
     // Animated scanning line
     if (isScanning) {
       final scanY = center.dy - radius + (radius * 2 * progress);
-      final scanPaint = Paint()
-        ..color = AppColors.primaryColor.withOpacity(0.6)
-        ..strokeWidth = 2;
+      final scanPaint =
+          Paint()
+            ..color = AppColors.primaryColor.withOpacity(0.6)
+            ..strokeWidth = 2;
 
       canvas.drawLine(
         Offset(center.dx - radius, scanY),
@@ -416,6 +398,7 @@ class _ScanReticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScanReticlePainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.isScanning != isScanning;
+    return oldDelegate.progress != progress ||
+        oldDelegate.isScanning != isScanning;
   }
 }

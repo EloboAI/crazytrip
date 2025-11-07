@@ -33,7 +33,8 @@ class Discovery {
         id: '1',
         name: 'Golden Gate Park',
         category: 'Park',
-        description: 'A beautiful urban park with stunning views and diverse wildlife.',
+        description:
+            'A beautiful urban park with stunning views and diverse wildlife.',
         location: 'San Francisco, CA',
         latitude: 37.7694,
         longitude: -122.4862,
@@ -46,7 +47,8 @@ class Discovery {
         id: '2',
         name: 'Historic Clock Tower',
         category: 'Historical',
-        description: 'A 19th-century clock tower that has become a city landmark.',
+        description:
+            'A 19th-century clock tower that has become a city landmark.',
         location: 'Downtown',
         latitude: 37.7749,
         longitude: -122.4194,

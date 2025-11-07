@@ -6,11 +6,7 @@ class ShimmerLoading extends StatefulWidget {
   final Widget child;
   final bool isLoading;
 
-  const ShimmerLoading({
-    super.key,
-    required this.child,
-    this.isLoading = true,
-  });
+  const ShimmerLoading({super.key, required this.child, this.isLoading = true});
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
@@ -29,9 +25,10 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       duration: const Duration(milliseconds: 1500),
     )..repeat();
 
-    _animation = Tween<double>(begin: -2, end: 2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: -2,
+      end: 2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -78,11 +75,7 @@ class SkeletonCard extends StatelessWidget {
   final double height;
   final double? width;
 
-  const SkeletonCard({
-    super.key,
-    required this.height,
-    this.width,
-  });
+  const SkeletonCard({super.key, required this.height, this.width});
 
   @override
   Widget build(BuildContext context) {
@@ -104,11 +97,7 @@ class SkeletonLine extends StatelessWidget {
   final double width;
   final double height;
 
-  const SkeletonLine({
-    super.key,
-    required this.width,
-    this.height = 16,
-  });
+  const SkeletonLine({super.key, required this.width, this.height = 16});
 
   @override
   Widget build(BuildContext context) {
@@ -129,10 +118,7 @@ class SkeletonLine extends StatelessWidget {
 class SkeletonCircle extends StatelessWidget {
   final double size;
 
-  const SkeletonCircle({
-    super.key,
-    required this.size,
-  });
+  const SkeletonCircle({super.key, required this.size});
 
   @override
   Widget build(BuildContext context) {

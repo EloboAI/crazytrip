@@ -37,7 +37,12 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex == 2 ? 0 : _currentIndex > 2 ? _currentIndex - 1 : _currentIndex,
+        index:
+            _currentIndex == 2
+                ? 0
+                : _currentIndex > 2
+                ? _currentIndex - 1
+                : _currentIndex,
         children: const [
           ExploreScreen(),
           MapScreen(),
@@ -49,17 +54,15 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
       ),
-      floatingActionButton: _currentIndex != 2
-          ? FloatingActionButton(
-              onPressed: () => _onTabTapped(2),
-              backgroundColor: AppColors.primaryColor,
-              elevation: AppSpacing.elevationFAB,
-              child: const Icon(
-                Icons.camera_alt,
-                size: AppSpacing.iconLarge,
-              ),
-            )
-          : null,
+      floatingActionButton:
+          _currentIndex != 2
+              ? FloatingActionButton(
+                onPressed: () => _onTabTapped(2),
+                backgroundColor: AppColors.primaryColor,
+                elevation: AppSpacing.elevationFAB,
+                child: const Icon(Icons.camera_alt, size: AppSpacing.iconLarge),
+              )
+              : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -147,9 +150,10 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.outline;
+    final color =
+        isActive
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.outline;
 
     return Expanded(
       child: InkWell(
@@ -168,9 +172,9 @@ class _NavBarItem extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: color,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                    ),
+                  color: color,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ],
           ),

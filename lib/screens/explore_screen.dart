@@ -34,7 +34,9 @@ class ExploreScreen extends StatelessWidget {
                   Text(
                     'Discover amazing places',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onBackground.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -116,13 +118,10 @@ class ExploreScreen extends StatelessWidget {
                   crossAxisSpacing: AppSpacing.m,
                   mainAxisSpacing: AppSpacing.m,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final discovery = nearbyDiscoveries[index];
-                    return _NearbyDiscoveryCard(discovery: discovery);
-                  },
-                  childCount: nearbyDiscoveries.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final discovery = nearbyDiscoveries[index];
+                  return _NearbyDiscoveryCard(discovery: discovery);
+                }, childCount: nearbyDiscoveries.length),
               ),
             ),
           ],
@@ -211,7 +210,9 @@ class _DiscoveryCard extends StatelessWidget {
                         Chip(
                           label: Text(discovery.category),
                           labelStyle: AppTextStyles.labelSmall,
-                          backgroundColor: AppColors.tertiaryColor.withOpacity(0.2),
+                          backgroundColor: AppColors.tertiaryColor.withOpacity(
+                            0.2,
+                          ),
                           side: BorderSide.none,
                           padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
@@ -291,11 +292,7 @@ class _NearbyDiscoveryCard extends StatelessWidget {
                         ),
                       ),
                       child: const Center(
-                        child: Icon(
-                          Icons.lock,
-                          color: Colors.white,
-                          size: 32,
-                        ),
+                        child: Icon(Icons.lock, color: Colors.white, size: 32),
                       ),
                     ),
                   ],

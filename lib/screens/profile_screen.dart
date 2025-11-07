@@ -35,10 +35,7 @@ class ProfileScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withOpacity(0.2),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 4,
-                        ),
+                        border: Border.all(color: Colors.white, width: 4),
                       ),
                       child: Center(
                         child: Text(
@@ -48,7 +45,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.m),
-                    
+
                     // Username
                     Text(
                       profile.username,
@@ -58,7 +55,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    
+
                     // Bio
                     Text(
                       profile.bio,
@@ -68,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.m),
-                    
+
                     // Level Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -77,7 +74,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusPill,
+                        ),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.3),
                         ),
@@ -178,7 +177,7 @@ class ProfileScreen extends StatelessWidget {
                     onTap: () {},
                   ),
                   const SizedBox(height: AppSpacing.l),
-                  
+
                   // Theme Toggle
                   Card(
                     child: Padding(
@@ -201,7 +200,8 @@ class ProfileScreen extends StatelessWidget {
                                 Text(
                                   'Switch app theme',
                                   style: AppTextStyles.bodySmall.copyWith(
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color:
+                                        Theme.of(context).colorScheme.outline,
                                   ),
                                 ),
                               ],
@@ -216,9 +216,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: AppSpacing.m),
-                  
+
                   // Logout Button
                   OutlinedButton(
                     onPressed: () {},
@@ -228,9 +228,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: const Text('Log Out'),
                   ),
-                  
+
                   const SizedBox(height: AppSpacing.l),
-                  
+
                   // Version Info
                   Center(
                     child: Text(
@@ -319,19 +319,13 @@ class _MenuItem extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.m),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: AppSpacing.m),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.titleMedium,
-                    ),
+                    Text(title, style: AppTextStyles.titleMedium),
                     Text(
                       subtitle,
                       style: AppTextStyles.bodySmall.copyWith(
