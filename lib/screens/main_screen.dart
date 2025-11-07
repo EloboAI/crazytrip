@@ -79,54 +79,57 @@ class _CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomAppBar(
-        height: AppSpacing.bottomNavHeight,
-        notchMargin: 8,
-        shape: const CircularNotchedRectangle(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavBarItem(
-              icon: Icons.explore_outlined,
-              activeIcon: Icons.explore,
-              label: 'Explore',
-              isActive: currentIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            _NavBarItem(
-              icon: Icons.map_outlined,
-              activeIcon: Icons.map,
-              label: 'Map',
-              isActive: currentIndex == 1,
-              onTap: () => onTap(1),
-            ),
-            // Spacer for FAB
-            const SizedBox(width: AppSpacing.minTouchTarget),
-            _NavBarItem(
-              icon: Icons.emoji_events_outlined,
-              activeIcon: Icons.emoji_events,
-              label: 'Achievements',
-              isActive: currentIndex == 3,
-              onTap: () => onTap(3),
-            ),
-            _NavBarItem(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
-              label: 'Profile',
-              isActive: currentIndex == 4,
-              onTap: () => onTap(4),
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
           ],
+        ),
+        child: BottomAppBar(
+          height: 65,
+          notchMargin: 8,
+          shape: const CircularNotchedRectangle(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavBarItem(
+                icon: Icons.explore_outlined,
+                activeIcon: Icons.explore,
+                label: 'Explore',
+                isActive: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavBarItem(
+                icon: Icons.map_outlined,
+                activeIcon: Icons.map,
+                label: 'Map',
+                isActive: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              // Spacer for FAB
+              const SizedBox(width: AppSpacing.minTouchTarget),
+              _NavBarItem(
+                icon: Icons.emoji_events_outlined,
+                activeIcon: Icons.emoji_events,
+                label: 'Achievements',
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+              _NavBarItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Profile',
+                isActive: currentIndex == 4,
+                onTap: () => onTap(4),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -155,31 +158,32 @@ class _NavBarItem extends StatelessWidget {
             ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.outline;
 
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: SizedBox(
+          height: 65,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isActive ? activeIcon : icon,
-                color: color,
-                size: AppSpacing.iconMedium,
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
+              Icon(isActive ? activeIcon : icon, color: color, size: 24),
+              if (isTablet) ...[
+                const SizedBox(height: 4),
+                Text(
                   label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  style: TextStyle(
                     color: color,
+                    fontSize: 11,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                   ),
                   maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.center,
                 ),
-              ),
+              ],
             ],
           ),
         ),
