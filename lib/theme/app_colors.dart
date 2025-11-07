@@ -15,7 +15,9 @@ class AppColors {
   static const Color tertiaryColor = Color(
     0xFF00897B,
   ); // Teal - distinct from primary/secondary
-  static const Color errorColor = Color(0xFFC62828); // Dark red for better contrast
+  static const Color errorColor = Color(
+    0xFFC62828,
+  ); // Dark red for better contrast
 
   // Light Theme Colors
   static const Color lightBackground = Color(0xFFFFFBFE);
@@ -38,23 +40,41 @@ class AppColors {
   static const Color darkOutline = Color(0xFF938F99);
 
   // Gamification Colors - High contrast, colorblind-safe
-  static const Color goldColor = Color(0xFFF9A825); // Amber gold - better contrast
+  static const Color goldColor = Color(
+    0xFFF9A825,
+  ); // Amber gold - better contrast
   static const Color silverColor = Color(0xFF757575); // Medium gray
-  static const Color bronzeColor = Color(0xFF8D6E63); // Brown - distinct from gold
-  static const Color xpColor = Color(0xFF0277BD); // Blue - safe for protanopia/deuteranopia
-  static const Color streakColor = Color(0xFFE65100); // Deep orange - high visibility
-  static const Color achievementColor = Color(0xFF6A1B9A); // Deep purple - distinct
+  static const Color bronzeColor = Color(
+    0xFF8D6E63,
+  ); // Brown - distinct from gold
+  static const Color xpColor = Color(
+    0xFF0277BD,
+  ); // Blue - safe for protanopia/deuteranopia
+  static const Color streakColor = Color(
+    0xFFE65100,
+  ); // Deep orange - high visibility
+  static const Color achievementColor = Color(
+    0xFF6A1B9A,
+  ); // Deep purple - distinct
 
   // Semantic Colors - WCAG AA compliant
-  static const Color successColor = Color(0xFF2E7D32); // Dark green - better contrast
+  static const Color successColor = Color(
+    0xFF2E7D32,
+  ); // Dark green - better contrast
   static const Color warningColor = Color(0xFFEF6C00); // Deep orange
   static const Color infoColor = Color(0xFF0277BD); // Blue - colorblind-safe
 
   // AR & Map Overlay Colors - Better contrast
-  static const Color arOverlayBackground = Color(0x4D000000); // 30% black - more visible
-  static const Color arHighlight = Color(0xFFFDD835); // Yellow - high visibility
+  static const Color arOverlayBackground = Color(
+    0x4D000000,
+  ); // 30% black - more visible
+  static const Color arHighlight = Color(
+    0xFFFDD835,
+  ); // Yellow - high visibility
   static const Color mapPinActive = Color(0xFFD32F2F); // Red - colorblind-safe
-  static const Color mapPinInactive = Color(0xFF616161); // Dark gray - better contrast
+  static const Color mapPinInactive = Color(
+    0xFF616161,
+  ); // Dark gray - better contrast
 
   // Gradient Colors - Accessible combinations
   static const List<Color> primaryGradient = [
