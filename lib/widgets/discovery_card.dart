@@ -104,8 +104,8 @@ class DiscoveryCard extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               style: IconButton.styleFrom(
-                                backgroundColor:
-                                    AppColors.errorColor.withOpacity(0.1),
+                                backgroundColor: AppColors.errorColor
+                                    .withOpacity(0.1),
                                 foregroundColor: AppColors.errorColor,
                               ),
                               tooltip: 'Crear Reel',

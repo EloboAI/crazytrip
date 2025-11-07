@@ -51,7 +51,8 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
             icon: const Icon(Icons.send),
             label: const Text('Publicar'),
             style: TextButton.styleFrom(
-              foregroundColor: _canPublish ? AppColors.primaryColor : Colors.grey,
+              foregroundColor:
+                  _canPublish ? AppColors.primaryColor : Colors.grey,
             ),
           ),
         ],
@@ -99,104 +100,105 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
           color: Colors.black,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
         ),
-        child: _videoPath == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.videocam,
-                    size: 80,
-                    color: Colors.white.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  Text(
-                    'Graba tu Reel',
-                    style: AppTextStyles.titleLarge.copyWith(
-                      color: Colors.white,
+        child:
+            _videoPath == null
+                ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.videocam,
+                      size: 80,
+                      color: Colors.white.withOpacity(0.5),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    'Captura tu experiencia en este lugar',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.white.withOpacity(0.7),
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      'Graba tu Reel',
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _openCamera,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Grabar Video'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.errorColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.l,
-                            vertical: AppSpacing.m,
-                          ),
-                        ),
+                    const SizedBox(height: AppSpacing.s),
+                    Text(
+                      'Captura tu experiencia en este lugar',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white.withOpacity(0.7),
                       ),
-                      const SizedBox(width: AppSpacing.m),
-                      OutlinedButton.icon(
-                        onPressed: _pickFromGallery,
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('Galería'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.l,
-                            vertical: AppSpacing.m,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              )
-            : Stack(
-                children: [
-                  // Video preview would go here
-                  Center(
-                    child: Column(
+                    ),
+                    const SizedBox(height: AppSpacing.l),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.play_circle_outline,
-                          size: 80,
-                          color: Colors.white,
+                        ElevatedButton.icon(
+                          onPressed: _openCamera,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Grabar Video'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.errorColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.l,
+                              vertical: AppSpacing.m,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: AppSpacing.s),
-                        Text(
-                          'Video cargado',
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: Colors.white,
+                        const SizedBox(width: AppSpacing.m),
+                        OutlinedButton.icon(
+                          onPressed: _pickFromGallery,
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Galería'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.l,
+                              vertical: AppSpacing.m,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Positioned(
-                    top: AppSpacing.s,
-                    right: AppSpacing.s,
-                    child: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _videoPath = null;
-                        });
-                      },
-                      icon: const Icon(Icons.close),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black54,
-                        foregroundColor: Colors.white,
+                  ],
+                )
+                : Stack(
+                  children: [
+                    // Video preview would go here
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.play_circle_outline,
+                            size: 80,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: AppSpacing.s),
+                          Text(
+                            'Video cargado',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    Positioned(
+                      top: AppSpacing.s,
+                      right: AppSpacing.s,
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _videoPath = null;
+                          });
+                        },
+                        icon: const Icon(Icons.close),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -212,9 +214,7 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: AppColors.discoveryGradient,
-                ),
+                gradient: LinearGradient(colors: AppColors.discoveryGradient),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
               child: Center(
@@ -271,10 +271,7 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Descripción',
-          icon: Icons.edit_note,
-        ),
+        const SectionHeader(title: 'Descripción', icon: Icons.edit_note),
         const SizedBox(height: AppSpacing.s),
         TextField(
           controller: _captionController,
@@ -294,18 +291,22 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: SocialPost.generateHashtags(widget.discovery!)
-                .take(8)
-                .map((tag) => Chip(
-                      label: Text('#$tag'),
-                      labelStyle: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.primaryColor,
+            children:
+                SocialPost.generateHashtags(widget.discovery!)
+                    .take(8)
+                    .map(
+                      (tag) => Chip(
+                        label: Text('#$tag'),
+                        labelStyle: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.primaryColor,
+                        ),
+                        backgroundColor: AppColors.primaryColor.withOpacity(
+                          0.1,
+                        ),
+                        visualDensity: VisualDensity.compact,
                       ),
-                      backgroundColor:
-                          AppColors.primaryColor.withOpacity(0.1),
-                      visualDensity: VisualDensity.compact,
-                    ))
-                .toList(),
+                    )
+                    .toList(),
           ),
       ],
     );
@@ -315,10 +316,7 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Publicar en',
-          icon: Icons.share,
-        ),
+        const SectionHeader(title: 'Publicar en', icon: Icons.share),
         const SizedBox(height: AppSpacing.s),
         ..._connectedAccounts.map((account) {
           final isConnected = account.isConnected;
@@ -331,9 +329,10 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: isConnected
-                      ? AppColors.primaryColor.withOpacity(0.1)
-                      : Colors.grey[200],
+                  color:
+                      isConnected
+                          ? AppColors.primaryColor.withOpacity(0.1)
+                          : Colors.grey[200],
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -352,24 +351,25 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
                   color: isConnected ? Colors.grey[600] : Colors.grey[400],
                 ),
               ),
-              trailing: isConnected
-                  ? Checkbox(
-                      value: isSelected,
-                      onChanged: (value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedPlatforms.add(account.platform);
-                          } else {
-                            _selectedPlatforms.remove(account.platform);
-                          }
-                        });
-                      },
-                      activeColor: AppColors.primaryColor,
-                    )
-                  : TextButton(
-                      onPressed: () => _connectAccount(account.platform),
-                      child: const Text('Conectar'),
-                    ),
+              trailing:
+                  isConnected
+                      ? Checkbox(
+                        value: isSelected,
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedPlatforms.add(account.platform);
+                            } else {
+                              _selectedPlatforms.remove(account.platform);
+                            }
+                          });
+                        },
+                        activeColor: AppColors.primaryColor,
+                      )
+                      : TextButton(
+                        onPressed: () => _connectAccount(account.platform),
+                        child: const Text('Conectar'),
+                      ),
               enabled: isConnected,
             ),
           );
@@ -382,10 +382,7 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Opciones',
-          icon: Icons.tune,
-        ),
+        const SectionHeader(title: 'Opciones', icon: Icons.tune),
         const SizedBox(height: AppSpacing.s),
         SwitchListTile(
           title: const Text('Incluir ubicación'),
@@ -407,10 +404,7 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Vista Previa',
-          icon: Icons.preview,
-        ),
+        const SectionHeader(title: 'Vista Previa', icon: Icons.preview),
         const SizedBox(height: AppSpacing.s),
         Card(
           child: Padding(
@@ -422,20 +416,14 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
                   children: [
                     CircleAvatar(
                       backgroundColor: AppColors.primaryColor,
-                      child: const Text(
-                        '👤',
-                        style: TextStyle(fontSize: 20),
-                      ),
+                      child: const Text('👤', style: TextStyle(fontSize: 20)),
                     ),
                     const SizedBox(width: AppSpacing.s),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '@tu_usuario',
-                            style: AppTextStyles.titleSmall,
-                          ),
+                          Text('@tu_usuario', style: AppTextStyles.titleSmall),
                           if (_includeGeotag && widget.discovery != null)
                             Text(
                               widget.discovery!.location,
@@ -454,9 +442,10 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
                       ? 'Tu descripción aparecerá aquí...'
                       : _captionController.text,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: _captionController.text.isEmpty
-                        ? Colors.grey[400]
-                        : null,
+                    color:
+                        _captionController.text.isEmpty
+                            ? Colors.grey[400]
+                            : null,
                   ),
                 ),
               ],
@@ -514,20 +503,21 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¡Publicando!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              'Publicando en ${_selectedPlatforms.length} plataforma${_selectedPlatforms.length > 1 ? 's' : ''}...',
-              textAlign: TextAlign.center,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('¡Publicando!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  'Publicando en ${_selectedPlatforms.length} plataforma${_selectedPlatforms.length > 1 ? 's' : ''}...',
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
 
     // Simulate publishing

@@ -1,12 +1,7 @@
 import 'discovery.dart';
 
 /// Social media platforms supported
-enum SocialPlatform {
-  instagram,
-  tiktok,
-  facebook,
-  twitter,
-}
+enum SocialPlatform { instagram, tiktok, facebook, twitter }
 
 extension SocialPlatformExtension on SocialPlatform {
   String get displayName {
@@ -50,12 +45,7 @@ extension SocialPlatformExtension on SocialPlatform {
 }
 
 /// Type of social content
-enum SocialContentType {
-  photo,
-  video,
-  reel,
-  story,
-}
+enum SocialContentType { photo, video, reel, story }
 
 /// Model for social media posts created in-app
 class SocialPost {
@@ -110,7 +100,11 @@ $comment
 
 📍 ${discovery.name}
 📌 ${discovery.location}
-${discovery.category == 'Food' ? '🍽️' : discovery.category == 'Nature' ? '🌿' : '✨'} ${discovery.category}
+${discovery.category == 'Food'
+        ? '🍽️'
+        : discovery.category == 'Nature'
+        ? '🌿'
+        : '✨'} ${discovery.category}
 
 #CrazyTrip #${discovery.category}Lover #Explore${discovery.location.split(',').first.replaceAll(' ', '')}
 ''';
@@ -118,12 +112,7 @@ ${discovery.category == 'Food' ? '🍽️' : discovery.category == 'Nature' ? '�
 
   /// Generate automatic hashtags based on discovery
   static List<String> generateHashtags(Discovery discovery) {
-    final baseHashtags = [
-      'CrazyTrip',
-      'Explore',
-      'Travel',
-      'Adventure',
-    ];
+    final baseHashtags = ['CrazyTrip', 'Explore', 'Travel', 'Adventure'];
 
     // Category-specific hashtags
     final categoryHashtags = {
@@ -135,7 +124,7 @@ ${discovery.category == 'Food' ? '🍽️' : discovery.category == 'Nature' ? '�
     };
 
     final hashtags = [...baseHashtags];
-    
+
     if (categoryHashtags.containsKey(discovery.category)) {
       hashtags.addAll(categoryHashtags[discovery.category]!);
     }
