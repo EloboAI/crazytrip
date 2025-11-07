@@ -201,6 +201,7 @@ class MapScreen extends StatelessWidget {
             bottom: 200,
             child: FloatingActionButton(
               onPressed: () {},
+              heroTag: 'map_location_fab', // Fix: Add unique hero tag
               backgroundColor: Theme.of(context).colorScheme.surface,
               child: Icon(
                 Icons.my_location,

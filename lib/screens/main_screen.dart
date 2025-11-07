@@ -58,6 +58,7 @@ class _MainScreenState extends State<MainScreen> {
           _currentIndex != 2
               ? FloatingActionButton(
                 onPressed: () => _onTabTapped(2),
+                heroTag: 'main_fab', // Fix: Add unique hero tag
                 backgroundColor: AppColors.primaryColor,
                 elevation: AppSpacing.elevationFAB,
                 child: const Icon(Icons.camera_alt, size: AppSpacing.iconLarge),
