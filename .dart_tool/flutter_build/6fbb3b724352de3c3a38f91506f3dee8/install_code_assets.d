@@ -1,1 +1,0 @@
- /Users/geinervillalobos/Documents/dev/crazytrip/.dart_tool/flutter_build/6fbb3b724352de3c3a38f91506f3dee8/native_assets.json: 
