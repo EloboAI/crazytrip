@@ -7,6 +7,7 @@ import '../models/promotion.dart';
 import '../widgets/discovery_card.dart';
 import '../widgets/section_header.dart';
 import 'promotions_screen.dart';
+import 'create_content_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -182,14 +183,26 @@ class ExploreScreen extends StatelessWidget {
             // Recent Discoveries Horizontal List
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 224,
+                height: 240,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
                   itemCount: unlockedDiscoveries.length,
                   itemBuilder: (context, index) {
                     final discovery = unlockedDiscoveries[index];
-                    return DiscoveryCard(discovery: discovery);
+                    return DiscoveryCard(
+                      discovery: discovery,
+                      onShare: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    CreateContentScreen(discovery: discovery),
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
               ),

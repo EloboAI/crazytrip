@@ -8,8 +8,14 @@ import '../models/discovery.dart';
 class DiscoveryCard extends StatelessWidget {
   final Discovery discovery;
   final VoidCallback? onTap;
+  final VoidCallback? onShare;
 
-  const DiscoveryCard({super.key, required this.discovery, this.onTap});
+  const DiscoveryCard({
+    super.key,
+    required this.discovery,
+    this.onTap,
+    this.onShare,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +96,21 @@ class DiscoveryCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
+                          if (onShare != null)
+                            IconButton(
+                              onPressed: onShare,
+                              icon: const Icon(Icons.video_camera_back),
+                              iconSize: 20,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              style: IconButton.styleFrom(
+                                backgroundColor:
+                                    AppColors.errorColor.withOpacity(0.1),
+                                foregroundColor: AppColors.errorColor,
+                              ),
+                              tooltip: 'Crear Reel',
+                            ),
+                          if (onShare != null) const SizedBox(width: 8),
                           Flexible(
                             child: Chip(
                               label: Text(

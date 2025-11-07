@@ -15,7 +15,93 @@
 
 ## 📱 ¿Qué es Crazy Trip?
 
-Crazy Trip combina la exploración del mundo real con mecánicas de juego inmersivas. Piensa en Pokémon GO meets Foursquare con elementos de aventura. Escanea lugares turísticos con realidad aumentada, desbloquea descubrimientos, completa desafíos y compite con otros exploradores.
+Crazy Trip es **la primera plataforma de turismo democratizado con gamificación y creación de contenido integrada**. A diferencia de Booking (solo grandes negocios) o Google Maps (información pasiva), Crazy Trip permite que **cualquier negocio - desde una cadena hotelera hasta un puesto de tacos - pueda ser descubierto y promocionado** a través de una experiencia de exploración gamificada donde los usuarios crean y comparten contenido directamente en sus redes sociales.
+
+### 🎯 Propuesta de Valor Única
+
+#### **Para Usuarios (Exploradores)**
+- 🎮 **Gamificación Real**: XP, logros y recompensas tangibles por explorar
+- 📱 **Creador de Reels Integrado**: Graba y publica directamente en TikTok/Instagram sin salir de la app
+- 🎁 **Descuentos Reales**: Beneficios basados en tu nivel de explorador
+- 🔍 **AR Scanner**: Convierte la exploración en una aventura interactiva
+- 🏆 **Competencia Social**: Compite en leaderboards con otros exploradores
+
+#### **Para Negocios (Cualquier Tamaño)**
+- 💰 **Sin barreras de entrada**: Desde food trucks hasta hoteles 5 estrellas
+- 📊 **Visibilidad orgánica**: Los usuarios crean contenido auténtico de tu negocio
+- 🎯 **Marketing de influencers automatizado**: Cada usuario es un micro-influencer potencial
+- 💵 **Pago por resultados**: Solo pagas por promociones activas, no por listing
+- 📈 **Viralización en redes**: El contenido se publica en TikTok/Instagram con geotags automáticos
+
+#### **Diferenciadores Clave vs Competencia**
+
+| Característica | Crazy Trip | Booking/Airbnb | Google Maps | TikTok/Instagram |
+|---|---|---|---|---|
+| Negocios informales | ✅ Sí | ❌ No | ⚠️ Limitado | ⚠️ Depende del creador |
+| Gamificación | ✅ Completa | ❌ No | ❌ No | ❌ No |
+| Creación de contenido in-app | ✅ Sí | ❌ No | ❌ No | ✅ Sí (pero sin contexto) |
+| Publicación multi-red | ✅ Automática | ❌ No | ❌ No | ❌ Una sola red |
+| Recompensas reales | ✅ XP → Descuentos | ❌ No | ⚠️ Puntos limitados | ❌ No |
+| Geotagging inteligente | ✅ Automático | ⚠️ Manual | ✅ Sí | ⚠️ Manual |
+| Incentivo para explorar | ✅ XP + Logros | ❌ No | ❌ No | ❌ No |
+
+### 💡 Casos de Uso Transformadores
+
+#### **Caso 1: Vendedor de Helados Artesanales** 🍦
+```
+1. María vende helados en un carrito en el parque
+2. Se registra GRATIS en Crazy Trip
+3. Usuario la descubre con AR Scanner → +50 XP
+4. Usuario graba un reel probando el helado
+5. Publica automáticamente en TikTok + Instagram con:
+   - Geotag del parque
+   - #CrazyTrip #HeladosArtesanales #ParqueCentral
+6. María gana visibilidad sin pagar publicidad
+7. Más usuarios ven el TikTok → vienen al parque → descubren a María
+```
+
+#### **Caso 2: Artista Callejero** 🎨
+```
+1. Carlos pinta murales en el centro
+2. Registra su mural como "descubrimiento"
+3. Turistas lo encuentran explorando
+4. Crean reels de 15 segundos del mural
+5. Carlos crea un "concurso": Mejor reel del mural gana $50
+6. Se generan 100+ reels en una semana
+7. Carlos gana seguidores, comisiones, y reconocimiento
+8. Ciudad gana contenido turístico auténtico
+```
+
+#### **Caso 3: Restaurante Local** 🍽️
+```
+1. Restaurante familiar sin presupuesto para Booking
+2. Crea promoción: "Postre gratis si llegas a nivel 5"
+3. Usuarios suben reels comiendo ahí para ganar XP
+4. Contenido se viraliza en redes sociales
+5. Restaurante solo paga $20/mes por la promoción
+6. Recibe 50+ menciones orgánicas en TikTok
+7. ROI: 2000% vs publicidad tradicional
+```
+
+### 🎯 Modelo de Negocio Win-Win-Win
+
+#### **Para la App (Crazy Trip)**
+- Freemium para negocios (gratis aparecer, paga por promociones)
+- Comisión por transacciones (descuentos canjeados)
+- Patrocinios de marcas grandes (turismo nacional/internacional)
+- Datos de comportamiento turístico (anonimizados, vendidos a gobiernos/marcas)
+
+#### **Para Usuarios**
+- App gratuita
+- Ganan XP → descuentos reales en negocios
+- No hay ads intrusivos (monetización nativa)
+- Contenido que crean es SUYO (se publica en SUS redes)
+
+#### **Para Negocios**
+- **Tier Gratuito**: Aparecer en el mapa
+- **Tier Básico ($9/mes)**: Crear 1 promoción
+- **Tier Pro ($29/mes)**: Promociones ilimitadas + analytics
+- **Tier Enterprise ($99/mes)**: API, integración POS, reportes avanzados
 
 ### 🎯 Características Principales
 
@@ -78,6 +164,17 @@ Crazy Trip combina la exploración del mundo real con mecánicas de juego inmers
 - Temporizador de cuenta regresiva para eventos
 - Integración con sistema de logros
 - Categorías: Concursos, Descuentos, Eventos, Desafíos
+
+#### 📱 **Creador de Contenido Social** ⭐ NUEVO
+- **Graba reels directamente** en la app al descubrir un lugar
+- **Publica en múltiples redes** (Instagram, TikTok, Facebook) simultáneamente
+- **Geotags automáticos** vinculados al descubrimiento
+- **Hashtags inteligentes** generados por categoría y ubicación
+- **Gana XP extra** por crear y compartir contenido
+- **Caption pre-generado** con info del lugar
+- **Editor in-app** con filtros y efectos
+- **Vinculación de descubrimientos** al contenido
+- **No guardamos tu contenido**: Se publica directo en TUS redes sociales
 
 ---
 
@@ -207,6 +304,7 @@ lib/
 │   ├── achievement.dart         # Modelo de logros + datos mock
 │   ├── discovery.dart           # Modelo de descubrimientos POI + datos mock
 │   ├── promotion.dart           # Modelo de promociones + datos mock
+│   ├── social_post.dart         # Modelo de contenido social ⭐ NUEVO
 │   └── user_profile.dart        # Modelos de usuario y leaderboard + datos mock
 ├── screens/                     # Vistas de pantalla completa
 │   ├── main_screen.dart         # Bottom nav + IndexedStack
@@ -215,6 +313,7 @@ lib/
 │   ├── ar_scanner_screen.dart   # Vista de cámara AR
 │   ├── achievements_screen.dart # Logros + leaderboard + estadísticas
 │   ├── promotions_screen.dart   # Promociones y concursos
+│   ├── create_content_screen.dart # Creador de reels sociales ⭐ NUEVO
 │   └── profile_screen.dart      # Perfil de usuario + configuración
 ├── theme/                       # Sistema de diseño
 │   ├── app_theme.dart           # Configuración de tema claro/oscuro
@@ -353,10 +452,13 @@ open coverage/html/index.html
 ### 🚧 Fase 2: Backend & Funcionalidad (En Progreso)
 - [ ] Integración de API/Backend
 - [ ] Funcionalidad real de AR/Cámara
+- [ ] **Integración OAuth con redes sociales** (Instagram, TikTok, Facebook) ⭐
+- [ ] **API de publicación de reels/videos** en múltiples plataformas ⭐
 - [ ] Integración de mapa real (Google Maps/Mapbox)
 - [ ] Servicios de GPS/Ubicación
 - [ ] Autenticación de usuarios
 - [ ] Base de datos (local con Hive/Drift o remota)
+- [ ] **Sistema de procesamiento de video in-app** ⭐
 
 ### 📋 Fase 3: Estado & Lógica (Planeado)
 - [ ] Gestión de estado (Provider/Riverpod/Bloc)
