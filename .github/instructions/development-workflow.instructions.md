@@ -169,7 +169,25 @@ Extract:
 - **Title**: User Story description
 - **Criterios de Aceptación**: List of checkboxes
 
-#### Step 3: Validate Task Alignment
+#### Step 3: Get All Sibling Tasks
+
+Retrieve all Tasks from the same User Story:
+```javascript
+mcp_githubmcp_issue_read({
+  method: "get_sub_issues",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <parent_number>
+})
+```
+
+This returns all Tasks under the User Story with their:
+- **Number**: Issue number
+- **Title**: Task title
+- **State**: `open` or `closed`
+- **State reason**: `completed`, `not_planned`, etc.
+
+#### Step 4: Validate Task Alignment
 
 Compare the Task with User Story acceptance criteria:
 
@@ -177,7 +195,7 @@ Compare the Task with User Story acceptance criteria:
 - Task description relates to one of the acceptance criteria
 - Task title mentions functionality from acceptance criteria
 - Task technical steps implement a specific criterion
-→ **Proceed with the Task**
+→ **Proceed with dependency check (Step 5)**
 
 ❌ **Task is MISALIGNED if:**
 - Task description doesn't match any acceptance criterion
@@ -209,9 +227,65 @@ Compare the Task with User Story acceptance criteria:
 
 **Wait for developer's confirmation before proceeding.**
 
-❌ **NEVER** work on a Task that doesn't align with its parent User Story
+#### Step 5: Check Task Dependencies
+
+**CRITICAL**: Analyze if this Task depends on other Tasks being completed first.
+
+Common dependency patterns:
+1. **Setup/Configuration Tasks** must be done before feature Tasks
+2. **Provider/Service Tasks** must be done before UI Tasks that use them
+3. **Data Model Tasks** must be done before Tasks that manipulate that data
+4. **Base Component Tasks** must be done before Tasks that extend them
+
+**Dependency Analysis Process:**
+
+1. **Review Task titles and descriptions** for dependency keywords:
+   - "Implementar", "Crear", "Setup" → Usually foundational
+   - "Integrar", "Conectar", "Usar" → Usually dependent
+   - "Persistir", "Guardar" → Depends on data model
+   - "UI", "Pantalla", "Mostrar" → Depends on backend/services
+
+2. **Check sibling Tasks states:**
+   - List all open Tasks from the User Story
+   - Identify which are foundational vs. dependent
+   - Check if foundational Tasks are completed
+
+3. **Validate dependency order:**
+
+✅ **Safe to proceed if:**
+- No obvious dependencies exist
+- All prerequisite Tasks are completed
+- Task is foundational (setup, models, providers)
+→ **Proceed with Task**
+
+⚠️ **Potential dependency detected:**
+```
+⚠️ El Task #<task_number> podría depender de otros Tasks del User Story #<parent_number>
+
+**Task actual:** <current_task_title>
+
+**Tasks relacionados del mismo User Story:**
+- Task #<number>: <title> [Estado: <open/closed>]
+- Task #<number>: <title> [Estado: <open/closed>]
+
+**Análisis de dependencias:**
+- ❌ Task #<number> parece ser prerequisito (aún abierto)
+- ✅ Task #<number> ya está completado
+
+**Recomendación:**
+¿Quieres trabajar primero en el Task #<prerequisite_number> que es prerequisito?
+O si estás seguro de que no hay dependencia, podemos continuar con el Task actual.
+
+¿Cómo quieres proceder?
+```
+
+**Wait for developer's decision before proceeding.**
+
+❌ **NEVER** work on a Task that clearly depends on incomplete foundational Tasks
 ✅ **ALWAYS** verify Task-to-User-Story alignment before starting
+✅ **ALWAYS** check sibling Tasks for potential dependencies
 ✅ **ALWAYS** ask for clarification if the alignment is unclear
+✅ **ALWAYS** suggest working on prerequisite Tasks first when detected
 
 ### 5. Validate Scope Before Starting
 
