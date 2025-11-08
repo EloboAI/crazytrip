@@ -32,7 +32,103 @@ Once you have the issue number, retrieve and analyze:
 - **Criterios de Aceptación** (for User Stories): Clear checklist of what must be completed
 - **Tareas Técnicas** (for Tasks): Specific implementation steps
 
-### 3. Validate Scope Before Starting
+### 3. Verify and Create Tasks (User Stories Only)
+
+**CRITICAL**: If the work item is a User Story (type = "user story"), you MUST verify it has Tasks before starting development.
+
+#### Step 1: Check if User Story has Tasks
+
+```javascript
+mcp_githubmcp_issue_read({
+  method: "get_sub_issues",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <user_story_number>
+})
+```
+
+#### Step 2: Evaluate Task Status
+
+✅ **If Tasks exist and some are open:**
+- List all Tasks with their status
+- Ask developer which Task to work on
+- Proceed with selected Task
+
+✅ **If ALL Tasks are closed:**
+- Inform developer that all Tasks are complete
+- Suggest closing the User Story
+
+❌ **If NO Tasks exist:**
+- **AUTOMATICALLY create Tasks** from acceptance criteria
+- One Task per acceptance criterion
+- Follow the pattern from `github-workflow.instructions.md`
+
+#### Step 3: Create Missing Tasks
+
+For each unchecked acceptance criterion (`- [ ]`), create a Task:
+
+```javascript
+// 1. Create the Task issue
+mcp_githubmcp_issue_write({
+  method: "create",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  title: "[Task] <imperative verb> <what>",
+  body: `**Parent:** #<user_story_number>
+
+**Descripción:** <acceptance criterion text>
+
+**Tareas Técnicas:**
+- <technical step 1>
+- <technical step 2>
+- <technical step 3>`,
+  type: "task"
+})
+
+// 2. Get node IDs
+const parentNodeId = await getNodeId(<user_story_number>)
+const taskNodeId = await getNodeId(<new_task_number>)
+
+// 3. Link Task to User Story via sub-issue API
+./gh api graphql -f query='
+mutation {
+  addSubIssue(input: {
+    issueId: "PARENT_NODE_ID"
+    subIssueId: "TASK_NODE_ID"
+  }) {
+    subIssue {
+      id
+    }
+  }
+}'
+```
+
+#### Step 4: Inform Developer
+
+After creating Tasks:
+```
+✅ User Story #<number> no tenía Tasks definidas
+✅ Creadas <N> Tasks desde los criterios de aceptación:
+   - Task #<number>: <title>
+   - Task #<number>: <title>
+   - Task #<number>: <title>
+
+¿En cuál Task quieres que empiece a trabajar?
+```
+
+#### When to Skip Task Creation
+
+❌ **NEVER create Tasks if:**
+- Work item is NOT a User Story (it's a Task or Feature)
+- User Story already has Tasks (even if all are closed)
+- Acceptance criteria are missing or unclear
+
+✅ **ALWAYS ask for clarification if:**
+- Acceptance criteria are vague
+- It's unclear how to split into Tasks
+- Developer might want different Task breakdown
+
+### 4. Validate Scope Before Starting
 
 **CRITICAL**: Before starting any work, validate that the developer's request is within the scope of the work item:
 
@@ -70,7 +166,7 @@ Once you have the issue number, retrieve and analyze:
 ✅ **ALWAYS** stick to the exact requirements in the work item
 ✅ **ALWAYS** ask for clarification if the scope is unclear
 
-### 4. Mark Task as In Progress
+### 5. Mark Task as In Progress
 
 Before starting development, update the task state to communicate you're working on it:
 
