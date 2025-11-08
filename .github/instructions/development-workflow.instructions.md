@@ -139,11 +139,13 @@ After creating Tasks:
 - It's unclear how to split into Tasks
 - Developer might want different Task breakdown
 
-### 4. Validate Task Against Parent User Story
+### 4. Validate Work Item Dependencies
 
-**CRITICAL**: If the work item is a Task, validate it against its parent User Story.
+**CRITICAL**: Before starting work, validate dependencies based on the work item type.
 
-#### Step 1: Identify Parent User Story
+#### For Tasks: Validate Against Parent User Story
+
+##### Step 1: Identify Parent User Story
 
 Check if the Task has a parent reference:
 ```bash
@@ -153,7 +155,7 @@ Check if the Task has a parent reference:
 
 Look for `**Parent:** #<number>` at the top of the description.
 
-#### Step 2: Retrieve Parent User Story Details
+##### Step 2: Retrieve Parent User Story Details
 
 If parent exists, get the User Story:
 ```javascript
@@ -169,7 +171,7 @@ Extract:
 - **Title**: User Story description
 - **Criterios de Aceptación**: List of checkboxes
 
-#### Step 3: Get All Sibling Tasks
+##### Step 3: Get All Sibling Tasks
 
 Retrieve all Tasks from the same User Story:
 ```javascript
@@ -187,7 +189,7 @@ This returns all Tasks under the User Story with their:
 - **State**: `open` or `closed`
 - **State reason**: `completed`, `not_planned`, etc.
 
-#### Step 4: Validate Task Alignment
+##### Step 4: Validate Task Alignment
 
 Compare the Task with User Story acceptance criteria:
 
@@ -227,7 +229,7 @@ Compare the Task with User Story acceptance criteria:
 
 **Wait for developer's confirmation before proceeding.**
 
-#### Step 5: Check Task Dependencies
+##### Step 5: Check Task Dependencies
 
 **CRITICAL**: Analyze if this Task depends on other Tasks being completed first.
 
@@ -281,11 +283,175 @@ O si estás seguro de que no hay dependencia, podemos continuar con el Task actu
 
 **Wait for developer's decision before proceeding.**
 
-❌ **NEVER** work on a Task that clearly depends on incomplete foundational Tasks
-✅ **ALWAYS** verify Task-to-User-Story alignment before starting
-✅ **ALWAYS** check sibling Tasks for potential dependencies
-✅ **ALWAYS** ask for clarification if the alignment is unclear
-✅ **ALWAYS** suggest working on prerequisite Tasks first when detected
+#### For User Stories: Validate Against Feature and Blocking Issues
+
+**CRITICAL**: If the work item is a User Story, validate dependencies at the Feature level.
+
+##### Step 1: Identify Parent Feature
+
+Check if the User Story has a parent reference:
+```bash
+# Get the User Story description
+./gh api repos/EloboAI/crazytrip/issues/<user_story_number> --jq '.body'
+```
+
+Look for `**Parent:** #<number>` at the top of the description.
+
+##### Step 2: Check for Blocking Relationships
+
+Query the issue's timeline to find blocking relationships:
+```bash
+# Get issue details including labels and body
+ISSUE_DATA=$(./gh api repos/EloboAI/crazytrip/issues/<user_story_number>)
+
+# Check body for "Blocked by: #<number>" or "Blocks: #<number>"
+echo "$ISSUE_DATA" | jq -r '.body' | grep -i "blocked by"
+echo "$ISSUE_DATA" | jq -r '.body' | grep -i "blocks"
+```
+
+**Blocking relationship patterns in issue body:**
+- `**Blocked by:** #<issue_number>` - Cannot start until that issue is closed
+- `**Blocks:** #<issue_number>` - Other issues depend on this one
+
+##### Step 3: Validate Blocking Issues Status
+
+If "Blocked by" relationship exists:
+
+```bash
+# Get blocking issue status
+BLOCKING_ISSUE_NUM=<number_from_blocked_by>
+BLOCKING_STATUS=$(./gh api repos/EloboAI/crazytrip/issues/$BLOCKING_ISSUE_NUM --jq '{state: .state, state_reason: .state_reason, title: .title}')
+
+echo "$BLOCKING_STATUS"
+```
+
+✅ **Safe to proceed if:**
+- Blocking issue state is `closed` with `state_reason: "completed"`
+→ **Continue to Step 4**
+
+❌ **BLOCKED - Cannot proceed if:**
+- Blocking issue state is `open`
+- Blocking issue state is `closed` with `state_reason: "not_planned"`
+→ **STOP and inform the developer:**
+
+```
+🚫 El User Story #<user_story_number> está BLOQUEADO
+
+**User Story actual:** <current_title>
+
+**Bloqueado por:**
+- Issue #<blocking_number>: <blocking_title> [Estado: <open/closed>]
+
+❌ No puedes trabajar en este User Story hasta que se resuelva el issue bloqueante.
+
+**Opciones:**
+1. Trabajar en el issue bloqueante #<blocking_number> primero
+2. Seleccionar un User Story diferente que no esté bloqueado
+3. Revisar si la relación de bloqueo sigue siendo válida
+
+¿Qué quieres hacer?
+```
+
+**Wait for developer's decision before proceeding.**
+
+##### Step 4: Get All Sibling User Stories from Feature
+
+If parent Feature exists, get all User Stories:
+```javascript
+mcp_githubmcp_issue_read({
+  method: "get_sub_issues",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <feature_number>
+})
+```
+
+This returns all User Stories under the Feature with their:
+- **Number**: Issue number
+- **Title**: User Story title
+- **State**: `open` or `closed`
+- **State reason**: `completed`, `not_planned`, etc.
+
+##### Step 5: Analyze Logical Dependencies Between User Stories
+
+**Common dependency patterns between User Stories:**
+
+1. **Authentication/Authorization** → Usually prerequisite for all features
+2. **Data Model/Schema** → Must exist before CRUD operations
+3. **Base Configuration/Settings** → Needed before advanced features
+4. **Core Functionality** → Required before enhancements
+5. **Backend/API** → Must work before UI implementation
+
+**Dependency Analysis Process:**
+
+1. **Review User Story titles for dependency keywords:**
+   - "Configurar", "Crear modelo", "Setup", "Autenticación" → Foundational
+   - "Listar", "Mostrar", "Visualizar" → Depends on data model
+   - "Editar", "Actualizar", "Eliminar" → Depends on creation/listing
+   - "Integrar", "Conectar" → Depends on both systems existing
+   - "Persistir", "Guardar" → Depends on data model and UI
+
+2. **Check sibling User Stories states:**
+   - List all open User Stories from the Feature
+   - Identify which are foundational vs. dependent
+   - Check if foundational User Stories are completed
+
+3. **Validate dependency order:**
+
+✅ **Safe to proceed if:**
+- No obvious dependencies exist
+- All prerequisite User Stories are completed
+- User Story is foundational (models, auth, config)
+→ **Proceed with User Story**
+
+⚠️ **Potential dependency detected:**
+```
+⚠️ El User Story #<user_story_number> podría depender de otros User Stories del Feature #<feature_number>
+
+**User Story actual:** <current_us_title>
+
+**User Stories relacionados del mismo Feature:**
+- US #<number>: <title> [Estado: <open/closed>]
+- US #<number>: <title> [Estado: <open/closed>]
+- US #<number>: <title> [Estado: <open/closed>]
+
+**Análisis de dependencias:**
+- ❌ US #<number>: <title> parece ser prerequisito (aún abierto)
+  Razón: <explain why - e.g., "Crea el modelo de datos necesario">
+- ✅ US #<number>: <title> ya está completado
+- ⚠️ US #<number>: <title> está abierto pero es independiente
+
+**Recomendación:**
+¿Quieres trabajar primero en el US #<prerequisite_number> que es prerequisito?
+O si estás seguro de que no hay dependencia, podemos continuar con el US actual.
+
+¿Cómo quieres proceder?
+```
+
+**Wait for developer's decision before proceeding.**
+
+##### Step 6: Summary Check Before Proceeding
+
+Before starting work on a User Story, ensure:
+- [ ] No "Blocked by" relationships, OR blocking issues are closed/completed
+- [ ] No prerequisite User Stories in same Feature are open
+- [ ] User Story has Tasks defined (or will be created from acceptance criteria)
+- [ ] Iteration is assigned
+
+✅ **All checks passed** → Proceed to iteration validation
+❌ **Any check failed** → Wait for developer confirmation or resolution
+
+#### Dependency Validation Rules Summary
+
+❌ **NEVER** work on a Task that depends on incomplete sibling Tasks
+❌ **NEVER** work on a User Story that is "Blocked by" an open issue
+❌ **NEVER** work on a User Story that depends on incomplete prerequisite User Stories in the same Feature
+✅ **ALWAYS** verify alignment with parent (Task → User Story, User Story → Feature)
+✅ **ALWAYS** check for explicit blocking relationships in issue body
+✅ **ALWAYS** analyze logical dependencies within the same parent
+✅ **ALWAYS** ask for clarification if dependencies are unclear
+✅ **ALWAYS** suggest working on prerequisite issues first when detected
+✅ **ALWAYS** respect developer's decision to override dependency suggestions
 
 ### 5. Validate Scope Before Starting
 
@@ -885,30 +1051,37 @@ After completing work:
 1. ✅ **ALWAYS** ask for work item number before starting
 2. ✅ **ALWAYS** read and understand acceptance criteria
 3. ✅ **ALWAYS** validate Task alignment with parent User Story
-4. ✅ **ALWAYS** check acceptance criteria match before starting Task
-5. ✅ **ALWAYS** check sibling Tasks for dependencies before starting
-6. ✅ **ALWAYS** suggest prerequisite Tasks when dependencies detected
-7. ✅ **ALWAYS** validate iteration assignment before starting work
-8. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
-9. ✅ **ALWAYS** ask developer before changing existing iteration
-10. ✅ **ALWAYS** validate that requests are within scope
-11. ✅ **ALWAYS** stop and ask if request is out of scope
-12. ✅ **ALWAYS** wait for developer confirmation before closing
-13. ✅ **ALWAYS** suggest next logical Task after completing one
-14. ✅ **ALWAYS** explain why the suggested Task should be next
-15. ✅ **ALWAYS** check parent-child relationships
-16. ✅ **ALWAYS** verify all siblings before closing parent
-17. ✅ **ALWAYS** use `state_reason: "completed"` when closing
-18. ❌ **NEVER** work on misaligned Tasks without developer confirmation
-19. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
-20. ❌ **NEVER** implement features outside the defined scope
-21. ❌ **NEVER** assume additional functionality should be included
-22. ❌ **NEVER** close work items prematurely
-23. ❌ **NEVER** skip hierarchy validation
-24. ❌ **NEVER** close parent before all children are done
-25. ❌ **NEVER** start coding without a specific work item
-26. ❌ **NEVER** start work without validating iteration assignment
-27. ❌ **NEVER** assume developer wants to continue without asking
+4. ✅ **ALWAYS** validate User Story against Feature and blocking issues
+5. ✅ **ALWAYS** check for "Blocked by" relationships in issue body
+6. ✅ **ALWAYS** verify blocking issues are closed before starting
+7. ✅ **ALWAYS** check acceptance criteria match before starting Task
+8. ✅ **ALWAYS** check sibling Tasks for dependencies before starting
+9. ✅ **ALWAYS** check sibling User Stories for dependencies within Feature
+10. ✅ **ALWAYS** suggest prerequisite issues when dependencies detected
+11. ✅ **ALWAYS** validate iteration assignment before starting work
+12. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
+13. ✅ **ALWAYS** ask developer before changing existing iteration
+14. ✅ **ALWAYS** validate that requests are within scope
+15. ✅ **ALWAYS** stop and ask if request is out of scope
+16. ✅ **ALWAYS** wait for developer confirmation before closing
+17. ✅ **ALWAYS** suggest next logical work item after completing one
+18. ✅ **ALWAYS** explain why the suggested work item should be next
+19. ✅ **ALWAYS** check parent-child relationships
+20. ✅ **ALWAYS** verify all siblings before closing parent
+21. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+22. ❌ **NEVER** work on blocked User Stories without resolving blockers
+23. ❌ **NEVER** work on misaligned Tasks without developer confirmation
+24. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
+25. ❌ **NEVER** work on dependent User Stories before prerequisites in same Feature
+26. ❌ **NEVER** implement features outside the defined scope
+27. ❌ **NEVER** assume additional functionality should be included
+28. ❌ **NEVER** close work items prematurely
+29. ❌ **NEVER** skip hierarchy validation
+30. ❌ **NEVER** skip dependency validation (Tasks or User Stories)
+31. ❌ **NEVER** close parent before all children are done
+32. ❌ **NEVER** start coding without a specific work item
+33. ❌ **NEVER** start work without validating iteration assignment
+34. ❌ **NEVER** assume developer wants to continue without asking
 
 ## Integration with GitHub Workflow
 
