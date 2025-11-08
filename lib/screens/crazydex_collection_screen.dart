@@ -40,7 +40,13 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi CrazyDex'),
+        title: Text(
+          'Mi CrazyDex',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -201,6 +207,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     IconData icon,
   ) {
     final isSelected = _selectedCategory == category;
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.only(right: AppSpacing.s),
       child: FilterChip(
@@ -222,8 +229,9 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
             _selectedCategory = selected ? category : null;
           });
         },
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: colorScheme.surface,
         selectedColor: AppColors.primaryColor,
+        showCheckmark: false,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : AppColors.primaryColor,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -289,9 +297,13 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   }
 
   Widget _buildItemCard(CrazyDexItem item, {required bool isDiscovered}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       margin: EdgeInsets.only(bottom: AppSpacing.m),
-      color: isDiscovered ? null : Colors.grey.shade100,
+      color:
+          isDiscovered
+              ? colorScheme.surface
+              : colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.m),
         child: Row(
@@ -304,7 +316,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                 color:
                     isDiscovered
                         ? AppColors.primaryColor.withOpacity(0.1)
-                        : Colors.grey.shade300,
+                        : colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -314,7 +326,11 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                           item.imageUrl,
                           style: const TextStyle(fontSize: 32),
                         )
-                        : Icon(Icons.lock, size: 32, color: Colors.grey),
+                        : Icon(
+                          Icons.lock,
+                          size: 32,
+                          color: colorScheme.outline,
+                        ),
               ),
             ),
             SizedBox(width: AppSpacing.m),
@@ -328,7 +344,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                     isDiscovered ? item.name : '???',
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isDiscovered ? null : Colors.grey,
+                      color:
+                          isDiscovered
+                              ? colorScheme.onSurface
+                              : colorScheme.outline,
                     ),
                   ),
                   SizedBox(height: AppSpacing.xxs),
@@ -345,14 +364,17 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                           color:
                               isDiscovered
                                   ? _getCategoryColor(item.category)
-                                  : Colors.grey.shade300,
+                                  : colorScheme.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           item.category.displayName,
                           style: AppTextStyles.bodySmall.copyWith(
                             fontSize: 10,
-                            color: isDiscovered ? Colors.white : Colors.grey,
+                            color:
+                                isDiscovered
+                                    ? Colors.white
+                                    : colorScheme.outline,
                           ),
                         ),
                       ),
@@ -360,7 +382,8 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                       Icon(
                         Icons.star,
                         size: 12,
-                        color: isDiscovered ? Colors.amber : Colors.grey,
+                        color:
+                            isDiscovered ? Colors.amber : colorScheme.outline,
                       ),
                       const SizedBox(width: 2),
                       Text(
@@ -369,7 +392,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                           color:
                               isDiscovered
                                   ? Colors.amber.shade700
-                                  : Colors.grey,
+                                  : colorScheme.outline,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -380,7 +403,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                     Text(
                       'Descubierto hace ${_getTimeAgo(item.discoveredAt!)}',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 10,
                       ),
                     ),
@@ -392,7 +415,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
             if (isDiscovered)
               Icon(Icons.check_circle, color: Colors.green, size: 24)
             else
-              Icon(Icons.help_outline, color: Colors.grey, size: 24),
+              Icon(Icons.help_outline, color: colorScheme.outline, size: 24),
           ],
         ),
       ),
@@ -425,13 +448,14 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.l),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey),
+            Icon(Icons.search_off, size: 64, color: colorScheme.outline),
             SizedBox(height: AppSpacing.m),
             Text(
               'No hay items en esta categoría',
@@ -441,7 +465,9 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
             SizedBox(height: AppSpacing.s),
             Text(
               'Visita diferentes lugares y usa tu cámara para descubrir nuevos items',
-              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

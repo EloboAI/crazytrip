@@ -122,6 +122,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildSearchBar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
       child: Container(
@@ -130,11 +133,11 @@ class _MapScreenState extends State<MapScreen> {
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? colorScheme.surfaceContainer : colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(context).shadowColor.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -142,14 +145,17 @@ class _MapScreenState extends State<MapScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, color: Colors.grey[600]),
+            Icon(Icons.search, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: TextField(
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Buscar lugares, promos, items...',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey[600],
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   border: InputBorder.none,
                   isDense: true,
@@ -169,7 +175,7 @@ class _MapScreenState extends State<MapScreen> {
             Container(
               width: 1,
               height: 24,
-              color: Colors.grey[300],
+              color: colorScheme.outline.withOpacity(0.3),
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             ),
             IconButton(
@@ -212,6 +218,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildFilterChip({required String label, required MapFilter filter}) {
     final isActive = _activeFilters.contains(filter);
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.s),
       child: FilterChip(
@@ -226,48 +233,49 @@ class _MapScreenState extends State<MapScreen> {
             }
           });
         },
-        backgroundColor: Colors.white,
-        selectedColor: AppColors.primaryColor.withOpacity(0.2),
-        checkmarkColor: AppColors.primaryColor,
+        backgroundColor: colorScheme.surface,
+        selectedColor: colorScheme.primaryContainer,
+        showCheckmark: false,
         labelStyle: AppTextStyles.bodySmall.copyWith(
-          color: isActive ? AppColors.primaryColor : Colors.grey[700],
+          color: isActive ? Colors.white : colorScheme.onSurfaceVariant,
           fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
         ),
         side: BorderSide(
-          color: isActive ? AppColors.primaryColor : Colors.grey[300]!,
+          color:
+              isActive
+                  ? colorScheme.primary
+                  : colorScheme.outline.withOpacity(0.3),
         ),
       ),
     );
   }
 
   Widget _buildMapView() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppColors.tertiaryColor.withOpacity(0.3),
-            AppColors.lightBackground,
-          ],
+          colors: [colorScheme.tertiaryContainer, colorScheme.surface],
         ),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.map, size: 120, color: Colors.grey[400]),
+            Icon(Icons.map, size: 120, color: colorScheme.outline),
             const SizedBox(height: AppSpacing.m),
             Text(
               'Vista de Mapa',
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Integración de Google Maps aquí',
-              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
@@ -287,22 +295,23 @@ class _MapScreenState extends State<MapScreen> {
     final content = _filteredContent;
 
     if (content.isEmpty) {
+      final colorScheme = Theme.of(context).colorScheme;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+            Icon(Icons.search_off, size: 80, color: colorScheme.outline),
             const SizedBox(height: AppSpacing.m),
             Text(
               'No hay resultados',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Intenta ajustar los filtros',
-              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
             ),
           ],
         ),
@@ -338,15 +347,16 @@ class _MapScreenState extends State<MapScreen> {
       maxChildSize: 0.7,
       builder: (context, scrollController) {
         final content = _filteredContent;
+        final colorScheme = Theme.of(context).colorScheme;
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppSpacing.radiusLarge),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Theme.of(context).shadowColor.withOpacity(0.2),
                 blurRadius: 16,
                 offset: const Offset(0, -4),
               ),
@@ -360,7 +370,7 @@ class _MapScreenState extends State<MapScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: colorScheme.outline.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -377,7 +387,7 @@ class _MapScreenState extends State<MapScreen> {
                         Text(
                           '${content.length} items en ${_searchRadius.toInt()}km',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: Colors.grey[600],
+                            color: colorScheme.outline,
                           ),
                         ),
                       ],
@@ -394,7 +404,7 @@ class _MapScreenState extends State<MapScreen> {
                           child: Text(
                             'No hay resultados',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.grey[600],
+                              color: colorScheme.outline,
                             ),
                           ),
                         )
@@ -497,7 +507,7 @@ class _MapScreenState extends State<MapScreen> {
                     Text(
                       promotion.description,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -508,14 +518,14 @@ class _MapScreenState extends State<MapScreen> {
                         Icon(
                           Icons.location_on,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Expanded(
                           child: Text(
                             promotion.address,
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.outline,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -588,7 +598,7 @@ class _MapScreenState extends State<MapScreen> {
                     Text(
                       item.description,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -674,7 +684,7 @@ class _MapScreenState extends State<MapScreen> {
                     Text(
                       place.description,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

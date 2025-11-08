@@ -10,6 +10,7 @@ class MenuItemCard extends StatelessWidget {
   final VoidCallback onTap;
   final Color? iconColor;
   final Widget? badge;
+  final Widget? trailing;
   final bool highlighted;
 
   const MenuItemCard({
@@ -20,6 +21,7 @@ class MenuItemCard extends StatelessWidget {
     required this.onTap,
     this.iconColor,
     this.badge,
+    this.trailing,
     this.highlighted = false,
   });
 
@@ -87,10 +89,11 @@ class MenuItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+                trailing ??
+                    Icon(
+                      Icons.chevron_right,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
               ],
             ),
           ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../models/user_profile.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/menu_item_card.dart';
+import '../widgets/theme_settings_bottom_sheet.dart';
+import '../providers/theme_provider.dart';
 import 'crazydex_collection_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -195,43 +198,26 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.l),
 
-                  // Theme Toggle
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.m),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.dark_mode_outlined,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: AppSpacing.m),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Dark Mode',
-                                  style: AppTextStyles.titleMedium,
-                                ),
-                                Text(
-                                  'Switch app theme',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.outline,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: false,
-                            onChanged: (value) {},
-                            activeColor: AppColors.primaryColor,
-                          ),
-                        ],
-                      ),
-                    ),
+                  // Theme Settings Card
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, _) {
+                      return MenuItemCard(
+                        icon:
+                            themeProvider.isDarkMode
+                                ? Icons.dark_mode_rounded
+                                : Icons.light_mode_rounded,
+                        title: 'Appearance',
+                        subtitle:
+                            'Theme: ${themeProvider.themeModeDescription}',
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        onTap: () {
+                          ThemeSettingsBottomSheet.show(context);
+                        },
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.m),
