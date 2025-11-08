@@ -22,6 +22,13 @@ class Promotion {
   final int maxClaims;
   final int claims;
 
+  // User-specific fields for tracking participation and rewards
+  final bool isParticipating;
+  final int userProgress;
+  final bool hasWon;
+  final bool isClaimed;
+  final DateTime? claimedAt;
+
   Promotion({
     required this.id,
     required this.title,
@@ -42,6 +49,11 @@ class Promotion {
     int? discountPercent,
     int? maxClaims,
     int? claims,
+    this.isParticipating = false,
+    this.userProgress = 0,
+    this.hasWon = false,
+    this.isClaimed = false,
+    this.claimedAt,
   }) : businessName = businessName ?? location,
        address = address ?? location,
        discountPercent = discountPercent ?? 0,
@@ -161,7 +173,9 @@ List<Promotion> getMockPromotions() {
       imageUrl: '🏛️',
       type: PromotionType.challenge,
       xpReward: 500,
-      linkedAchievementId: 'ach_4', // History Buff achievement
+      linkedAchievementId: 'ach_4',
+      isParticipating: true,
+      userProgress: 7,
     ),
     Promotion(
       id: 'promo_2',
@@ -181,8 +195,10 @@ List<Promotion> getMockPromotions() {
       ],
       imageUrl: '🌲',
       type: PromotionType.event,
-      xpReward: 0, // Variable based on discoveries
-      linkedAchievementId: 'ach_3', // Nature Lover achievement
+      xpReward: 0,
+      linkedAchievementId: 'ach_3',
+      isParticipating: true,
+      userProgress: 2,
     ),
     Promotion(
       id: 'promo_3',
@@ -205,6 +221,9 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.contest,
       xpReward: 1000,
       linkedAchievementId: null,
+      hasWon: true,
+      isParticipating: true,
+      userProgress: 4,
     ),
     Promotion(
       id: 'promo_4',
@@ -296,6 +315,11 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.challenge,
       xpReward: 400,
       linkedAchievementId: null,
+      hasWon: true,
+      isClaimed: true,
+      claimedAt: DateTime(now.year, 11, 1),
+      isParticipating: true,
+      userProgress: 5,
     ),
     Promotion(
       id: 'promo_8',

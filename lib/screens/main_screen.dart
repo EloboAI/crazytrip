@@ -4,6 +4,7 @@ import '../theme/app_spacing.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'ar_scanner_screen.dart';
+import 'rewards_screen.dart';
 import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -45,6 +46,7 @@ class _MainScreenState extends State<MainScreen> {
         children: const [
           HomeScreen(), // 🏠 Inicio - Feed de reels
           MapScreen(), // 🗺️ Mapa - Con filtros y vista lista/mapa
+          RewardsScreen(), // 🏆 Premios - Promociones y recompensas
           ProfileScreen(), // 👤 Yo - Perfil
         ],
       ),
@@ -114,14 +116,19 @@ class _CustomBottomNavigationBar extends StatelessWidget {
               // Spacer for FAB
               const SizedBox(width: AppSpacing.minTouchTarget),
               _NavBarItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: 'Yo',
+                icon: Icons.emoji_events_outlined,
+                activeIcon: Icons.emoji_events,
+                label: 'Premios',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
-              // Empty space to balance layout
-              const SizedBox(width: AppSpacing.minTouchTarget),
+              _NavBarItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Yo',
+                isActive: currentIndex == 4,
+                onTap: () => onTap(4),
+              ),
             ],
           ),
         ),
