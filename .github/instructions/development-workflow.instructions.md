@@ -32,7 +32,45 @@ Once you have the issue number, retrieve and analyze:
 - **Criterios de Aceptación** (for User Stories): Clear checklist of what must be completed
 - **Tareas Técnicas** (for Tasks): Specific implementation steps
 
-### 3. Mark Task as In Progress
+### 3. Validate Scope Before Starting
+
+**CRITICAL**: Before starting any work, validate that the developer's request is within the scope of the work item:
+
+✅ **If request is IN SCOPE:**
+- The request matches the work item title
+- The request is covered by the acceptance criteria or technical tasks
+- The request is a clarification or refinement of existing requirements
+→ **Proceed with development**
+
+❌ **If request is OUT OF SCOPE:**
+- The request adds functionality not listed in acceptance criteria
+- The request modifies different features or components
+- The request is unrelated to the work item's purpose
+→ **STOP and inform the developer:**
+
+```
+⚠️ Lo que solicitas no está dentro del alcance del work item #<number>.
+
+**Work item actual:** <title>
+**Alcance definido:** 
+- <list acceptance criteria or technical tasks>
+
+**Tu solicitud:** <what they asked for>
+
+**Opciones:**
+1. Dame otro work item que cubra esta funcionalidad
+2. Solicita crear un nuevo issue para esta tarea
+3. Trabajemos en lo que está definido en el work item actual
+
+¿Cómo quieres proceder?
+```
+
+❌ **NEVER** implement features outside the defined scope without explicit approval
+❌ **NEVER** assume that related functionality should be included
+✅ **ALWAYS** stick to the exact requirements in the work item
+✅ **ALWAYS** ask for clarification if the scope is unclear
+
+### 4. Mark Task as In Progress
 
 Before starting development, update the task state to communicate you're working on it:
 
@@ -57,6 +95,35 @@ mcp_githubmcp_add_issue_comment({
 ```
 
 ## During Development
+
+### Stay Within Scope
+
+**CRITICAL RULE**: Only implement what is explicitly defined in the work item.
+
+✅ **Allowed within scope:**
+- Implementing listed acceptance criteria
+- Following technical tasks as described
+- Bug fixes directly related to the work item
+- Code quality improvements for the specific feature
+- Asking clarifying questions about requirements
+
+❌ **NOT allowed without approval:**
+- Adding features not in acceptance criteria
+- Modifying unrelated components
+- Implementing "nice to have" additions
+- Refactoring code outside the work item scope
+- Creating new functionality not described
+
+**If developer asks for out-of-scope work during development:**
+```
+⚠️ Esto no está en el alcance del work item #<number> actual.
+
+¿Quieres que:
+1. Continúe con el work item actual (#<number>)
+2. Me des un work item diferente que cubra esto
+3. Cree un nuevo issue para esta funcionalidad
+
+```
 
 ### Follow Acceptance Criteria
 
@@ -242,6 +309,40 @@ You:
 ✅ Ask: "¿Qué necesitas que corrija específicamente?"
 ```
 
+### Scenario 5: Developer Requests Out-of-Scope Work
+```
+Developer working on #188 (Task: "Implementar toggle entre modo claro y oscuro")
+Developer: "También implementa la persistencia del tema seleccionado"
+
+You:
+1. Check acceptance criteria of #188
+2. If "persistencia" is NOT listed:
+   ⚠️ La persistencia del tema no está en el alcance del Task #188.
+   
+   **Alcance actual (#188):**
+   - Implementar toggle entre modo claro y oscuro
+   
+   **Tu solicitud:** Persistencia del tema
+   
+   ¿Quieres que:
+   1. Busquemos otro task que incluya la persistencia
+   2. Cree un nuevo issue para esta funcionalidad
+   3. Continuemos solo con lo del task actual
+```
+
+### Scenario 6: Ambiguous Request Clarification
+```
+Developer: "Trabaja en el issue #156"
+Developer: "Ahora agrega validación de formularios"
+
+You:
+1. Check #156 acceptance criteria
+2. If validation is not mentioned:
+   ⚠️ La validación de formularios no está mencionada en #156.
+   
+   ¿Esto es parte del issue actual o necesitas que trabaje en un issue diferente?
+```
+
 ## Communication Guidelines
 
 ### Always Inform Progress
@@ -271,14 +372,18 @@ After completing work:
 
 1. ✅ **ALWAYS** ask for work item number before starting
 2. ✅ **ALWAYS** read and understand acceptance criteria
-3. ✅ **ALWAYS** wait for developer confirmation before closing
-4. ✅ **ALWAYS** check parent-child relationships
-5. ✅ **ALWAYS** verify all siblings before closing parent
-6. ✅ **ALWAYS** use `state_reason: "completed"` when closing
-7. ❌ **NEVER** close work items prematurely
-8. ❌ **NEVER** skip hierarchy validation
-9. ❌ **NEVER** close parent before all children are done
-10. ❌ **NEVER** start coding without a specific work item
+3. ✅ **ALWAYS** validate that requests are within scope
+4. ✅ **ALWAYS** stop and ask if request is out of scope
+5. ✅ **ALWAYS** wait for developer confirmation before closing
+6. ✅ **ALWAYS** check parent-child relationships
+7. ✅ **ALWAYS** verify all siblings before closing parent
+8. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+9. ❌ **NEVER** implement features outside the defined scope
+10. ❌ **NEVER** assume additional functionality should be included
+11. ❌ **NEVER** close work items prematurely
+12. ❌ **NEVER** skip hierarchy validation
+13. ❌ **NEVER** close parent before all children are done
+14. ❌ **NEVER** start coding without a specific work item
 
 ## Integration with GitHub Workflow
 
