@@ -34,16 +34,22 @@ class _RewardsScreenState extends State<RewardsScreen>
     final allPromotions = getMockPromotions();
 
     // Filtrar promociones por estado
-    final activePromotions = allPromotions
-        .where((p) =>
-            p.isActive && (p.isParticipating || p.type == PromotionType.discount))
-        .toList();
+    final activePromotions =
+        allPromotions
+            .where(
+              (p) =>
+                  p.isActive &&
+                  (p.isParticipating || p.type == PromotionType.discount),
+            )
+            .toList();
 
     final wonPromotions =
         allPromotions.where((p) => p.hasWon && !p.isClaimed).toList();
 
     final historyPromotions =
-        allPromotions.where((p) => p.isClaimed || (p.isExpired && p.isParticipating)).toList();
+        allPromotions
+            .where((p) => p.isClaimed || (p.isExpired && p.isParticipating))
+            .toList();
 
     // Estadísticas
     final totalWon = allPromotions.where((p) => p.hasWon).length;
@@ -148,9 +154,9 @@ class _RewardsScreenState extends State<RewardsScreen>
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(
-                      0.2,
-                    ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.2),
                   ),
                 ),
               ),
@@ -298,9 +304,7 @@ class _QuickStatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -500,9 +504,7 @@ class _PrizeCard extends StatelessWidget {
                   onPressed: () => _showClaimDialog(context, promotion),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.goldColor,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.m,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         AppSpacing.radiusMedium,
@@ -527,56 +529,54 @@ class _PrizeCard extends StatelessWidget {
   void _showClaimDialog(BuildContext context, Promotion promotion) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('🎉 ¡Reclamar Premio!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              promotion.title,
-              style: AppTextStyles.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text('Premio: ${promotion.prize}'),
-            const SizedBox(height: AppSpacing.m),
-            const Text(
-              'Visita el lugar indicado y muestra este código:',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.m),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
-              ),
-              child: Text(
-                'CRAZY-${promotion.id.toUpperCase()}',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('🎉 ¡Reclamar Premio!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(promotion.title, style: AppTextStyles.titleMedium),
+                const SizedBox(height: AppSpacing.s),
+                Text('Premio: ${promotion.prize}'),
+                const SizedBox(height: AppSpacing.m),
+                const Text(
+                  'Visita el lugar indicado y muestra este código:',
+                  style: TextStyle(fontSize: 12),
                 ),
-                textAlign: TextAlign.center,
-              ),
+                const SizedBox(height: AppSpacing.s),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.m),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                  ),
+                  child: Text(
+                    'CRAZY-${promotion.id.toUpperCase()}',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Marcar como Usado'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Marcar como Usado'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -764,25 +764,17 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(icon, size: 80, color: Colors.grey[400]),
             const SizedBox(height: AppSpacing.m),
             Text(
               title,
-              style: AppTextStyles.titleLarge.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: AppTextStyles.titleLarge.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
               message,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey[500],
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null && onAction != null) ...[
