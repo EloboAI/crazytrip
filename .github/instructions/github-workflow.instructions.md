@@ -54,6 +54,31 @@ mutation {
 
 **Important**: Use `./gh` prefix for all GitHub CLI commands in this repository.
 
+## Execution Preferences
+
+### Command Execution
+
+**Preferred approach**: Execute commands directly in the terminal.
+
+```bash
+# ✅ GOOD: Direct execution
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/2 --jq '.node_id')
+./gh api graphql -f query="mutation { ... }"
+```
+
+**When to create script files**:
+- Only for large batch operations (20+ issues)
+- Only for repetitive tasks that will be executed multiple times
+- Only when explicitly requested by the developer
+
+```bash
+# ❌ AVOID: Creating unnecessary script files for one-time operations
+# Only do this if processing 20+ items or if reusability is needed
+```
+
+> **Note**: For most operations, copy-paste commands directly into the terminal rather than creating intermediate script files.
+
 ## Issue States and State Reasons
 
 ### Valid States
@@ -213,21 +238,19 @@ mutation {
 
 ### Complete Example: Creating a Feature with Type
 
-```bash
-#!/bin/bash
+**Execute directly in terminal (no need to create script files):**
 
+```bash
+# Define variables
 PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
 TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
 TYPE_FEATURE="1a8c493e"
-
-# 1. Create the issue (using GitHub API or MCP tools)
-# ... issue creation code ...
-
-# 2. Get node ID
 ISSUE_NUM=2
+
+# Get node ID
 NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
 
-# 3. Add to project
+# Add to project
 ITEM_RESULT=$(./gh api graphql -f query="
 mutation {
   addProjectV2ItemById(input: {
@@ -242,7 +265,7 @@ mutation {
 
 ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
 
-# 4. Set type to Feature
+# Set type to Feature
 ./gh api graphql -f query="
 mutation {
   updateProjectV2ItemFieldValue(input: {
@@ -260,24 +283,23 @@ mutation {
 echo "✅ Issue #$ISSUE_NUM: Type 'Feature' assigned"
 ```
 
+> **Note**: Execute commands directly in terminal. Creating script files is optional and only recommended for repetitive batch operations.
+
 ### Batch Type Assignment
 
-When creating multiple issues (e.g., User Stories and Tasks for a Feature), use a script to assign types efficiently:
+**For multiple issues, use a loop directly in terminal (no script file needed):**
 
 ```bash
-#!/bin/bash
-
+# Define constants
 PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
 TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
 TYPE_USER_STORY="b70e4844"
 TYPE_TASK="86b0c338"
 
-# Function to add to project and set type
-assign_type() {
-  local issue_num=$1
-  local type_value=$2
-  
-  node_id=$(./gh api repos/EloboAI/crazytrip/issues/$issue_num --jq '.node_id')
+# Assign type to User Stories
+for issue in 195 192 194 193; do
+  echo "Processing User Story #$issue..."
+  node_id=$(./gh api repos/EloboAI/crazytrip/issues/$issue --jq '.node_id')
   
   item_result=$(./gh api graphql -f query="
     mutation {
@@ -298,26 +320,52 @@ assign_type() {
         projectId: \"$PROJECT_ID\"
         itemId: \"$item_id\"
         fieldId: \"$TYPE_FIELD_ID\"
-        value: {singleSelectOptionId: \"$type_value\"}
+        value: {singleSelectOptionId: \"$TYPE_USER_STORY\"}
       }) {
         projectV2Item { id }
       }
     }
   " > /dev/null
   
-  echo "✅ Issue #$issue_num: Type assigned"
-}
-
-# Assign types to User Stories
-for issue in 195 192 194 193; do
-  assign_type $issue "$TYPE_USER_STORY"
+  echo "✅ User Story #$issue: Type assigned"
 done
 
-# Assign types to Tasks
+# Assign type to Tasks
 for issue in 196 197 198 199 200 201; do
-  assign_type $issue "$TYPE_TASK"
+  echo "Processing Task #$issue..."
+  node_id=$(./gh api repos/EloboAI/crazytrip/issues/$issue --jq '.node_id')
+  
+  item_result=$(./gh api graphql -f query="
+    mutation {
+      addProjectV2ItemById(input: {
+        projectId: \"$PROJECT_ID\"
+        contentId: \"$node_id\"
+      }) {
+        item { id }
+      }
+    }
+  ")
+  
+  item_id=$(echo "$item_result" | jq -r '.data.addProjectV2ItemById.item.id')
+  
+  ./gh api graphql -f query="
+    mutation {
+      updateProjectV2ItemFieldValue(input: {
+        projectId: \"$PROJECT_ID\"
+        itemId: \"$item_id\"
+        fieldId: \"$TYPE_FIELD_ID\"
+        value: {singleSelectOptionId: \"$TYPE_TASK\"}
+      }) {
+        projectV2Item { id }
+      }
+    }
+  " > /dev/null
+  
+  echo "✅ Task #$issue: Type assigned"
 done
 ```
+
+> **Note**: For large batch operations (20+ issues), you may optionally create a reusable script file, but it's not required. Direct terminal execution is preferred for most cases.
 
 ## User Story Format
 

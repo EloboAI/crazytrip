@@ -4,6 +4,17 @@ applyTo: "**"
 
 # Development Workflow Instructions
 
+## Execution Preferences
+
+**Preferred approach**: Execute commands directly in the terminal instead of creating script files.
+
+- ✅ **DO**: Copy and execute commands directly in terminal
+- ✅ **DO**: Use loops and functions inline for batch operations
+- ❌ **AVOID**: Creating script files unless processing 20+ items or for reusable automation
+- ❌ **AVOID**: Creating files for one-time operations
+
+> **Note**: Only create script files when explicitly needed for large batch operations or when the developer requests a reusable automation.
+
 ## Starting Work
 
 ### 1. Always Request a Work Item
