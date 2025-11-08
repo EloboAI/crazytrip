@@ -46,17 +46,26 @@ class _MapScreenState extends State<MapScreen> {
 
   List<dynamic> get _filteredContent {
     List<dynamic> content = [];
-    
+
     // Prioridad 1: Promociones y Concursos (de paga)
     if (_activeFilters.contains(MapFilter.promotions)) {
-      content.addAll(_promotions.where((p) => 
-        p.type == PromotionType.discount || p.type == PromotionType.event));
+      content.addAll(
+        _promotions.where(
+          (p) =>
+              p.type == PromotionType.discount || p.type == PromotionType.event,
+        ),
+      );
     }
     if (_activeFilters.contains(MapFilter.contests)) {
-      content.addAll(_promotions.where((p) => 
-        p.type == PromotionType.contest || p.type == PromotionType.challenge));
+      content.addAll(
+        _promotions.where(
+          (p) =>
+              p.type == PromotionType.contest ||
+              p.type == PromotionType.challenge,
+        ),
+      );
     }
-    
+
     // Prioridad 2: Items y Lugares (clusterizables)
     if (_activeFilters.contains(MapFilter.items)) {
       content.addAll(_items);
@@ -67,19 +76,20 @@ class _MapScreenState extends State<MapScreen> {
 
     // Filtrar por búsqueda
     if (_searchQuery.isNotEmpty) {
-      content = content.where((item) {
-        final query = _searchQuery.toLowerCase();
-        if (item is Promotion) {
-          return item.title.toLowerCase().contains(query) ||
-                 item.businessName.toLowerCase().contains(query);
-        } else if (item is CrazyDexItem) {
-          return item.name.toLowerCase().contains(query);
-        } else if (item is Discovery) {
-          return item.name.toLowerCase().contains(query) ||
-                 item.category.toLowerCase().contains(query);
-        }
-        return false;
-      }).toList();
+      content =
+          content.where((item) {
+            final query = _searchQuery.toLowerCase();
+            if (item is Promotion) {
+              return item.title.toLowerCase().contains(query) ||
+                  item.businessName.toLowerCase().contains(query);
+            } else if (item is CrazyDexItem) {
+              return item.name.toLowerCase().contains(query);
+            } else if (item is Discovery) {
+              return item.name.toLowerCase().contains(query) ||
+                  item.category.toLowerCase().contains(query);
+            }
+            return false;
+          }).toList();
     }
 
     return content;
@@ -163,15 +173,14 @@ class _MapScreenState extends State<MapScreen> {
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             ),
             IconButton(
-              icon: Icon(
-                _viewMode == MapViewMode.map ? Icons.list : Icons.map,
-              ),
+              icon: Icon(_viewMode == MapViewMode.map ? Icons.list : Icons.map),
               color: AppColors.primaryColor,
               onPressed: () {
                 setState(() {
-                  _viewMode = _viewMode == MapViewMode.map
-                      ? MapViewMode.list
-                      : MapViewMode.map;
+                  _viewMode =
+                      _viewMode == MapViewMode.map
+                          ? MapViewMode.list
+                          : MapViewMode.map;
                 });
               },
             ),
@@ -192,22 +201,10 @@ class _MapScreenState extends State<MapScreen> {
             label: '💰 Promociones',
             filter: MapFilter.promotions,
           ),
-          _buildFilterChip(
-            label: '🏆 Concursos',
-            filter: MapFilter.contests,
-          ),
-          _buildFilterChip(
-            label: '🔍 Items',
-            filter: MapFilter.items,
-          ),
-          _buildFilterChip(
-            label: '📍 Lugares',
-            filter: MapFilter.places,
-          ),
-          _buildFilterChip(
-            label: '🎉 Eventos',
-            filter: MapFilter.events,
-          ),
+          _buildFilterChip(label: '🏆 Concursos', filter: MapFilter.contests),
+          _buildFilterChip(label: '🔍 Items', filter: MapFilter.items),
+          _buildFilterChip(label: '📍 Lugares', filter: MapFilter.places),
+          _buildFilterChip(label: '🎉 Eventos', filter: MapFilter.events),
         ],
       ),
     );
@@ -259,11 +256,7 @@ class _MapScreenState extends State<MapScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.map,
-              size: 120,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.map, size: 120, color: Colors.grey[400]),
             const SizedBox(height: AppSpacing.m),
             Text(
               'Vista de Mapa',
@@ -274,9 +267,7 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Integración de Google Maps aquí',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey[500],
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
@@ -294,7 +285,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildListView() {
     final content = _filteredContent;
-    
+
     if (content.isEmpty) {
       return Center(
         child: Column(
@@ -311,9 +302,7 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Intenta ajustar los filtros',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey[500],
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
             ),
           ],
         ),
@@ -384,10 +373,7 @@ class _MapScreenState extends State<MapScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Resultados',
-                          style: AppTextStyles.titleLarge,
-                        ),
+                        Text('Resultados', style: AppTextStyles.titleLarge),
                         Text(
                           '${content.length} items en ${_searchRadius.toInt()}km',
                           style: AppTextStyles.bodySmall.copyWith(
@@ -402,33 +388,34 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(height: AppSpacing.s),
               // Results list
               Expanded(
-                child: content.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No hay resultados',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.grey[600],
+                child:
+                    content.isEmpty
+                        ? Center(
+                          child: Text(
+                            'No hay resultados',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.grey[600],
+                            ),
                           ),
+                        )
+                        : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                          ),
+                          itemCount: content.length,
+                          itemBuilder: (context, index) {
+                            final item = content[index];
+                            if (item is Promotion) {
+                              return _buildPromotionListCard(item);
+                            } else if (item is CrazyDexItem) {
+                              return _buildItemListCard(item);
+                            } else if (item is Discovery) {
+                              return _buildPlaceListCard(item);
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
-                      )
-                    : ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.m,
-                        ),
-                        itemCount: content.length,
-                        itemBuilder: (context, index) {
-                          final item = content[index];
-                          if (item is Promotion) {
-                            return _buildPromotionListCard(item);
-                          } else if (item is CrazyDexItem) {
-                            return _buildItemListCard(item);
-                          } else if (item is Discovery) {
-                            return _buildPlaceListCard(item);
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
               ),
             ],
           ),
@@ -594,10 +581,7 @@ class _MapScreenState extends State<MapScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          stars,
-                          style: const TextStyle(fontSize: 12),
-                        ),
+                        Text(stars, style: const TextStyle(fontSize: 12)),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -735,10 +719,7 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Radio de Búsqueda',
-                    style: AppTextStyles.titleLarge,
-                  ),
+                  Text('Radio de Búsqueda', style: AppTextStyles.titleLarge),
                   const SizedBox(height: AppSpacing.m),
                   Row(
                     children: [
