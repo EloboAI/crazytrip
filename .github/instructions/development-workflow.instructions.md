@@ -139,7 +139,81 @@ After creating Tasks:
 - It's unclear how to split into Tasks
 - Developer might want different Task breakdown
 
-### 4. Validate Scope Before Starting
+### 4. Validate Task Against Parent User Story
+
+**CRITICAL**: If the work item is a Task, validate it against its parent User Story.
+
+#### Step 1: Identify Parent User Story
+
+Check if the Task has a parent reference:
+```bash
+# Get the task description
+./gh api repos/EloboAI/crazytrip/issues/<task_number> --jq '.body'
+```
+
+Look for `**Parent:** #<number>` at the top of the description.
+
+#### Step 2: Retrieve Parent User Story Details
+
+If parent exists, get the User Story:
+```javascript
+mcp_githubmcp_issue_read({
+  method: "get",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <parent_number>
+})
+```
+
+Extract:
+- **Title**: User Story description
+- **Criterios de Aceptación**: List of checkboxes
+
+#### Step 3: Validate Task Alignment
+
+Compare the Task with User Story acceptance criteria:
+
+✅ **Task is VALID if:**
+- Task description relates to one of the acceptance criteria
+- Task title mentions functionality from acceptance criteria
+- Task technical steps implement a specific criterion
+→ **Proceed with the Task**
+
+❌ **Task is MISALIGNED if:**
+- Task description doesn't match any acceptance criterion
+- Task implements functionality not mentioned in User Story
+- Task seems to belong to a different feature
+→ **STOP and inform the developer:**
+
+```
+⚠️ El Task #<task_number> no parece alineado con su User Story padre #<parent_number>
+
+**User Story:** <parent_title>
+**Criterios de Aceptación:**
+- [ ] <criterion 1>
+- [ ] <criterion 2>
+- [ ] <criterion 3>
+
+**Task actual:** <task_title>
+**Descripción:** <task_description>
+
+❌ Este Task no corresponde a ninguno de los criterios de aceptación listados.
+
+**Opciones:**
+1. ¿Es este el Task correcto para trabajar?
+2. ¿Debería trabajar en un Task diferente?
+3. ¿Necesitas actualizar el User Story para incluir este criterio?
+
+¿Qué quieres hacer?
+```
+
+**Wait for developer's confirmation before proceeding.**
+
+❌ **NEVER** work on a Task that doesn't align with its parent User Story
+✅ **ALWAYS** verify Task-to-User-Story alignment before starting
+✅ **ALWAYS** ask for clarification if the alignment is unclear
+
+### 5. Validate Scope Before Starting
 
 **CRITICAL**: Before starting any work, validate that the developer's request is within the scope of the work item:
 
@@ -177,7 +251,7 @@ After creating Tasks:
 ✅ **ALWAYS** stick to the exact requirements in the work item
 ✅ **ALWAYS** ask for clarification if the scope is unclear
 
-### 5. Validate and Assign Iteration
+### 6. Validate and Assign Iteration
 
 **CRITICAL**: Before starting work on a Task or User Story, validate that it has an iteration assigned.
 
@@ -324,7 +398,7 @@ La iteración actual es diferente.
 
 If developer chooses option 1, execute the iteration assignment mutation above with the current iteration ID.
 
-### 6. Mark Task as In Progress
+### 7. Mark Task as In Progress
 
 After validating/assigning iteration, update the task state:
 
@@ -563,7 +637,32 @@ You:
 ✅ Ask: "¿Qué necesitas que corrija específicamente?"
 ```
 
-### Scenario 5: Developer Requests Out-of-Scope Work
+### Scenario 5: Task Misaligned with User Story
+```
+Developer: "Trabaja en el task #188"
+You:
+1. Get task description
+2. Find parent User Story #156
+3. Get acceptance criteria from #156
+4. Compare task with criteria
+5. If NO MATCH:
+   ⚠️ El Task #188 no corresponde a ningún criterio del User Story #156.
+   
+   **User Story #156:** Activar Dark Mode
+   **Criterios:**
+   - Toggle entre claro/oscuro
+   - Cambio instantáneo
+   - Adaptación de elementos UI
+   - Contraste adecuado
+   
+   **Task #188:** Persistencia del tema seleccionado
+   
+   ❌ Este Task no está en los criterios definidos.
+   
+   ¿Es el Task correcto o necesitas crear/actualizar el User Story?
+```
+
+### Scenario 6: Developer Requests Out-of-Scope Work
 ```
 Developer working on #188 (Task: "Implementar toggle entre modo claro y oscuro")
 Developer: "También implementa la persistencia del tema seleccionado"
@@ -584,7 +683,7 @@ You:
    3. Continuemos solo con lo del task actual
 ```
 
-### Scenario 6: Ambiguous Request Clarification
+### Scenario 7: Ambiguous Request Clarification
 ```
 Developer: "Trabaja en el issue #156"
 Developer: "Ahora agrega validación de formularios"
@@ -626,22 +725,25 @@ After completing work:
 
 1. ✅ **ALWAYS** ask for work item number before starting
 2. ✅ **ALWAYS** read and understand acceptance criteria
-3. ✅ **ALWAYS** validate iteration assignment before starting work
-4. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
-5. ✅ **ALWAYS** ask developer before changing existing iteration
-6. ✅ **ALWAYS** validate that requests are within scope
-7. ✅ **ALWAYS** stop and ask if request is out of scope
-8. ✅ **ALWAYS** wait for developer confirmation before closing
-9. ✅ **ALWAYS** check parent-child relationships
-10. ✅ **ALWAYS** verify all siblings before closing parent
-11. ✅ **ALWAYS** use `state_reason: "completed"` when closing
-12. ❌ **NEVER** implement features outside the defined scope
-13. ❌ **NEVER** assume additional functionality should be included
-14. ❌ **NEVER** close work items prematurely
-15. ❌ **NEVER** skip hierarchy validation
-16. ❌ **NEVER** close parent before all children are done
-17. ❌ **NEVER** start coding without a specific work item
-18. ❌ **NEVER** start work without validating iteration assignment
+3. ✅ **ALWAYS** validate Task alignment with parent User Story
+4. ✅ **ALWAYS** check acceptance criteria match before starting Task
+5. ✅ **ALWAYS** validate iteration assignment before starting work
+6. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
+7. ✅ **ALWAYS** ask developer before changing existing iteration
+8. ✅ **ALWAYS** validate that requests are within scope
+9. ✅ **ALWAYS** stop and ask if request is out of scope
+10. ✅ **ALWAYS** wait for developer confirmation before closing
+11. ✅ **ALWAYS** check parent-child relationships
+12. ✅ **ALWAYS** verify all siblings before closing parent
+13. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+14. ❌ **NEVER** work on misaligned Tasks without developer confirmation
+15. ❌ **NEVER** implement features outside the defined scope
+16. ❌ **NEVER** assume additional functionality should be included
+17. ❌ **NEVER** close work items prematurely
+18. ❌ **NEVER** skip hierarchy validation
+19. ❌ **NEVER** close parent before all children are done
+20. ❌ **NEVER** start coding without a specific work item
+21. ❌ **NEVER** start work without validating iteration assignment
 
 ## Integration with GitHub Workflow
 
