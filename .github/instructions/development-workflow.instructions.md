@@ -610,7 +610,92 @@ Check the state of all sub-issues:
 - AND all acceptance criteria in parent are checked (`[x]`)
 - THEN proceed to close the parent
 
-### 4. Close Parent if Complete
+### 4. Suggest Next Task
+
+**CRITICAL**: After completing a Task, suggest the next logical Task to work on.
+
+#### Step 1: Analyze Remaining Tasks
+
+From the list of sibling Tasks obtained in Step 3:
+1. **Filter open Tasks**: Only Tasks with `state: "open"`
+2. **Analyze dependencies**: Based on Task titles and descriptions
+3. **Prioritize by logic**:
+   - Foundational Tasks (setup, models, providers) first
+   - Service/logic Tasks second
+   - UI/integration Tasks last
+   - Independent Tasks can be done anytime
+
+#### Step 2: Suggest Next Task
+
+Present the suggestion to the developer:
+
+```
+✅ Task #<completed_task_number> completado
+
+**Tasks restantes del User Story #<parent_number>:**
+
+**Sugerencia de orden de trabajo:**
+
+🔹 **Siguiente recomendado:**
+- Task #<number>: <title>
+  Razón: <why this should be next - e.g., "Es prerequisito para los demás", "Completa la funcionalidad base", etc.>
+
+📋 **Otros Tasks pendientes:**
+- Task #<number>: <title> (Depende de: #<dependency_number>)
+- Task #<number>: <title> (Independiente)
+- Task #<number>: <title> (UI - hacer después de la lógica)
+
+¿En cuál Task quieres trabajar ahora?
+```
+
+#### Step 3: Handle Developer's Choice
+
+**If developer chooses suggested Task:**
+- Proceed with validation workflow for that Task (Steps 1-7 from "Starting Work")
+- Check iteration assignment
+- Start work
+
+**If developer chooses different Task:**
+- Ask for confirmation if there are obvious dependencies
+- Validate the chosen Task
+- Proceed with workflow
+
+**If developer chooses to stop:**
+- Confirm completion status
+- End session
+
+#### Suggestion Logic Examples
+
+**Example 1: Provider-UI sequence**
+```
+Completed: Task #180 - Crear ThemeProvider
+Suggest: Task #181 - Implementar toggle en UI
+Reason: El provider ya está disponible, ahora se puede usar en la UI
+```
+
+**Example 2: Model-Service-UI sequence**
+```
+Completed: Task #200 - Crear modelo de datos User
+Suggest: Task #201 - Implementar servicio de autenticación
+Reason: El modelo está listo, el servicio lo usa antes de implementar UI
+Skip for now: Task #202 - Pantalla de perfil (depende de servicio)
+```
+
+**Example 3: Independent Tasks**
+```
+Completed: Task #150 - Implementar tema oscuro
+Suggest: Task #151 - Agregar animaciones (independiente)
+OR: Task #152 - Implementar persistencia (independiente)
+Reason: Ambos son independientes, puedes elegir cualquiera
+```
+
+✅ **ALWAYS** suggest the most logical next Task
+✅ **ALWAYS** explain why that Task should be next
+✅ **ALWAYS** list all remaining Tasks with their dependencies
+✅ **ALWAYS** respect developer's choice if they prefer a different Task
+❌ **NEVER** assume the developer wants to continue without asking
+
+### 5. Close Parent if Complete
 
 **For User Stories:**
 ```javascript
@@ -631,7 +716,7 @@ mcp_githubmcp_issue_write({
 ✅ User Story #<parent> cerrado como completado
 ```
 
-### 5. Repeat for Higher Levels
+### 6. Repeat for Higher Levels
 
 If the parent was a User Story with a Feature parent:
 1. Check if ALL sibling User Stories are complete
