@@ -886,23 +886,29 @@ After completing work:
 2. ✅ **ALWAYS** read and understand acceptance criteria
 3. ✅ **ALWAYS** validate Task alignment with parent User Story
 4. ✅ **ALWAYS** check acceptance criteria match before starting Task
-5. ✅ **ALWAYS** validate iteration assignment before starting work
-6. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
-7. ✅ **ALWAYS** ask developer before changing existing iteration
-8. ✅ **ALWAYS** validate that requests are within scope
-9. ✅ **ALWAYS** stop and ask if request is out of scope
-10. ✅ **ALWAYS** wait for developer confirmation before closing
-11. ✅ **ALWAYS** check parent-child relationships
-12. ✅ **ALWAYS** verify all siblings before closing parent
-13. ✅ **ALWAYS** use `state_reason: "completed"` when closing
-14. ❌ **NEVER** work on misaligned Tasks without developer confirmation
-15. ❌ **NEVER** implement features outside the defined scope
-16. ❌ **NEVER** assume additional functionality should be included
-17. ❌ **NEVER** close work items prematurely
-18. ❌ **NEVER** skip hierarchy validation
-19. ❌ **NEVER** close parent before all children are done
-20. ❌ **NEVER** start coding without a specific work item
-21. ❌ **NEVER** start work without validating iteration assignment
+5. ✅ **ALWAYS** check sibling Tasks for dependencies before starting
+6. ✅ **ALWAYS** suggest prerequisite Tasks when dependencies detected
+7. ✅ **ALWAYS** validate iteration assignment before starting work
+8. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
+9. ✅ **ALWAYS** ask developer before changing existing iteration
+10. ✅ **ALWAYS** validate that requests are within scope
+11. ✅ **ALWAYS** stop and ask if request is out of scope
+12. ✅ **ALWAYS** wait for developer confirmation before closing
+13. ✅ **ALWAYS** suggest next logical Task after completing one
+14. ✅ **ALWAYS** explain why the suggested Task should be next
+15. ✅ **ALWAYS** check parent-child relationships
+16. ✅ **ALWAYS** verify all siblings before closing parent
+17. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+18. ❌ **NEVER** work on misaligned Tasks without developer confirmation
+19. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
+20. ❌ **NEVER** implement features outside the defined scope
+21. ❌ **NEVER** assume additional functionality should be included
+22. ❌ **NEVER** close work items prematurely
+23. ❌ **NEVER** skip hierarchy validation
+24. ❌ **NEVER** close parent before all children are done
+25. ❌ **NEVER** start coding without a specific work item
+26. ❌ **NEVER** start work without validating iteration assignment
+27. ❌ **NEVER** assume developer wants to continue without asking
 
 ## Integration with GitHub Workflow
 
