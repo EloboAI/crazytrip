@@ -142,6 +142,183 @@ mutation {
 }'
 ```
 
+## Issue Type Management
+
+### Project Type Field
+
+The project has a custom **Type** field that must be assigned to every issue:
+
+- **Field ID**: `PVTSSF_lAHOCi99Ic4BHjd7zg4RozY`
+- **Project ID**: `PVT_kwHOCi99Ic4BHjd7`
+
+### Available Types
+
+| Type | Option ID | Usage |
+|------|-----------|-------|
+| Epic | `1ffc5176` | Highest level business initiatives |
+| Feature | `1a8c493e` | Mid-level functionality groups |
+| User Story | `b70e4844` | User-facing functionality |
+| Task | `86b0c338` | Technical implementation units |
+| Bug | `94e60a12` | Defects and issues |
+| Delivery | `17c0b083` | Deployment and release items |
+| Impediment | `8fd781ce` | Blockers and obstacles |
+
+### Assigning Type to Issues
+
+**CRITICAL**: After creating an issue, you MUST assign its type. Follow these steps:
+
+#### Step 1: Add Issue to Project (if not already added)
+
+```bash
+# Get issue node ID
+ISSUE_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<number> --jq '.node_id')
+
+# Add to project and get project item ID
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$ISSUE_NODE_ID\"
+  }) {
+    item {
+      id
+    }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+```
+
+#### Step 2: Set the Type Field
+
+```bash
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_VALUE="<option_id_from_table_above>"
+
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$TYPE_FIELD_ID\"
+    value: {singleSelectOptionId: \"$TYPE_VALUE\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+### Complete Example: Creating a Feature with Type
+
+```bash
+#!/bin/bash
+
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_FEATURE="1a8c493e"
+
+# 1. Create the issue (using GitHub API or MCP tools)
+# ... issue creation code ...
+
+# 2. Get node ID
+ISSUE_NUM=2
+NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
+
+# 3. Add to project
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$NODE_ID\"
+  }) {
+    item {
+      id
+    }
+  }
+}")
+
+ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+
+# 4. Set type to Feature
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$ITEM_ID\"
+    fieldId: \"$TYPE_FIELD_ID\"
+    value: {singleSelectOptionId: \"$TYPE_FEATURE\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+
+echo "✅ Issue #$ISSUE_NUM: Type 'Feature' assigned"
+```
+
+### Batch Type Assignment
+
+When creating multiple issues (e.g., User Stories and Tasks for a Feature), use a script to assign types efficiently:
+
+```bash
+#!/bin/bash
+
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_USER_STORY="b70e4844"
+TYPE_TASK="86b0c338"
+
+# Function to add to project and set type
+assign_type() {
+  local issue_num=$1
+  local type_value=$2
+  
+  node_id=$(./gh api repos/EloboAI/crazytrip/issues/$issue_num --jq '.node_id')
+  
+  item_result=$(./gh api graphql -f query="
+    mutation {
+      addProjectV2ItemById(input: {
+        projectId: \"$PROJECT_ID\"
+        contentId: \"$node_id\"
+      }) {
+        item { id }
+      }
+    }
+  ")
+  
+  item_id=$(echo "$item_result" | jq -r '.data.addProjectV2ItemById.item.id')
+  
+  ./gh api graphql -f query="
+    mutation {
+      updateProjectV2ItemFieldValue(input: {
+        projectId: \"$PROJECT_ID\"
+        itemId: \"$item_id\"
+        fieldId: \"$TYPE_FIELD_ID\"
+        value: {singleSelectOptionId: \"$type_value\"}
+      }) {
+        projectV2Item { id }
+      }
+    }
+  " > /dev/null
+  
+  echo "✅ Issue #$issue_num: Type assigned"
+}
+
+# Assign types to User Stories
+for issue in 195 192 194 193; do
+  assign_type $issue "$TYPE_USER_STORY"
+done
+
+# Assign types to Tasks
+for issue in 196 197 198 199 200 201; do
+  assign_type $issue "$TYPE_TASK"
+done
+```
+
 ## User Story Format
 
 ### Structure
@@ -206,12 +383,16 @@ Body:
 
 ```bash
 # 1. Create Feature issue
-# 2. Create User Stories with Parent reference
-# 3. For each User Story:
+# 2. Add Feature to project and assign Type "Feature"
+# 3. Create User Stories with Parent reference
+# 4. For each User Story:
 #    a. Create Tasks from acceptance criteria
-#    b. Link Tasks to User Story via sub-issue API
-# 4. Add all to Project
-# 5. Assign to current Iteration
+#    b. Add User Story to project and assign Type "User Story"
+#    c. Link User Story to Feature via sub-issue API
+# 5. For each Task:
+#    a. Add Task to project and assign Type "Task"
+#    b. Link Task to User Story via sub-issue API
+# 6. Assign all to current Iteration
 ```
 
 ### 2. Closing Work Items
@@ -333,6 +514,9 @@ When a User Story has 4 acceptance criteria, create 4 Tasks:
 5. ✅ **ALWAYS** create Tasks from User Story acceptance criteria
 6. ✅ **ALWAYS** add `[Task]` prefix to task titles
 7. ✅ **ALWAYS** follow hierarchy: Epic → Feature → User Story → Task
-8. ❌ **NEVER** skip hierarchy levels
-9. ❌ **NEVER** close parent issues before all children are closed
-10. ❌ **NEVER** use plain `gh` command (always `./gh`)
+8. ✅ **ALWAYS** assign Type to every issue created (Feature, User Story, Task, etc.)
+9. ✅ **ALWAYS** add issues to project before assigning Type
+10. ❌ **NEVER** skip hierarchy levels
+11. ❌ **NEVER** close parent issues before all children are closed
+12. ❌ **NEVER** use plain `gh` command (always `./gh`)
+13. ❌ **NEVER** create issues without assigning their Type field
