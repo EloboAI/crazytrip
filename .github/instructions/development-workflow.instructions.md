@@ -177,9 +177,156 @@ After creating Tasks:
 ✅ **ALWAYS** stick to the exact requirements in the work item
 ✅ **ALWAYS** ask for clarification if the scope is unclear
 
-### 5. Mark Task as In Progress
+### 5. Validate and Assign Iteration
 
-Before starting development, update the task state to communicate you're working on it:
+**CRITICAL**: Before starting work on a Task or User Story, validate that it has an iteration assigned.
+
+#### Step 1: Check Current Iteration Assignment
+
+Query the project item to see if it has an iteration assigned:
+
+```bash
+# Get the project item ID for the issue
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+ISSUE_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<number> --jq '.node_id')
+
+# Find the project item
+ITEM_RESULT=$(./gh api graphql -f query="
+{
+  node(id: \"$PROJECT_ID\") {
+    ... on ProjectV2 {
+      items(first: 100) {
+        nodes {
+          id
+          content {
+            ... on Issue {
+              number
+            }
+          }
+          fieldValueByName(name: \"Iteration\") {
+            ... on ProjectV2ItemFieldIterationValue {
+              title
+              startDate
+              duration
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+
+# Extract iteration info
+echo "$ITEM_RESULT" | jq '.data.node.items.nodes[] | select(.content.number == <issue_number>)'
+```
+
+#### Step 2: Decision Tree
+
+✅ **If issue HAS current iteration assigned:**
+- Proceed with development
+- Mark task as in progress
+
+❌ **If issue HAS NO iteration assigned:**
+- **AUTOMATICALLY assign to current iteration**
+- Use the Iteration field ID and current iteration ID
+- Then mark as in progress
+
+❌ **If issue HAS iteration assigned but NOT current:**
+- **ASK the developer** if they want to change it to current iteration
+- Wait for confirmation before proceeding
+
+#### Step 3: Auto-Assign to Current Iteration (if no iteration)
+
+```bash
+# Constants
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+ITERATION_FIELD_ID="PVTIF_lAHOCi99Ic4BHjd7zg4RoeM"
+ISSUE_NUMBER=<number>
+
+# Get issue node ID
+ISSUE_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUMBER --jq '.node_id')
+
+# Get project item ID
+ITEM_RESULT=$(./gh api graphql -f query="
+{
+  node(id: \"$PROJECT_ID\") {
+    ... on ProjectV2 {
+      items(first: 100) {
+        nodes {
+          id
+          content {
+            ... on Issue {
+              number
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r ".data.node.items.nodes[] | select(.content.number == $ISSUE_NUMBER) | .id")
+
+# Get current iteration ID
+CURRENT_ITERATION=$(./gh api graphql -f query="
+{
+  node(id: \"$PROJECT_ID\") {
+    ... on ProjectV2 {
+      field(name: \"Iteration\") {
+        ... on ProjectV2IterationField {
+          configuration {
+            iterations {
+              id
+              title
+              startDate
+              duration
+            }
+          }
+        }
+      }
+    }
+  }
+}" | jq -r '.data.node.field.configuration.iterations[] | select(.title | contains("Iteration")) | .id' | head -1)
+
+# Assign to current iteration
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$ITERATION_FIELD_ID\"
+    value: {iterationId: \"$CURRENT_ITERATION\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+
+echo "✅ Issue #$ISSUE_NUMBER asignado a iteración actual"
+```
+
+#### Step 4: Ask Developer to Change Iteration (if has different iteration)
+
+```
+⚠️ El issue #<number> está asignado a: <iteration_title> (inicia: <start_date>)
+
+La iteración actual es diferente.
+
+¿Quieres cambiarlo a la iteración actual para trabajarlo ahora?
+1. Sí, cambiar a iteración actual
+2. No, continuar con la iteración asignada
+
+¿Qué prefieres?
+```
+
+**Wait for developer's response before proceeding.**
+
+If developer chooses option 1, execute the iteration assignment mutation above with the current iteration ID.
+
+### 6. Mark Task as In Progress
+
+After validating/assigning iteration, update the task state:
 
 ```javascript
 mcp_githubmcp_issue_write({
@@ -479,18 +626,22 @@ After completing work:
 
 1. ✅ **ALWAYS** ask for work item number before starting
 2. ✅ **ALWAYS** read and understand acceptance criteria
-3. ✅ **ALWAYS** validate that requests are within scope
-4. ✅ **ALWAYS** stop and ask if request is out of scope
-5. ✅ **ALWAYS** wait for developer confirmation before closing
-6. ✅ **ALWAYS** check parent-child relationships
-7. ✅ **ALWAYS** verify all siblings before closing parent
-8. ✅ **ALWAYS** use `state_reason: "completed"` when closing
-9. ❌ **NEVER** implement features outside the defined scope
-10. ❌ **NEVER** assume additional functionality should be included
-11. ❌ **NEVER** close work items prematurely
-12. ❌ **NEVER** skip hierarchy validation
-13. ❌ **NEVER** close parent before all children are done
-14. ❌ **NEVER** start coding without a specific work item
+3. ✅ **ALWAYS** validate iteration assignment before starting work
+4. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
+5. ✅ **ALWAYS** ask developer before changing existing iteration
+6. ✅ **ALWAYS** validate that requests are within scope
+7. ✅ **ALWAYS** stop and ask if request is out of scope
+8. ✅ **ALWAYS** wait for developer confirmation before closing
+9. ✅ **ALWAYS** check parent-child relationships
+10. ✅ **ALWAYS** verify all siblings before closing parent
+11. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+12. ❌ **NEVER** implement features outside the defined scope
+13. ❌ **NEVER** assume additional functionality should be included
+14. ❌ **NEVER** close work items prematurely
+15. ❌ **NEVER** skip hierarchy validation
+16. ❌ **NEVER** close parent before all children are done
+17. ❌ **NEVER** start coding without a specific work item
+18. ❌ **NEVER** start work without validating iteration assignment
 
 ## Integration with GitHub Workflow
 
