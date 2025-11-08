@@ -4,7 +4,6 @@ import '../theme/app_spacing.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'ar_scanner_screen.dart';
-import 'nearby_screen.dart';
 import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -45,8 +44,7 @@ class _MainScreenState extends State<MainScreen> {
                 : _currentIndex,
         children: const [
           HomeScreen(), // 🏠 Inicio - Feed de reels
-          MapScreen(), // 🗺️ Mapa - Mapa interactivo
-          NearbyScreen(), // 🎯 Cerca - Contenido cercano
+          MapScreen(), // 🗺️ Mapa - Con filtros y vista lista/mapa
           ProfileScreen(), // 👤 Yo - Perfil
         ],
       ),
@@ -116,19 +114,14 @@ class _CustomBottomNavigationBar extends StatelessWidget {
               // Spacer for FAB
               const SizedBox(width: AppSpacing.minTouchTarget),
               _NavBarItem(
-                icon: Icons.near_me_outlined,
-                activeIcon: Icons.near_me,
-                label: 'Cerca',
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-              _NavBarItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Yo',
-                isActive: currentIndex == 4,
-                onTap: () => onTap(4),
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
+              // Empty space to balance layout
+              const SizedBox(width: AppSpacing.minTouchTarget),
             ],
           ),
         ),
