@@ -1,8 +1,11 @@
+```instructions
 ---
 applyTo: "**"
 ---
 
 # Coding Standards and Best Practices
+
+> **Related Instructions**: §1-github-api-reference for GitHub operations | §2-development-workflow for development workflow
 
 ## Language Standards
 

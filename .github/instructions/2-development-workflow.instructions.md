@@ -4,16 +4,7 @@ applyTo: "**"
 
 # Development Workflow Instructions
 
-## Execution Preferences
-
-**Preferred approach**: Execute commands directly in the terminal instead of creating script files.
-
-- ✅ **DO**: Copy and execute commands directly in terminal
-- ✅ **DO**: Use loops and functions inline for batch operations
-- ❌ **AVOID**: Creating script files unless processing 20+ items or for reusable automation
-- ❌ **AVOID**: Creating files for one-time operations
-
-> **Note**: Only create script files when explicitly needed for large batch operations or when the developer requests a reusable automation.
+> **Note**: For GitHub API commands, execution preferences, and issue hierarchy, see [§1-github-api-reference.instructions.md](./1-github-api-reference.instructions.md)
 
 ## Starting Work
 
@@ -76,43 +67,9 @@ mcp_githubmcp_issue_read({
 
 #### Step 3: Create Missing Tasks
 
-For each unchecked acceptance criterion (`- [ ]`), create a Task:
+For each unchecked acceptance criterion (`- [ ]`), create a Task following the process defined in §1-github-api-reference §"Task Creation from Acceptance Criteria".
 
-```javascript
-// 1. Create the Task issue
-mcp_githubmcp_issue_write({
-  method: "create",
-  owner: "EloboAI",
-  repo: "crazytrip",
-  title: "[Task] <imperative verb> <what>",
-  body: `**Parent:** #<user_story_number>
-
-**Descripción:** <acceptance criterion text>
-
-**Tareas Técnicas:**
-- <technical step 1>
-- <technical step 2>
-- <technical step 3>`,
-  type: "task"
-})
-
-// 2. Get node IDs
-const parentNodeId = await getNodeId(<user_story_number>)
-const taskNodeId = await getNodeId(<new_task_number>)
-
-// 3. Link Task to User Story via sub-issue API
-./gh api graphql -f query='
-mutation {
-  addSubIssue(input: {
-    issueId: "PARENT_NODE_ID"
-    subIssueId: "TASK_NODE_ID"
-  }) {
-    subIssue {
-      id
-    }
-  }
-}'
-```
+Use the sub-issue API to link Tasks to the User Story (see §1-github-api-reference §"Adding Sub-Issues").
 
 #### Step 4: Inform Developer
 
@@ -920,106 +877,47 @@ Before closing any work item:
 - [ ] All sibling issues verified as complete (if parent exists)
 - [ ] Parent closed if all siblings complete
 
-## Common Scenarios
+## Common Scenarios & Decision Tree
 
-### Scenario 1: Task with No Parent
-```
-Developer: "Ya está lista la tarea #180"
-You:
-1. Close task #180 as completed
-2. Report: "✅ Task #180 completada (sin parent)"
-```
+### Completion Workflow Decision Tree
 
-### Scenario 2: Task with Parent User Story
 ```
-Developer: "Ya terminé el task #188"
-You:
-1. Close task #188 as completed
-2. Check parent (e.g., #156)
-3. Get all sub-issues of #156
-4. If all sub-issues closed → Close #156
-5. Report: "✅ Task #188 completada. User Story #156 cerrado (todos sus tasks completos)"
-```
-
-### Scenario 3: Last User Story of Feature
-```
-Developer: "Listo el user story #157"
-You:
-1. Verify all tasks of #157 are closed
-2. Close #157 as completed
-3. Check parent Feature (e.g., #38)
-4. Get all sub-issues (User Stories) of #38
-5. If all User Stories closed → Close Feature #38
-6. Report: "✅ User Story #157 completado. Feature #38 cerrado (todos sus user stories completos)"
+Developer says: "Ya está lista la tarea #X"
+    ↓
+Close Task #X with state_reason: "completed"
+    ↓
+Check: Does Task have **Parent:** reference?
+    ├─ NO → Report: "✅ Task completed (no parent)"
+    │        END
+    └─ YES → Get Parent issue #P
+            ↓
+        Get all sub-issues of Parent #P
+            ↓
+        Are ALL siblings closed?
+            ├─ NO → Report: "✅ Task completed. Parent #P has X pending tasks"
+            │        Suggest next task
+            │        END
+            └─ YES → Close Parent #P with state_reason: "completed"
+                    ↓
+                Check: Does Parent have grandparent?
+                    ├─ NO → Report: "✅ Task and Parent completed"
+                    │        END
+                    └─ YES → Repeat validation for grandparent
 ```
 
-### Scenario 4: Work Not Complete
-```
-Developer: "Hay un bug en el dark mode"
-You:
-❌ DON'T close the task
-✅ Continue working on fixes
-✅ Ask: "¿Qué necesitas que corrija específicamente?"
-```
+### Key Scenario Patterns
 
-### Scenario 5: Task Misaligned with User Story
-```
-Developer: "Trabaja en el task #188"
-You:
-1. Get task description
-2. Find parent User Story #156
-3. Get acceptance criteria from #156
-4. Compare task with criteria
-5. If NO MATCH:
-   ⚠️ El Task #188 no corresponde a ningún criterio del User Story #156.
-   
-   **User Story #156:** Activar Dark Mode
-   **Criterios:**
-   - Toggle entre claro/oscuro
-   - Cambio instantáneo
-   - Adaptación de elementos UI
-   - Contraste adecuado
-   
-   **Task #188:** Persistencia del tema seleccionado
-   
-   ❌ Este Task no está en los criterios definidos.
-   
-   ¿Es el Task correcto o necesitas crear/actualizar el User Story?
-```
+**Pattern 1: Misaligned Task** - Task doesn't match User Story criteria
+→ **Action**: Compare task description with parent's acceptance criteria. If no match, alert developer and ask for confirmation before proceeding.
 
-### Scenario 6: Developer Requests Out-of-Scope Work
-```
-Developer working on #188 (Task: "Implementar toggle entre modo claro y oscuro")
-Developer: "También implementa la persistencia del tema seleccionado"
+**Pattern 2: Out-of-Scope Request** - Developer requests functionality not in work item
+→ **Action**: Stop, show current scope, ask if they want to: (1) switch to different work item, (2) create new issue, or (3) continue with current scope only.
 
-You:
-1. Check acceptance criteria of #188
-2. If "persistencia" is NOT listed:
-   ⚠️ La persistencia del tema no está en el alcance del Task #188.
-   
-   **Alcance actual (#188):**
-   - Implementar toggle entre modo claro y oscuro
-   
-   **Tu solicitud:** Persistencia del tema
-   
-   ¿Quieres que:
-   1. Busquemos otro task que incluya la persistencia
-   2. Cree un nuevo issue para esta funcionalidad
-   3. Continuemos solo con lo del task actual
-```
+**Pattern 3: Incomplete Work** - Developer reports bugs or issues
+→ **Action**: Don't close work item. Continue fixing and ask for specific details about what needs correction.
 
-### Scenario 7: Ambiguous Request Clarification
-```
-Developer: "Trabaja en el issue #156"
-Developer: "Ahora agrega validación de formularios"
-
-You:
-1. Check #156 acceptance criteria
-2. If validation is not mentioned:
-   ⚠️ La validación de formularios no está mencionada en #156.
-   
-   ¿Esto es parte del issue actual o necesitas que trabaje en un issue diferente?
-```
+**Pattern 4: Ambiguous Request** - Developer's request unclear or contradictory
+→ **Action**: Ask clarification question referencing the work item's defined scope and acceptance criteria.
 
 ## Communication Guidelines
 
@@ -1083,12 +981,3 @@ After completing work:
 33. ❌ **NEVER** start work without validating iteration assignment
 34. ❌ **NEVER** assume developer wants to continue without asking
 
-## Integration with GitHub Workflow
-
-This workflow integrates with `github-workflow.instructions.md`:
-- Follow the issue hierarchy defined there
-- Use the API commands specified there
-- Respect the parent-child relationships established there
-- Apply the same naming conventions and formats
-
-When in doubt, refer to both instruction files to ensure proper work item management throughout the development lifecycle.
