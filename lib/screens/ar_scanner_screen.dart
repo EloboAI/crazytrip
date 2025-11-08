@@ -105,8 +105,12 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.arOverlayBackground,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusPill,
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -158,14 +162,18 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.arOverlayBackground,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusMedium,
+                      ),
                       border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _mode == CameraMode.scan ? Icons.info_outline : Icons.video_library,
+                          _mode == CameraMode.scan
+                              ? Icons.info_outline
+                              : Icons.video_library,
                           color: Colors.white,
                           size: 16,
                         ),
@@ -174,7 +182,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                           _mode == CameraMode.scan
                               ? 'Apunta a objetos para identificarlos'
                               : 'Graba reels para compartir',
-                          style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -264,11 +274,17 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                           shape:
                               _mode == CameraMode.scan
                                   ? BoxShape.circle
-                                  : (_isRecording ? BoxShape.rectangle : BoxShape.circle),
+                                  : (_isRecording
+                                      ? BoxShape.rectangle
+                                      : BoxShape.circle),
                           color:
                               _mode == CameraMode.scan
-                                  ? (_isScanning ? AppColors.primaryColor : Colors.white)
-                                  : (_isRecording ? Colors.red : Colors.red.withOpacity(0.8)),
+                                  ? (_isScanning
+                                      ? AppColors.primaryColor
+                                      : Colors.white)
+                                  : (_isRecording
+                                      ? Colors.red
+                                      : Colors.red.withOpacity(0.8)),
                           borderRadius:
                               _mode == CameraMode.reel && _isRecording
                                   ? BorderRadius.circular(8)
@@ -283,8 +299,12 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   // Instructions
                   Text(
                     _mode == CameraMode.scan
-                        ? (_isScanning ? 'Identificando...' : 'Toca para escanear')
-                        : (_isRecording ? 'Grabando reel...' : 'Toca para grabar'),
+                        ? (_isScanning
+                            ? 'Identificando...'
+                            : 'Toca para escanear')
+                        : (_isRecording
+                            ? 'Grabando reel...'
+                            : 'Toca para grabar'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white.withOpacity(0.8),
                     ),
@@ -395,7 +415,10 @@ class _ModeButton extends StatelessWidget {
           vertical: AppSpacing.s,
         ),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryColor.withOpacity(0.8) : Colors.transparent,
+          color:
+              isActive
+                  ? AppColors.primaryColor.withOpacity(0.8)
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         ),
         child: Row(

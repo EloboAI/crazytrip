@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-import 'explore_screen.dart';
+import 'home_screen.dart';
 import 'map_screen.dart';
 import 'ar_scanner_screen.dart';
-import 'achievements_screen.dart';
+import 'nearby_screen.dart';
 import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   void _onTabTapped(int index) {
-    // Handle center FAB separately
+    // Handle center FAB (Scan) separately
     if (index == 2) {
       // Navigate to AR Scanner as full screen
       Navigator.push(
@@ -44,10 +44,10 @@ class _MainScreenState extends State<MainScreen> {
                 ? _currentIndex - 1
                 : _currentIndex,
         children: const [
-          ExploreScreen(),
-          MapScreen(),
-          AchievementsScreen(),
-          ProfileScreen(),
+          HomeScreen(), // 🏠 Inicio - Feed de reels
+          MapScreen(), // 🗺️ Mapa - Mapa interactivo
+          NearbyScreen(), // 🎯 Cerca - Contenido cercano
+          ProfileScreen(), // 👤 Yo - Perfil
         ],
       ),
       bottomNavigationBar: _CustomBottomNavigationBar(
@@ -58,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
           _currentIndex != 2
               ? FloatingActionButton(
                 onPressed: () => _onTabTapped(2),
-                heroTag: 'main_fab', // Fix: Add unique hero tag
+                heroTag: 'main_fab',
                 backgroundColor: AppColors.primaryColor,
                 elevation: AppSpacing.elevationFAB,
                 child: const Icon(Icons.camera_alt, size: AppSpacing.iconLarge),
@@ -100,32 +100,32 @@ class _CustomBottomNavigationBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavBarItem(
-                icon: Icons.explore_outlined,
-                activeIcon: Icons.explore,
-                label: 'Explore',
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'Inicio',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavBarItem(
                 icon: Icons.map_outlined,
                 activeIcon: Icons.map,
-                label: 'Map',
+                label: 'Mapa',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               // Spacer for FAB
               const SizedBox(width: AppSpacing.minTouchTarget),
               _NavBarItem(
-                icon: Icons.emoji_events_outlined,
-                activeIcon: Icons.emoji_events,
-                label: 'Achievements',
+                icon: Icons.near_me_outlined,
+                activeIcon: Icons.near_me,
+                label: 'Cerca',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
               _NavBarItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
-                label: 'Profile',
+                label: 'Yo',
                 isActive: currentIndex == 4,
                 onTap: () => onTap(4),
               ),

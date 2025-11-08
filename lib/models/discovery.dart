@@ -99,7 +99,8 @@ class Discovery {
         id: 'd5',
         name: 'Soda La Casona',
         category: 'Food & Drink',
-        description: 'Restaurante típico costarricense con los mejores platos tradicionales.',
+        description:
+            'Restaurante típico costarricense con los mejores platos tradicionales.',
         location: 'San José, Costa Rica',
         latitude: 9.9281,
         longitude: -84.0907,
@@ -114,7 +115,8 @@ class Discovery {
         id: 'd6',
         name: 'Mercado de Artesanías',
         category: 'Art & Culture',
-        description: 'Mercado tradicional con artesanías costarricenses auténticas.',
+        description:
+            'Mercado tradicional con artesanías costarricenses auténticas.',
         location: 'Sarchí, Costa Rica',
         latitude: 10.0833,
         longitude: -84.3333,
@@ -129,7 +131,8 @@ class Discovery {
         id: 'd7',
         name: 'Arenal Volcano Area',
         category: 'Nature',
-        description: 'Zona del majestuoso Volcán Arenal con catarata La Fortuna.',
+        description:
+            'Zona del majestuoso Volcán Arenal con catarata La Fortuna.',
         location: 'La Fortuna, Costa Rica',
         latitude: 10.4628,
         longitude: -84.7032,
@@ -144,7 +147,8 @@ class Discovery {
         id: 'd8',
         name: 'Chirripó National Park',
         category: 'Nature',
-        description: 'Hogar del pico más alto de Costa Rica, el Cerro Chirripó.',
+        description:
+            'Hogar del pico más alto de Costa Rica, el Cerro Chirripó.',
         location: 'San Gerardo de Rivas, Costa Rica',
         latitude: 9.4833,
         longitude: -83.4833,
@@ -174,7 +178,8 @@ class Discovery {
         id: 'd10',
         name: 'Teatro Nacional de Costa Rica',
         category: 'Historical & Culture',
-        description: 'Majestuoso teatro neoclásico, joya arquitectónica de San José.',
+        description:
+            'Majestuoso teatro neoclásico, joya arquitectónica de San José.',
         location: 'San José, Costa Rica',
         latitude: 9.9326,
         longitude: -84.0767,

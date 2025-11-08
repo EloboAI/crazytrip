@@ -15,6 +15,13 @@ class Promotion {
   final int xpReward;
   final String? linkedAchievementId; // Links to achievement system
 
+  // Additional fields for nearby promotions
+  final String businessName;
+  final String address;
+  final int discountPercent;
+  final int maxClaims;
+  final int claims;
+
   Promotion({
     required this.id,
     required this.title,
@@ -30,7 +37,16 @@ class Promotion {
     required this.type,
     required this.xpReward,
     this.linkedAchievementId,
-  });
+    String? businessName,
+    String? address,
+    int? discountPercent,
+    int? maxClaims,
+    int? claims,
+  }) : businessName = businessName ?? location,
+       address = address ?? location,
+       discountPercent = discountPercent ?? 0,
+       maxClaims = maxClaims ?? 100,
+       claims = claims ?? 0;
 
   /// Check if promotion is currently active
   bool get isActive {
@@ -63,6 +79,9 @@ class Promotion {
     }
     return endDate.difference(DateTime.now()).inHours;
   }
+
+  /// Get remaining claims
+  int get remainingClaims => maxClaims - claims;
 
   /// Get status text
   String get statusText {

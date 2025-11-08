@@ -9,10 +9,7 @@ import '../theme/app_text_styles.dart';
 class DiscoveryCrazyDexScreen extends StatelessWidget {
   final Discovery discovery;
 
-  const DiscoveryCrazyDexScreen({
-    super.key,
-    required this.discovery,
-  });
+  const DiscoveryCrazyDexScreen({super.key, required this.discovery});
 
   @override
   Widget build(BuildContext context) {
@@ -22,68 +19,66 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
     final locked = items.where((item) => !item.isDiscovered).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('CrazyDex - ${discovery.name}'),
-      ),
-      body: items.isEmpty
-          ? Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.l),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.search_off,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: AppSpacing.m),
-                    Text(
-                      'No hay items CrazyDex en este lugar',
-                      style: AppTextStyles.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: AppSpacing.s),
-                    Text(
-                      'Otros usuarios aún no han identificado nada aquí',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.grey,
+      appBar: AppBar(title: Text('CrazyDex - ${discovery.name}')),
+      body:
+          items.isEmpty
+              ? Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.l),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off, size: 64, color: Colors.grey),
+                      SizedBox(height: AppSpacing.m),
+                      Text(
+                        'No hay items CrazyDex en este lugar',
+                        style: AppTextStyles.headlineMedium,
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
+                      SizedBox(height: AppSpacing.s),
+                      Text(
+                        'Otros usuarios aún no han identificado nada aquí',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : ListView(
+                padding: EdgeInsets.all(AppSpacing.m),
+                children: [
+                  // Header with stats
+                  _buildStatsCard(items.length, discovered.length),
+                  SizedBox(height: AppSpacing.l),
+
+                  // Discovered items
+                  if (discovered.isNotEmpty) ...[
+                    _buildSectionHeader('Descubiertos', discovered.length),
+                    SizedBox(height: AppSpacing.m),
+                    ...discovered.map(
+                      (item) => _buildDiscoveredItemCard(context, item),
+                    ),
+                    SizedBox(height: AppSpacing.l),
+                  ],
+
+                  // Locked items
+                  if (locked.isNotEmpty) ...[
+                    _buildSectionHeader('Por descubrir', locked.length),
+                    SizedBox(height: AppSpacing.m),
+                    ...locked.map(
+                      (item) => _buildLockedItemCard(context, item),
                     ),
                   ],
-                ),
+
+                  SizedBox(height: AppSpacing.xl),
+
+                  // Call to action
+                  _buildCallToAction(context),
+                ],
               ),
-            )
-          : ListView(
-              padding: EdgeInsets.all(AppSpacing.m),
-              children: [
-                // Header with stats
-                _buildStatsCard(items.length, discovered.length),
-                SizedBox(height: AppSpacing.l),
-
-                // Discovered items
-                if (discovered.isNotEmpty) ...[
-                  _buildSectionHeader('Descubiertos', discovered.length),
-                  SizedBox(height: AppSpacing.m),
-                  ...discovered
-                      .map((item) => _buildDiscoveredItemCard(context, item)),
-                  SizedBox(height: AppSpacing.l),
-                ],
-
-                // Locked items
-                if (locked.isNotEmpty) ...[
-                  _buildSectionHeader('Por descubrir', locked.length),
-                  SizedBox(height: AppSpacing.m),
-                  ...locked.map((item) => _buildLockedItemCard(context, item)),
-                ],
-
-                SizedBox(height: AppSpacing.xl),
-
-                // Call to action
-                _buildCallToAction(context),
-              ],
-            ),
     );
   }
 
@@ -100,18 +95,13 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem('Total', total.toString(), Icons.list),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.grey.shade300,
-                ),
+                Container(width: 1, height: 40, color: Colors.grey.shade300),
                 _buildStatItem(
-                    'Descubiertos', discovered.toString(), Icons.check_circle),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.grey.shade300,
+                  'Descubiertos',
+                  discovered.toString(),
+                  Icons.check_circle,
                 ),
+                Container(width: 1, height: 40, color: Colors.grey.shade300),
                 _buildStatItem('Progreso', '$percentage%', Icons.emoji_events),
               ],
             ),
@@ -122,8 +112,9 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                 value: total > 0 ? discovered / total : 0,
                 minHeight: 8,
                 backgroundColor: Colors.grey.shade300,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(AppColors.secondaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.secondaryColor,
+                ),
               ),
             ),
           ],
@@ -146,9 +137,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
         ),
         Text(
           label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.grey,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
         ),
       ],
     );
@@ -159,7 +148,9 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
       children: [
         Text(
           title,
-          style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
+          style: AppTextStyles.headlineMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         SizedBox(width: AppSpacing.xs),
         Container(
@@ -204,10 +195,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Text(
-                    item.imageUrl,
-                    style: TextStyle(fontSize: 32),
-                  ),
+                  child: Text(item.imageUrl, style: TextStyle(fontSize: 32)),
                 ),
               ),
               SizedBox(width: AppSpacing.m),
@@ -227,18 +215,11 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 20,
-                        ),
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
                       ],
                     ),
                     SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      item.rarityStars,
-                      style: TextStyle(fontSize: 12),
-                    ),
+                    Text(item.rarityStars, style: TextStyle(fontSize: 12)),
                     SizedBox(height: AppSpacing.xxs),
                     Row(
                       children: [
@@ -248,9 +229,10 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                             vertical: AppSpacing.xxs,
                           ),
                           decoration: BoxDecoration(
-                            color: item.category.displayName == 'Fauna'
-                                ? Colors.green.withOpacity(0.1)
-                                : item.category.displayName == 'Flora'
+                            color:
+                                item.category.displayName == 'Fauna'
+                                    ? Colors.green.withOpacity(0.1)
+                                    : item.category.displayName == 'Flora'
                                     ? Colors.blue.withOpacity(0.1)
                                     : Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -302,11 +284,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.lock,
-                size: 32,
-                color: Colors.grey,
-              ),
+              child: Icon(Icons.lock, size: 32, color: Colors.grey),
             ),
             SizedBox(width: AppSpacing.m),
 
@@ -323,10 +301,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    item.rarityStars,
-                    style: TextStyle(fontSize: 12),
-                  ),
+                  Text(item.rarityStars, style: TextStyle(fontSize: 12)),
                   SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
@@ -376,11 +351,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
         padding: EdgeInsets.all(AppSpacing.m),
         child: Column(
           children: [
-            Icon(
-              Icons.camera_alt,
-              size: 48,
-              color: AppColors.primaryColor,
-            ),
+            Icon(Icons.camera_alt, size: 48, color: AppColors.primaryColor),
             SizedBox(height: AppSpacing.m),
             Text(
               '¡Usa tu cámara para identificar!',
@@ -392,9 +363,7 @@ class DiscoveryCrazyDexScreen extends StatelessWidget {
             SizedBox(height: AppSpacing.s),
             Text(
               'Toma fotos de lo que encuentres en este lugar y nuestra IA los identificará para desbloquearlos en tu CrazyDex.',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: AppSpacing.m),

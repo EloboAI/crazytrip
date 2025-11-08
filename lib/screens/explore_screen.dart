@@ -208,8 +208,9 @@ class ExploreScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) =>
-                                    DiscoveryCrazyDexScreen(discovery: discovery),
+                                (context) => DiscoveryCrazyDexScreen(
+                                  discovery: discovery,
+                                ),
                           ),
                         );
                       },
@@ -245,18 +246,20 @@ class ExploreScreen extends StatelessWidget {
                   return CompactDiscoveryCard(
                     discovery: discovery,
                     showLock: true,
-                    onCrazyDexTap: discovery.crazyDexItemsAvailable > 0
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        DiscoveryCrazyDexScreen(discovery: discovery),
-                              ),
-                            );
-                          }
-                        : null,
+                    onCrazyDexTap:
+                        discovery.crazyDexItemsAvailable > 0
+                            ? () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => DiscoveryCrazyDexScreen(
+                                        discovery: discovery,
+                                      ),
+                                ),
+                              );
+                            }
+                            : null,
                   );
                 }, childCount: nearbyDiscoveries.length),
               ),

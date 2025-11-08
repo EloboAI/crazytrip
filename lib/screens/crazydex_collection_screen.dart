@@ -23,14 +23,18 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     final locked = allItems.where((item) => !item.isDiscovered).toList();
 
     // Filter by category if selected
-    final filteredDiscovered = _selectedCategory == null
-        ? discovered
-        : discovered
-            .where((item) => item.category == _selectedCategory)
-            .toList();
-    final filteredLocked = _selectedCategory == null
-        ? locked
-        : locked.where((item) => item.category == _selectedCategory).toList();
+    final filteredDiscovered =
+        _selectedCategory == null
+            ? discovered
+            : discovered
+                .where((item) => item.category == _selectedCategory)
+                .toList();
+    final filteredLocked =
+        _selectedCategory == null
+            ? locked
+            : locked
+                .where((item) => item.category == _selectedCategory)
+                .toList();
 
     final progress = calculateProgress(allItems);
 
@@ -56,32 +60,35 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
           // Items List
           Expanded(
-            child: filteredDiscovered.isEmpty && filteredLocked.isEmpty
-                ? _buildEmptyState()
-                : ListView(
-                    padding: EdgeInsets.all(AppSpacing.m),
-                    children: [
-                      if (filteredDiscovered.isNotEmpty) ...[
-                        _buildSectionHeader(
-                            'Descubiertos', filteredDiscovered.length),
-                        SizedBox(height: AppSpacing.m),
-                        ...filteredDiscovered.map((item) => _buildItemCard(
-                              item,
-                              isDiscovered: true,
-                            )),
-                        SizedBox(height: AppSpacing.l),
+            child:
+                filteredDiscovered.isEmpty && filteredLocked.isEmpty
+                    ? _buildEmptyState()
+                    : ListView(
+                      padding: EdgeInsets.all(AppSpacing.m),
+                      children: [
+                        if (filteredDiscovered.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'Descubiertos',
+                            filteredDiscovered.length,
+                          ),
+                          SizedBox(height: AppSpacing.m),
+                          ...filteredDiscovered.map(
+                            (item) => _buildItemCard(item, isDiscovered: true),
+                          ),
+                          SizedBox(height: AppSpacing.l),
+                        ],
+                        if (filteredLocked.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'Por descubrir',
+                            filteredLocked.length,
+                          ),
+                          SizedBox(height: AppSpacing.m),
+                          ...filteredLocked.map(
+                            (item) => _buildItemCard(item, isDiscovered: false),
+                          ),
+                        ],
                       ],
-                      if (filteredLocked.isNotEmpty) ...[
-                        _buildSectionHeader(
-                            'Por descubrir', filteredLocked.length),
-                        SizedBox(height: AppSpacing.m),
-                        ...filteredLocked.map((item) => _buildItemCard(
-                              item,
-                              isDiscovered: false,
-                            )),
-                      ],
-                    ],
-                  ),
+                    ),
           ),
         ],
       ),
@@ -189,7 +196,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   }
 
   Widget _buildCategoryChip(
-      CrazyDexCategory? category, String label, IconData icon) {
+    CrazyDexCategory? category,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = _selectedCategory == category;
     return Padding(
       padding: EdgeInsets.only(right: AppSpacing.s),
@@ -291,22 +301,20 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: isDiscovered
-                    ? AppColors.primaryColor.withOpacity(0.1)
-                    : Colors.grey.shade300,
+                color:
+                    isDiscovered
+                        ? AppColors.primaryColor.withOpacity(0.1)
+                        : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: isDiscovered
-                    ? Text(
-                        item.imageUrl,
-                        style: const TextStyle(fontSize: 32),
-                      )
-                    : Icon(
-                        Icons.lock,
-                        size: 32,
-                        color: Colors.grey,
-                      ),
+                child:
+                    isDiscovered
+                        ? Text(
+                          item.imageUrl,
+                          style: const TextStyle(fontSize: 32),
+                        )
+                        : Icon(Icons.lock, size: 32, color: Colors.grey),
               ),
             ),
             SizedBox(width: AppSpacing.m),
@@ -324,10 +332,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                     ),
                   ),
                   SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    item.rarityStars,
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  Text(item.rarityStars, style: const TextStyle(fontSize: 12)),
                   SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
@@ -337,9 +342,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                           vertical: AppSpacing.xxs,
                         ),
                         decoration: BoxDecoration(
-                          color: isDiscovered
-                              ? _getCategoryColor(item.category)
-                              : Colors.grey.shade300,
+                          color:
+                              isDiscovered
+                                  ? _getCategoryColor(item.category)
+                                  : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -360,9 +366,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                       Text(
                         '+${item.xpReward} XP',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: isDiscovered
-                              ? Colors.amber.shade700
-                              : Colors.grey,
+                          color:
+                              isDiscovered
+                                  ? Colors.amber.shade700
+                                  : Colors.grey,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -424,11 +431,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Colors.grey,
-            ),
+            Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: AppSpacing.m),
             Text(
               'No hay items en esta categoría',
@@ -438,9 +441,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
             SizedBox(height: AppSpacing.s),
             Text(
               'Visita diferentes lugares y usa tu cámara para descubrir nuevos items',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -467,22 +468,23 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   void _showInfoDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Qué es el CrazyDex?'),
-        content: const Text(
-          'El CrazyDex es tu colección personal de descubrimientos. '
-          'Cada lugar que visitas tiene items únicos que puedes identificar '
-          'usando tu cámara.\n\n'
-          'Colecciona flora, fauna, monumentos, comida típica y más. '
-          '¡Completa categorías para desbloquear logros especiales!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('¿Qué es el CrazyDex?'),
+            content: const Text(
+              'El CrazyDex es tu colección personal de descubrimientos. '
+              'Cada lugar que visitas tiene items únicos que puedes identificar '
+              'usando tu cámara.\n\n'
+              'Colecciona flora, fauna, monumentos, comida típica y más. '
+              '¡Completa categorías para desbloquear logros especiales!',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

@@ -1,215 +1,236 @@
-# 🌍 Crazy Trip
+# 🌎 CrazyTrip
 
-**Crazy Trip** es una aplicación móvil de exploración y descubrimiento gamificada que transforma el turismo en una aventura interactiva. Usa escaneo AR, colecciona logros, gana XP y compite en tablas de clasificación mientras descubres lugares turísticos increíbles.
+**Descubre, Colecciona, Comparte** - La red social de viajes con gamificación estilo Pokémon GO
 
-<div align="center">
-  
-  [![Flutter](https://img.shields.io/badge/Flutter-3.7.0+-02569B?logo=flutter)](https://flutter.dev)
-  [![Dart](https://img.shields.io/badge/Dart-3.7.0+-0175C2?logo=dart)](https://dart.dev)
-  [![Material Design 3](https://img.shields.io/badge/Material%20Design-3-757575?logo=material-design)](https://m3.material.io)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-</div>
+CrazyTrip es una aplicación móvil que transforma el turismo en una experiencia social, interactiva y gamificada. Los usuarios exploran destinos, coleccionan items únicos usando IA, comparten sus experiencias mediante reels, y descubren lugares mediante un mapa colaborativo al estilo Pokémon GO.
 
 ---
 
-## 📱 ¿Qué es Crazy Trip?
+## 🎯 Visión
 
-Crazy Trip es **la primera plataforma de turismo democratizado con gamificación y creación de contenido integrada**. A diferencia de Booking (solo grandes negocios) o Google Maps (información pasiva), Crazy Trip permite que **cualquier negocio - desde una cadena hotelera hasta un puesto de tacos - pueda ser descubierto y promocionado** a través de una experiencia de exploración gamificada donde los usuarios crean y comparten contenido directamente en sus redes sociales.
+CrazyTrip democratiza el turismo combinando **social media + gamificación + IA**. A diferencia de Booking (solo grandes negocios) o Google Maps (información pasiva), CrazyTrip permite que cualquier negocio - desde food trucks hasta hoteles 5 estrellas - sea descubierto mediante una experiencia tipo Pokémon GO donde usuarios crean y comparten contenido directamente en sus redes sociales.
 
-### 🎯 Propuesta de Valor Única
+### Características Principales
 
-#### **Para Usuarios (Exploradores)**
-- 🎮 **Gamificación Real**: XP, logros y recompensas tangibles por explorar
-- 📱 **Creador de Reels Integrado**: Graba y publica directamente en TikTok/Instagram sin salir de la app
-- 🎁 **Descuentos Reales**: Beneficios basados en tu nivel de explorador
-- 🔍 **AR Scanner**: Convierte la exploración en una aventura interactiva
-- 🏆 **Competencia Social**: Compite en leaderboards con otros exploradores
-
-#### **Para Negocios (Cualquier Tamaño)**
-- 💰 **Sin barreras de entrada**: Desde food trucks hasta hoteles 5 estrellas
-- 📊 **Visibilidad orgánica**: Los usuarios crean contenido auténtico de tu negocio
-- 🎯 **Marketing de influencers automatizado**: Cada usuario es un micro-influencer potencial
-- 💵 **Pago por resultados**: Solo pagas por promociones activas, no por listing
-- 📈 **Viralización en redes**: El contenido se publica en TikTok/Instagram con geotags automáticos
-
-#### **Diferenciadores Clave vs Competencia**
-
-| Característica | Crazy Trip | Booking/Airbnb | Google Maps | TikTok/Instagram |
-|---|---|---|---|---|
-| Negocios informales | ✅ Sí | ❌ No | ⚠️ Limitado | ⚠️ Depende del creador |
-| Gamificación | ✅ Completa | ❌ No | ❌ No | ❌ No |
-| Creación de contenido in-app | ✅ Sí | ❌ No | ❌ No | ✅ Sí (pero sin contexto) |
-| Publicación multi-red | ✅ Automática | ❌ No | ❌ No | ❌ Una sola red |
-| Recompensas reales | ✅ XP → Descuentos | ❌ No | ⚠️ Puntos limitados | ❌ No |
-| Geotagging inteligente | ✅ Automático | ⚠️ Manual | ✅ Sí | ⚠️ Manual |
-| Incentivo para explorar | ✅ XP + Logros | ❌ No | ❌ No | ❌ No |
-
-### 💡 Casos de Uso Transformadores
-
-#### **Caso 1: Vendedor de Helados Artesanales** 🍦
-```
-1. María vende helados en un carrito en el parque
-2. Se registra GRATIS en Crazy Trip
-3. Usuario la descubre con AR Scanner → +50 XP
-4. Usuario graba un reel probando el helado
-5. Publica automáticamente en TikTok + Instagram con:
-   - Geotag del parque
-   - #CrazyTrip #HeladosArtesanales #ParqueCentral
-6. María gana visibilidad sin pagar publicidad
-7. Más usuarios ven el TikTok → vienen al parque → descubren a María
-```
-
-#### **Caso 2: Artista Callejero** 🎨
-```
-1. Carlos pinta murales en el centro
-2. Registra su mural como "descubrimiento"
-3. Turistas lo encuentran explorando
-4. Crean reels de 15 segundos del mural
-5. Carlos crea un "concurso": Mejor reel del mural gana $50
-6. Se generan 100+ reels en una semana
-7. Carlos gana seguidores, comisiones, y reconocimiento
-8. Ciudad gana contenido turístico auténtico
-```
-
-#### **Caso 3: Restaurante Local** 🍽️
-```
-1. Restaurante familiar sin presupuesto para Booking
-2. Crea promoción: "Postre gratis si llegas a nivel 5"
-3. Usuarios suben reels comiendo ahí para ganar XP
-4. Contenido se viraliza en redes sociales
-5. Restaurante solo paga $20/mes por la promoción
-6. Recibe 50+ menciones orgánicas en TikTok
-7. ROI: 2000% vs publicidad tradicional
-```
-
-### 🎯 Modelo de Negocio Win-Win-Win
-
-#### **Para la App (Crazy Trip)**
-- Freemium para negocios (gratis aparecer, paga por promociones)
-- Comisión por transacciones (descuentos canjeados)
-- Patrocinios de marcas grandes (turismo nacional/internacional)
-- Datos de comportamiento turístico (anonimizados, vendidos a gobiernos/marcas)
-
-#### **Para Usuarios**
-- App gratuita
-- Ganan XP → descuentos reales en negocios
-- No hay ads intrusivos (monetización nativa)
-- Contenido que crean es SUYO (se publica en SUS redes)
-
-#### **Para Negocios**
-- **Tier Gratuito**: Aparecer en el mapa
-- **Tier Básico ($9/mes)**: Crear 1 promoción
-- **Tier Pro ($29/mes)**: Promociones ilimitadas + analytics
-- **Tier Enterprise ($99/mes)**: API, integración POS, reportes avanzados
-
-### 🎯 Características Principales
-
-#### 🔍 **Exploración**
-- **Feed de descubrimientos** con lugares visitados recientemente
-- **Lugares cercanos sin explorar** en diseño de cuadrícula
-- **Sistema de categorías** (Naturaleza, Histórico, Arte, Gastronomía, etc.)
-- **Recompensas de XP** por cada descubrimiento (50-600 XP)
-
-#### 🗺️ **Mapa Interactivo**
-- Vista de mapa con marcadores de ubicación
-- Búsqueda de lugares por nombre
-- Filtros por categoría
-- Hoja inferior mostrando descubrimientos cercanos (radio de 2km)
-- Botón "Mi Ubicación" flotante
-
-#### 📸 **Escáner AR (Realidad Aumentada)**
-- Experiencia de escaneo de cámara en pantalla completa
-- Retículo de escaneo animado
-- Indicadores de estado en tiempo real
-- Estadísticas rápidas (escaneos totales, XP ganado, racha actual)
-- Interfaz glassmorphic para overlay AR
-- Identifica y desbloquea descubrimientos mediante AR
-
-#### 🏆 **Logros y Gamificación**
-- **Sistema de logros** con múltiples categorías:
-  - 🌱 Principiante (Primeros Pasos)
-  - 📈 Progreso (Hitos de explorador)
-  - 🌲 Específicos de categoría (Amante de la Naturaleza, Urbanita, Historiador)
-  - 🔥 Rachas (Guerrero Semanal)
-  - 👥 Social (Mariposa Social)
-  - 🎖️ Hitos (Explorador Maestro)
-  - 🤖 Tecnología (Pionero AR)
-  - ✈️ Viajes (Trotamundos)
-- **Seguimiento de progreso** con barras visuales
-- Recompensas de XP por cada logro (50-1000 XP)
-- Distinción entre desbloqueados y en progreso
-
-#### 📊 **Sistema de Clasificación (Leaderboard)**
-- Ranking global de jugadores
-- Muestra: rango, nombre de usuario, avatar emoji, XP total, cantidad de descubrimientos
-- Colores especiales para el top 3 (Oro 🥇, Plata 🥈, Bronce 🥉)
-- Resaltado de posición del usuario actual
-
-#### 👤 **Perfil de Usuario**
-- Panel de estadísticas personales
-- **Sistema de niveles** con seguimiento de XP
-- **Contador de rachas** con ícono de fuego 🔥
-- Estadísticas rápidas: descubrimientos, XP total, racha
-- Etiquetas de categorías favoritas
-- Fecha de registro
-- Menú de configuración (Editar Perfil, Notificaciones, Descubrimientos Guardados, Invitar Amigos)
-- Toggle de modo oscuro
-- Funcionalidad de cierre de sesión
-
-#### 🎁 **Promociones y Concursos**
-- **Promociones activas** de lugares turísticos
-- **Concursos limitados** con premios especiales
-- **Descuentos exclusivos** para ubicaciones
-- Temporizador de cuenta regresiva para eventos
-- Integración con sistema de logros
-- Categorías: Concursos, Descuentos, Eventos, Desafíos
-
-#### 📱 **Creador de Contenido Social** ⭐ NUEVO
-- **Graba reels directamente** en la app al descubrir un lugar
-- **Publica en múltiples redes** (Instagram, TikTok, Facebook) simultáneamente
-- **Geotags automáticos** vinculados al descubrimiento
-- **Hashtags inteligentes** generados por categoría y ubicación
-- **Gana XP extra** por crear y compartir contenido
-- **Caption pre-generado** con info del lugar
-- **Editor in-app** con filtros y efectos
-- **Vinculación de descubrimientos** al contenido
-- **No guardamos tu contenido**: Se publica directo en TUS redes sociales
+- 🗺️ **Mapa Interactivo**: Pins generados por usuarios al descubrir items en ubicaciones reales
+- 📸 **Escaneo con IA**: Identifica flora, fauna, comida y cultura mediante cámara
+- 🎬 **Reels Sociales**: Comparte experiencias en formato vertical (TikTok-style)
+- 🏆 **CrazyDex**: Colecciona items únicos vinculados a ubicaciones específicas
+- 🎯 **Contenido Cercano**: Descubre qué hay cerca según tu ubicación actual
+- 🤖 **Planificador IA**: Crea itinerarios personalizados con lenguaje natural
+- 🎪 **Concursos**: Compite por coleccionar más items o visitar más lugares
+- 💰 **Promociones**: Descuentos basados en ubicación de negocios locales
 
 ---
 
-## 🎮 Sistema de Gamificación
+## 🗓️ Roadmap de Implementación
 
-### 💎 Sistema de XP
-- Ganado al descubrir ubicaciones (50-600 XP por descubrimiento)
-- Ganado al desbloquear logros (50-1000 XP)
-- Niveles basados en XP acumulativo
-- Barra de progreso mostrando avance de nivel
+### **Fase 1: MVP - Fundamentos** (3 meses) ✅ EN PROGRESO
+**Objetivo**: App funcional con captura de items, feed básico y mapa
 
-### 🔥 Sistema de Rachas
-- Contador de racha diaria
-- Representación con ícono de fuego
-- Mantiene el engagement del usuario con visitas consecutivas
+**Semanas 1-4: Navegación y Estructura**
+- ✅ Configuración de 5 tabs con navegación
+- ✅ HomeScreen con layout de feed
+- ⏳ NearbyScreen con detección de ubicación
+- ⏳ Actualizar MainScreen con nuevo bottom nav
+- ✅ Modelo Reel y Post
+- ⏳ Modelo Promotion actualizado
 
-### 🏅 Sistema de Logros
-- 10+ logros únicos con seguimiento de progreso
-- Múltiples categorías (Principiante, Progreso, Categoría, Racha, Social, Hito, Tech, Viajes)
-- Indicadores visuales de progresión
-- Íconos basados en emojis para cada logro
+**Semanas 5-8: Escaneo y CrazyDex**
+- Integración de cámara (camera plugin)
+- Detección de ubicación actual (geolocator)
+- Mock de IA para identificación (futuro: Google Vision API)
+- Guardar items escaneados en CrazyDex local
+- Pantalla de confirmación post-escaneo
 
-### 🏆 Competencia en Leaderboard
-- Sistema basado en rangos
-- Colores de trofeo para el top 3
-- Elemento de comparación social
+**Semanas 9-12: Mapa Interactivo**
+- Mapa con Google Maps Flutter
+- Renderizar pins según items en base de datos
+- Tap en pin → Modal con info del item
+- Filtros: Todos | Capturados | Disponibles
+- Clustering de pins cercanos
 
-### 🗂️ Categorías de Descubrimientos
-- 🌳 **Parque**
-- 🏛️ **Histórico**
-- 🌲 **Naturaleza**
-- 🏖️ **Playa**
-- 🎨 **Arte**
-- ☕ **Gastronomía**
-- 🏢 **Moderno**
+**Entregables Fase 1**:
+- ✅ Navegación de 5 tabs funcional
+- ⏳ Escaneo con cámara y guardado local
+- ⏳ Mapa con pins básicos
+- ✅ Feed con datos mock estáticos
+- ⏳ CrazyDex con progreso por categorías
+
+---
+
+### **Fase 2: Social** (2 meses)
+**Objetivo**: Convertir en red social con reels, likes, comentarios, follows
+
+**Semanas 13-16: Reels y Contenido**
+- Creación de reels (grabación, trim, música)
+- Player de video vertical (pageview)
+- Sistema de likes y comentarios
+- Compartir reels en otras plataformas
+- Galería de mis reels en perfil
+
+**Semanas 17-20: Interacción Social**
+- Sistema de follows/followers
+- Notificaciones (likes, comentarios, nuevos followers)
+- Feed algorítmico (seguidos + recomendaciones)
+- Perfiles de otros usuarios
+- Búsqueda de usuarios y hashtags
+
+**Entregables Fase 2**:
+- Creación y reproducción de reels
+- Sistema completo de likes/comentarios
+- Follows y feed personalizado
+- Notificaciones push básicas
+
+---
+
+### **Fase 3: IA y Gamificación** (3 meses)
+**Objetivo**: Planificador de viajes IA, concursos, logros avanzados
+
+**Semanas 21-24: Planificador IA**
+- Integración con OpenAI/Claude API
+- Input en lenguaje natural: "5 días en Costa Rica, aventura"
+- Generación de itinerarios con lugares, actividades, items
+- Guardar y compartir planes
+- Exportar a Google Calendar
+
+**Semanas 25-28: Sistema de Concursos**
+- CRUD de concursos (admin)
+- Leaderboards en tiempo real
+- Tipos: Más items, más lugares, primero en capturar
+- Premios y badges especiales
+- Timeline de concursos activos
+
+**Semanas 29-32: Logros y Progresión**
+- Sistema de achievements expandido
+- Niveles de usuario (1-50)
+- Badges por hitos (100 items, 10 países, etc.)
+- Racha de días activos
+- Estadísticas avanzadas con gráficos
+
+**Entregables Fase 3**:
+- Planificador IA funcional con guardado
+- Sistema de concursos con leaderboards
+- Logros y niveles implementados
+- Gamificación completa
+
+---
+
+### **Fase 4: Promociones y Monetización** (2 meses)
+**Objetivo**: Sistema de promociones, subscripciones, ads
+
+**Semanas 33-36: Promociones Geolocalizadas**
+- Dashboard para negocios (crear promociones)
+- Pins azules en mapa para promos activas
+- Códigos QR o códigos únicos
+- Analytics para negocios (views, claims)
+- Notificaciones de promos cercanas
+
+**Semanas 37-40: Monetización**
+- Suscripción Premium (sin ads, features exclusivos)
+- Ads entre reels (Google AdMob)
+- Comisiones por promociones canjeadas
+- Items exclusivos de pago
+- Sistema de referidos con rewards
+
+**Entregables Fase 4**:
+- Promociones geolocalizadas activas
+- Dashboard para negocios
+- Sistema de suscripción Premium
+- Ads integrados (AdMob)
+
+---
+
+### **Fase 5: Reservas y Expansión** (1 mes)
+**Objetivo**: Integración con booking, tours, multi-idioma
+
+**Semanas 41-44: Booking**
+- API de Booking.com / Expedia
+- Búsqueda de hoteles, tours, vuelos
+- Afiliación con comisión
+- Guardado de favoritos
+- Integración con planes del IA
+
+**Entregables Fase 5**:
+- Sistema de reservas integrado
+- Multi-idioma (ES, EN, PT)
+- Onboarding mejorado
+- App lista para escalar
+
+---
+
+## 🎨 Principios de UX (Nielsen Norman Group)
+
+Basado en [Complex Application Design](https://www.nngroup.com/articles/complex-application-design/):
+
+1. **Learning by Doing**: No tutoriales largos, los usuarios aprenden usando la app
+   - Primera experiencia: Abrir → Scan → Identificar algo inmediatamente
+   - Tooltips contextuales al visitar secciones por primera vez
+
+2. **Flexible Pathways**: Múltiples caminos para lograr objetivos
+   - Capturar item: Scan tab, desde mapa, desde CrazyDex, desde Cerca
+   - Ver reels: Home feed, perfil de usuario, pin en mapa, búsqueda
+
+3. **Reduce Clutter**: Esconder complejidad sin perder funcionalidad
+   - Filtros en modals/bottom sheets, no siempre visibles
+   - Staged disclosure: Ver más detalles → tap en card
+
+4. **Visual Salience**: Info importante es visualmente prominente
+   - Progress bars de CrazyDex con colores vibrantes
+   - Badges de XP y logros con animaciones
+   - Pins en mapa con iconos claros
+
+5. **Track Progress**: Usuarios ven su avance constantemente
+   - "Has capturado 45/200 items"
+   - Historial de lugares visitados con fechas
+   - Planes de viaje guardados con checkboxes
+
+---
+
+## 🏗️ Arquitectura
+
+### Navegación Principal (5 Tabs)
+
+```
+┌─────────────────────────────────────────────┐
+│  🏠 Inicio  🗺️ Mapa  📸 Scan  🎯 Cerca  👤 Yo │
+└─────────────────────────────────────────────┘
+```
+
+#### 🏠 Inicio (Home)
+Feed principal con reels de viajes, promociones destacadas y contenido de seguidos
+- Scroll vertical infinito
+- Mix de reels, posts de texto, promociones
+- Filtros: Todos | Seguidos | Tendencias
+
+#### 🗺️ Mapa
+Mapa interactivo con pins de usuarios, similar a Pokémon GO
+- Pins verdes: Items que ya capturaste
+- Pins naranjas: Items disponibles para capturar
+- Pins azules: Lugares con promociones activas
+- Tap en pin → Ver detalles del item + galería de reels de otros usuarios
+
+#### 📸 Scan
+Cámara con IA para identificar y coleccionar items
+- Modo IDENTIFY: Escanea y agrega a CrazyDex
+- Modo REEL: Graba video corto (15-60s)
+- Modo STORY: Foto/video efímero 24h
+- Detección automática de ubicación y tags
+
+#### 🎯 Cerca (Nearby)
+Contenido basado en tu ubicación actual
+- Promociones activas en la zona
+- Items disponibles para capturar
+- Eventos y concursos locales
+- "Escaneado por otros aquí" (social proof)
+
+#### 👤 Yo (Profile)
+Perfil, estadísticas, configuración
+- Mi CrazyDex con progreso
+- Mis reels y posts
+- Logros y badges
+- Planificador de viajes IA
+- Historial de lugares visitados
 
 ---
 

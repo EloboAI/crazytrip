@@ -75,7 +75,8 @@ class CrazyDexItem {
   final String imageUrl; // Emoji for now, later real images
   final int rarity; // 1-5 stars
   final int xpReward;
-  final List<String> aiLabels; // Labels for AI identification (e.g., ["bird", "toucan", "tropical"])
+  final List<String>
+  aiLabels; // Labels for AI identification (e.g., ["bird", "toucan", "tropical"])
   final DateTime? discoveredAt;
   final String? discoveryId; // ID of the Discovery where this was found
   final bool isDiscovered;
@@ -199,7 +200,9 @@ class CrazyDexProgress {
 List<CrazyDexItem> getCrazyDexItemsForDiscovery(String discoveryId) {
   final allItems = getMockCrazyDexItems();
   // Filter items that belong to this discovery
-  return allItems.where((item) => item.tags.contains('discovery_$discoveryId')).toList();
+  return allItems
+      .where((item) => item.tags.contains('discovery_$discoveryId'))
+      .toList();
 }
 
 /// Mock data generator for CrazyDex items
@@ -220,7 +223,15 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 5,
       xpReward: 1000,
       aiLabels: ['bird', 'quetzal', 'green bird', 'tropical bird'],
-      tags: ['ave', 'bird', 'green', 'maya', 'sacred', 'discovery_d1', 'discovery_d3'],
+      tags: [
+        'ave',
+        'bird',
+        'green',
+        'maya',
+        'sacred',
+        'discovery_d1',
+        'discovery_d3',
+      ],
       isDiscovered: true,
       discoveredAt: DateTime.now().subtract(const Duration(days: 5)),
       discoveryId: 'd1',
@@ -237,7 +248,14 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 3,
       xpReward: 200,
       aiLabels: ['bird', 'toucan', 'colorful bird', 'big beak'],
-      tags: ['ave', 'bird', 'tropical', 'colorful', 'discovery_d1', 'discovery_d2'],
+      tags: [
+        'ave',
+        'bird',
+        'tropical',
+        'colorful',
+        'discovery_d1',
+        'discovery_d2',
+      ],
       isDiscovered: true,
       discoveredAt: DateTime.now().subtract(const Duration(days: 3)),
       discoveryId: 'd1',
@@ -254,7 +272,15 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 2,
       xpReward: 100,
       aiLabels: ['bird', 'hummingbird', 'small bird', 'flying bird'],
-      tags: ['ave', 'bird', 'small', 'fast', 'discovery_d1', 'discovery_d2', 'discovery_d3'],
+      tags: [
+        'ave',
+        'bird',
+        'small',
+        'fast',
+        'discovery_d1',
+        'discovery_d2',
+        'discovery_d3',
+      ],
       isDiscovered: false,
     ),
     CrazyDexItem(
@@ -310,13 +336,19 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       category: CrazyDexCategory.fauna,
       description: 'Anfibio de colores brillantes y piel tóxica.',
       scientificName: 'Dendrobatidae',
-      funFact:
-          'Los indígenas usaban su veneno para las puntas de sus flechas.',
+      funFact: 'Los indígenas usaban su veneno para las puntas de sus flechas.',
       imageUrl: '🐸',
       rarity: 4,
       xpReward: 400,
       aiLabels: ['frog', 'poison dart frog', 'colorful frog', 'amphibian'],
-      tags: ['frog', 'poison', 'colorful', 'toxic', 'discovery_d2', 'discovery_d3'],
+      tags: [
+        'frog',
+        'poison',
+        'colorful',
+        'toxic',
+        'discovery_d2',
+        'discovery_d3',
+      ],
       isDiscovered: false,
     ),
 
@@ -332,7 +364,14 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 3,
       xpReward: 150,
       aiLabels: ['flower', 'orchid', 'purple flower', 'plant'],
-      tags: ['flower', 'orchid', 'purple', 'national', 'discovery_d3', 'discovery_d4'],
+      tags: [
+        'flower',
+        'orchid',
+        'purple',
+        'national',
+        'discovery_d3',
+        'discovery_d4',
+      ],
       isDiscovered: true,
       discoveredAt: DateTime.now().subtract(const Duration(days: 2)),
       discoveryId: 'd3',
@@ -363,7 +402,14 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 2,
       xpReward: 80,
       aiLabels: ['flower', 'heliconia', 'tropical flower', 'plant'],
-      tags: ['flower', 'tropical', 'red', 'yellow', 'discovery_d1', 'discovery_d4'],
+      tags: [
+        'flower',
+        'tropical',
+        'red',
+        'yellow',
+        'discovery_d1',
+        'discovery_d4',
+      ],
       isDiscovered: false,
     ),
 
@@ -434,7 +480,12 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       imageUrl: '🏛️',
       rarity: 4,
       xpReward: 300,
-      aiLabels: ['building', 'theater', 'neoclassical building', 'architecture'],
+      aiLabels: [
+        'building',
+        'theater',
+        'neoclassical building',
+        'architecture',
+      ],
       tags: ['theater', 'historic', 'neoclassical', 'sanjose', 'discovery_d10'],
       isDiscovered: false,
     ),
@@ -450,7 +501,14 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 1,
       xpReward: 50,
       aiLabels: ['food', 'rice', 'beans', 'plate', 'gallo pinto'],
-      tags: ['rice', 'beans', 'breakfast', 'traditional', 'discovery_d5', 'discovery_d6'],
+      tags: [
+        'rice',
+        'beans',
+        'breakfast',
+        'traditional',
+        'discovery_d5',
+        'discovery_d6',
+      ],
       isDiscovered: true,
       discoveredAt: DateTime.now(),
       discoveryId: 'd5',
@@ -466,7 +524,14 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       rarity: 1,
       xpReward: 50,
       aiLabels: ['food', 'plate', 'rice', 'meat', 'salad', 'casado'],
-      tags: ['plate', 'complete', 'lunch', 'traditional', 'discovery_d5', 'discovery_d6'],
+      tags: [
+        'plate',
+        'complete',
+        'lunch',
+        'traditional',
+        'discovery_d5',
+        'discovery_d6',
+      ],
       isDiscovered: true,
       discoveredAt: DateTime.now().subtract(const Duration(hours: 3)),
       discoveryId: 'd5',
