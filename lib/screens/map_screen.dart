@@ -139,32 +139,34 @@ class _MapScreenState extends State<MapScreen> {
   /// Inicia el tracking en tiempo real de la ubicación del usuario
   void _startLocationTracking() {
     // Verificar permisos antes de iniciar el stream
-    LocationService.checkPermission().then((permission) {
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        // No hay permisos, no iniciar tracking
-        return;
-      }
-
-      // Iniciar el stream de ubicación
-      _locationStreamSubscription =
-          LocationService.getLocationStream().listen(
-        (Position position) {
-          if (mounted) {
-            setState(() {
-              _userPosition = position;
-            });
-            _updateUserLocationMarker(position);
+    LocationService.checkPermission()
+        .then((permission) {
+          if (permission == LocationPermission.denied ||
+              permission == LocationPermission.deniedForever) {
+            // No hay permisos, no iniciar tracking
+            return;
           }
-        },
-        onError: (error) {
-          debugPrint('Error in location stream: $error');
-        },
-        cancelOnError: false,
-      );
-    }).catchError((error) {
-      debugPrint('Error checking permissions: $error');
-    });
+
+          // Iniciar el stream de ubicación
+          _locationStreamSubscription = LocationService.getLocationStream()
+              .listen(
+                (Position position) {
+                  if (mounted) {
+                    setState(() {
+                      _userPosition = position;
+                    });
+                    _updateUserLocationMarker(position);
+                  }
+                },
+                onError: (error) {
+                  debugPrint('Error in location stream: $error');
+                },
+                cancelOnError: false,
+              );
+        })
+        .catchError((error) {
+          debugPrint('Error checking permissions: $error');
+        });
   }
 
   /// Re-centra el mapa en la ubicación actual del usuario
