@@ -94,7 +94,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _isLoadingLocation = true;
     });
-    
+
     try {
       final position = await LocationService.getCurrentLocation();
       if (position != null && mounted) {
@@ -103,7 +103,7 @@ class _MapScreenState extends State<MapScreen> {
           _isLoadingLocation = false;
         });
         _updateUserLocationMarker(position);
-        
+
         // Centrar el mapa en la ubicación del usuario
         if (_mapController != null) {
           _mapController!.animateCamera(
@@ -148,7 +148,7 @@ class _MapScreenState extends State<MapScreen> {
           _userPosition = position;
         });
         _updateUserLocationMarker(position);
-        
+
         if (_mapController != null) {
           await _mapController!.animateCamera(
             CameraUpdate.newLatLngZoom(
