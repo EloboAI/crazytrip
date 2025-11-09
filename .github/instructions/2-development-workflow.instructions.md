@@ -15,12 +15,16 @@ applyTo: "**"
 ## 2. User Stories vs Tasks
 **When the chosen issue is a User Story:**
 - Ensure it already has Tasks (one per acceptance criterion). If any criterion lacks a Task, create it immediately, linking back to the User Story and using the parent Feature label.
-- **BEFORE asking which Task to start**: Analyze ALL Tasks for manual actions and dependencies.
-- **Create ALL required [MANUAL] Tasks FIRST** before presenting options to the developer.
-- After manual Tasks are created and identified, present the developer with:
-  1. List of manual Tasks with direct GitHub links that need completion first
-  2. List of automated Tasks in recommended execution order
+- **BEFORE presenting any response to the developer:**
+  1. Fetch ALL existing Tasks using `mcp_githubmcp_issue_read({method:"get_sub_issues", ...})`
+  2. Analyze EACH Task to identify which ones require manual actions (API keys, credentials, OAuth, etc.)
+  3. For Tasks that require manual actions but are NOT labeled `[MANUAL]`, treat them as manual Tasks regardless
+  4. Create NEW `[MANUAL]` Tasks ONLY if manual work is needed but no existing Task covers it
+- **After analyzing all Tasks, present the developer with ONE response that includes:**
+  1. List of manual Tasks (existing or newly created) with direct GitHub links in format: `https://github.com/EloboAI/crazytrip/issues/<number>`
+  2. List of automated Tasks in recommended execution order with their issue numbers
   3. Clear explanation of dependencies between tasks
+- **CRITICAL**: Do NOT give multiple responses or mention issue numbers before creating them. Complete all analysis and Task creation FIRST, then present everything in ONE single response.
 - Wait for developer to confirm manual Tasks are done before proceeding with automated Tasks.
 
 **When the chosen issue is a Task:**
@@ -28,17 +32,22 @@ applyTo: "**"
 - Compare the Task scope with the parent's acceptance criteria. If it does not match, stop and clarify.
 - Gather sibling Tasks with `mcp_githubmcp_issue_read({method:"get_sub_issues", ...})` and note their status for dependency checks.
 - **IMMEDIATELY check if this Task requires manual actions** (API keys, credentials, OAuth setup, etc.).
-- If manual actions are required, create a `[MANUAL]` Task, show the link to the developer, and STOP until they complete it.
+- If this Task OR any sibling Task requires manual actions that are not yet complete, identify the manual Task (even if not labeled `[MANUAL]`), show its link to the developer, and STOP until they complete it.
+- If no existing Task covers the manual work, create a new `[MANUAL]` Task, show the link, and STOP until they complete it.
 
 ## 3. Manual Actions
-- **ALWAYS check FIRST if the Task requires manual actions** before attempting to code anything.
-- If completing the Task requires anything the assistant cannot do (API keys, OAuth, certificates, hardware tests, billing configuration, cloud console setup, etc.), create a new `[Task] [MANUAL] ...` issue IMMEDIATELY.
+- **ALWAYS check FIRST if any Task requires manual actions** before attempting to code anything or presenting response.
+- Manual actions are ANY work that the assistant CANNOT perform, including: API keys, OAuth, certificates, hardware tests, billing, cloud console setup, etc.
+- **When analyzing Tasks for manual actions:**
+  1. Check if an existing Task (even without `[MANUAL]` label) describes work that requires manual actions
+  2. If found, treat it as a manual Task and provide its GitHub link to the developer
+  3. Create a NEW `[Task] [MANUAL] ...` issue ONLY if no existing Task covers the required manual work
 - Manual Task rules:
   - Parent is always the User Story, not the current Task.
   - Labels: `manual-action`, `AI-requirement`, plus the parent Feature label.
   - Body includes purpose, exact steps (with concrete commands), resources, and a verification checklist.
   - Link it to the User Story with `addSubIssue`, add it to the project, set Type = Task, and assign it to the user.
-  - **CRITICAL**: Show the developer the direct GitHub link to the manual Task in this format: `https://github.com/EloboAI/crazytrip/issues/<number>`
+  - **CRITICAL**: Show the developer the direct GitHub link in this format: `https://github.com/EloboAI/crazytrip/issues/<number>`
   - Explain clearly what needs to be done manually and why the assistant cannot do it.
   - **STOP and wait** until the developer confirms completion and marks the manual Task as Done in the project.
 
