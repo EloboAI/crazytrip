@@ -47,6 +47,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<Circle> _circles = {};
   bool _isLoadingLocation = true;
   StreamSubscription<Position>? _locationStreamSubscription;
+  bool _locationPermissionDenied = false;
 
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
@@ -105,11 +106,30 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
+      // Primero verificar el estado de los permisos
+      final permission = await LocationService.checkPermission();
+      
+      if (permission == LocationPermission.denied) {
+        // Permisos denegados, pero podemos pedir
+        final hasPermission = await LocationService.requestLocationPermission();
+        if (!hasPermission) {
+          // Usuario rechazó los permisos
+          _handleLocationPermissionDenied(false);
+          return;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
+        // Permisos permanentemente denegados
+        _handleLocationPermissionDenied(true);
+        return;
+      }
+
+      // Intentar obtener ubicación
       final position = await LocationService.getCurrentLocation();
       if (position != null && mounted) {
         setState(() {
           _userPosition = position;
           _isLoadingLocation = false;
+          _locationPermissionDenied = false;
         });
         _updateUserLocationMarker(position);
 
@@ -123,10 +143,13 @@ class _MapScreenState extends State<MapScreen> {
           );
         }
       } else {
-        // No se pudo obtener la ubicación
+        // No se pudo obtener la ubicación por otro motivo
         setState(() {
           _isLoadingLocation = false;
         });
+        if (mounted) {
+          _showLocationServiceDisabledDialog();
+        }
       }
     } catch (e) {
       debugPrint('Error getting user location: $e');
@@ -134,6 +157,93 @@ class _MapScreenState extends State<MapScreen> {
         _isLoadingLocation = false;
       });
     }
+  }
+
+  /// Maneja el caso cuando los permisos de ubicación son denegados
+  void _handleLocationPermissionDenied(bool permanent) {
+    setState(() {
+      _isLoadingLocation = false;
+      _locationPermissionDenied = true;
+    });
+
+    if (!mounted) return;
+
+    if (permanent) {
+      // Permisos permanentemente denegados - mostrar diálogo con opción de ir a configuración
+      _showPermissionPermanentlyDeniedDialog();
+    } else {
+      // Permisos temporalmente denegados - mostrar SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Permisos de ubicación denegados. El mapa funcionará sin tu ubicación.',
+          ),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: _getUserLocation,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Muestra un diálogo cuando los permisos están permanentemente denegados
+  void _showPermissionPermanentlyDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permisos de Ubicación Requeridos'),
+        content: const Text(
+          'Para mostrar tu ubicación en el mapa, necesitamos acceso a tu ubicación.\n\n'
+          'Has denegado permanentemente los permisos. Por favor, ve a Configuración '
+          'y habilita los permisos de ubicación para esta app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Ahora No'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await LocationService.openAppSettings();
+            },
+            child: const Text('Ir a Configuración'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Muestra un diálogo cuando el servicio de ubicación está deshabilitado
+  void _showLocationServiceDisabledDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Servicio de Ubicación Deshabilitado'),
+        content: const Text(
+          'El servicio de ubicación está deshabilitado en tu dispositivo.\n\n'
+          'Por favor, habilítalo en Configuración para usar la funcionalidad de ubicación.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Ahora No'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await LocationService.openLocationSettings();
+            },
+            child: const Text('Abrir Configuración'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Inicia el tracking en tiempo real de la ubicación del usuario
@@ -390,6 +500,8 @@ class _MapScreenState extends State<MapScreen> {
                 _buildSearchBar(),
                 const SizedBox(height: AppSpacing.s),
                 _buildFilterChips(),
+                // Banner de permisos denegados
+                if (_locationPermissionDenied) _buildPermissionDeniedBanner(),
               ],
             ),
           ),
@@ -411,6 +523,67 @@ class _MapScreenState extends State<MapScreen> {
                 child: const Icon(Icons.my_location, size: 28),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionDeniedBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+        border: Border.all(
+          color: colorScheme.error.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_off,
+            color: colorScheme.onErrorContainer,
+            size: 24,
+          ),
+          const SizedBox(width: AppSpacing.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ubicación deshabilitada',
+                  style: AppTextStyles.titleSmall.copyWith(
+                    color: colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'El mapa funciona, pero no verás tu ubicación',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s),
+          IconButton(
+            onPressed: () async {
+              await LocationService.openAppSettings();
+            },
+            icon: Icon(
+              Icons.settings,
+              color: colorScheme.onErrorContainer,
+            ),
+            tooltip: 'Ir a Configuración',
+          ),
         ],
       ),
     );
