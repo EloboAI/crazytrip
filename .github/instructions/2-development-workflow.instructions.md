@@ -172,29 +172,43 @@ Actions that ALWAYS require human intervention:
 - If it is in a different iteration, ask the developer whether to move it before changing anything.
 
 ## 6. Working Within Scope
-- Implement only what is in the issue title, acceptance criteria, or technical tasks.
+- **CRITICAL**: Implement ONLY ONE Task at a time. Never work on multiple Tasks simultaneously.
+- **CRITICAL**: After completing a Task, STOP and ask the developer which Task to tackle next.
+- Implement only what is in the CURRENT Task's title and technical tasks list.
+- If you notice related work in other Tasks, mention it but DO NOT implement it.
 - Reject or escalate out-of-scope requests: offer to switch issues, open a new one, or stay within scope.
 - Keep code consistent with project standards (Theme colors, Material 3, existing widgets, accessibility, etc.).
 
 ## 7. During Implementation
+- **CRITICAL**: At the START of EVERY action (file read, file edit, command execution), state: "**[Task #X]** - [Brief description of what you're doing]"
+- **CRITICAL**: After EACH significant action (not just at the end), add a progress comment to the Task issue using `mcp_githubmcp_add_issue_comment`
 - Use theme-aware colors and shared styles; never hardcode palette values.
 - Test results in light and dark themes and cover edge cases relevant to the work item.
 - Keep changes constrained to the affected feature; avoid broad refactors unless explicitly requested and approved.
+- **CRITICAL**: As you complete technical subtasks within the Task, add comments documenting what was done.
 
 ## 8. Completion Flow
-1. Wait for the developer to confirm the work is finished.
-2. Close the issue via `mcp_githubmcp_issue_write` (state = closed, state_reason = completed when appropriate).
-3. Update the project Status field to `Done` using the provided field/option IDs.
-4. Review parent links:
-   - For Tasks: if all sibling Tasks are closed and criteria met, close the User Story.
-   - For User Stories: if all siblings are closed, close the Feature.
-   - Apply the same logic recursively up the hierarchy.
-5. Communicate what closed, what remains open, and suggest the next logical Task/User Story with a short rationale.
+1. **CRITICAL**: When ALL technical tasks in the current Task are completed:
+   a. Add a final completion comment to the Task issue
+   b. Ask the developer to verify the implementation
+2. **ONLY after developer confirms the Task is complete:**
+   a. Close the Task via `mcp_githubmcp_issue_write` (state = closed, state_reason = completed)
+   b. Update the project Status field to `Done` using the GraphQL API with proper project item ID
+   c. Check the parent User Story's acceptance criteria checkboxes
+3. **After closing the Task:**
+   a. Fetch all sibling Tasks to check their status
+   b. If all sibling Tasks are closed AND all acceptance criteria are met, ask developer if you should close the User Story
+   c. If User Story can be closed, follow the same pattern: close issue, update project status, check parent Feature
+4. **CRITICAL**: Never close multiple issues in one turn. Close one Task, ask developer what's next.
+5. Communicate what was closed, what remains open, and suggest the next logical Task with a short rationale.
 
 ## 9. Communication Reference
-- Report progress succinctly, highlighting status of parents and remaining siblings when relevant.
-- After finishing a Task, list outstanding Tasks from the same User Story and recommend an order (with reasoning) so the developer can pick the next item.
+- **CRITICAL**: Always prefix your actions with the Task number: "**[Task #X]** - Action description"
+- Report progress after EACH significant action, not just at the end
+- After finishing a Task and closing it, list outstanding Tasks from the same User Story
+- Recommend the next Task with reasoning (dependencies, logical order)
 - If blocked or out of scope, explain the reason and offer concrete options.
+- **CRITICAL**: Keep the developer informed throughout the process, not just at the beginning and end
 
 ## 10. Critical Rules
 1. Always ask for the work item first and read it fully.
@@ -205,8 +219,11 @@ Actions that ALWAYS require human intervention:
 6. Always validate dependencies (blocked issues, sibling Tasks/User Stories, manual prerequisites).
 7. Always ensure the issue is in the correct iteration before starting.
 8. Always respect scope; escalate anything outside it.
-9. Always close issues only after explicit developer confirmation and status updates in the project.
-10. Always communicate next steps and rationale after completing work.
-11. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
-12. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
-13. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
+9. **CRITICAL**: Always work on ONE Task at a time. Never implement multiple Tasks without explicit developer approval.
+10. **CRITICAL**: Always prefix actions with "**[Task #X]**" so developer knows what you're working on.
+11. **CRITICAL**: Always add progress comments to the Task issue as you work, not just at the end.
+12. **CRITICAL**: Always close Task issues and update project status ONLY after developer confirmation.
+13. Always communicate next steps and rationale after completing work.
+14. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
+15. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
+16. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
