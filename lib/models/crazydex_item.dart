@@ -107,8 +107,8 @@ class CrazyDexItem {
     this.tags = const [],
     double? latitude,
     double? longitude,
-  }) : latitude = latitude ?? 10.2099277,
-       longitude = longitude ?? -84.0147707;
+  }) : latitude = latitude ?? 10.1924067,
+       longitude = longitude ?? -83.8256565;
 
   /// Get rarity display name
   String get rarityName {

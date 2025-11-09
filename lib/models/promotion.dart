@@ -65,8 +65,8 @@ class Promotion {
        discountPercent = discountPercent ?? 0,
        maxClaims = maxClaims ?? 100,
        claims = claims ?? 0,
-       latitude = latitude ?? 10.2099277,
-       longitude = longitude ?? -84.0147707;
+       latitude = latitude ?? 10.1924067,
+       longitude = longitude ?? -83.8256565;
 
   /// Check if promotion is currently active
   bool get isActive {
@@ -184,8 +184,8 @@ List<Promotion> getMockPromotions() {
       linkedAchievementId: 'ach_4',
       isParticipating: true,
       userProgress: 7,
-      latitude: 10.2099277,
-      longitude: -84.0147707,
+      latitude: 10.1924067,
+      longitude: -83.8256565,
     ),
     Promotion(
       id: 'promo_2',

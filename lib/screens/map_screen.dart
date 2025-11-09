@@ -54,7 +54,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   // Posición inicial del mapa (Guápiles, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(10.2099277, -84.0147707),
+    target: LatLng(10.1924067, -83.8256565),
     zoom: 14.0,
   );
 
