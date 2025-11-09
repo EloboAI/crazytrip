@@ -24,7 +24,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   MapViewMode _viewMode = MapViewMode.map;
   final Set<MapFilter> _activeFilters = {
     MapFilter.promotions,
@@ -63,6 +63,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadMapData();
     _loadMapStyles();
     _getUserLocation();
@@ -71,6 +72,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _locationStreamSubscription?.cancel();
     super.dispose();
   }
@@ -82,6 +84,46 @@ class _MapScreenState extends State<MapScreen> {
     if (_mapController != null) {
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
       _applyMapStyle(themeProvider.isDarkMode);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Cuando la app vuelve a primer plano, re-verificar permisos
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissionsOnResume();
+    }
+  }
+
+  /// Verifica y actualiza el estado de permisos cuando la app vuelve a primer plano
+  Future<void> _checkPermissionsOnResume() async {
+    final permission = await LocationService.checkPermission();
+    final isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      // Permisos concedidos
+      if (_locationPermissionDenied && mounted) {
+        // El usuario activó los permisos, actualizar estado
+        setState(() {
+          _locationPermissionDenied = false;
+        });
+
+        // Reintentar obtener ubicación y reiniciar tracking
+        if (isLocationServiceEnabled) {
+          await _getUserLocation();
+          _startLocationTracking();
+        }
+      }
+    } else {
+      // Permisos aún denegados
+      if (!_locationPermissionDenied && mounted) {
+        setState(() {
+          _locationPermissionDenied = true;
+        });
+      }
     }
   }
 
@@ -512,7 +554,11 @@ class _MapScreenState extends State<MapScreen> {
           if (_viewMode == MapViewMode.map) _buildBottomSheet(),
 
           // My Location Button (FloatingActionButton)
-          if (_viewMode == MapViewMode.map && !_isLoadingLocation)
+          // Solo mostrar si: modo mapa, no loading, permisos OK, y tenemos ubicación
+          if (_viewMode == MapViewMode.map &&
+              !_isLoadingLocation &&
+              !_locationPermissionDenied &&
+              _userPosition != null)
             Positioned(
               right: AppSpacing.m,
               bottom: 320, // Encima del bottom sheet
