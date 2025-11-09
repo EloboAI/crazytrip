@@ -47,5 +47,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Location permissions for Google Maps -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>La aplicación necesita acceso a tu ubicación para mostrar tu posición en el mapa.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>La aplicación necesita acceso a tu ubicación para mostrarte lugares cercanos y funciones basadas en ubicación.</string>
 </dict>
 </plist>

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../providers/theme_provider.dart';
 import '../models/promotion.dart';
 import '../models/crazydex_item.dart';
 import '../models/discovery.dart';
@@ -26,6 +30,19 @@ class _MapScreenState extends State<MapScreen> {
   };
   double _searchRadius = 5.0; // km por defecto
   String _searchQuery = '';
+  
+  // Google Maps Controller
+  GoogleMapController? _mapController;
+  
+  // Map styles
+  String? _lightMapStyle;
+  String? _darkMapStyle;
+  
+  // Posición inicial del mapa (San José, Costa Rica)
+  static const CameraPosition _initialPosition = CameraPosition(
+    target: LatLng(9.9281, -84.0907),
+    zoom: 14.0,
+  );
 
   // Mock data
   late List<Promotion> _promotions;
@@ -36,6 +53,31 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _loadMapData();
+    _loadMapStyles();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Actualizar el estilo del mapa cuando cambia el tema
+    if (_mapController != null) {
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      _applyMapStyle(themeProvider.isDarkMode);
+    }
+  }
+
+  Future<void> _loadMapStyles() async {
+    try {
+      _lightMapStyle = await rootBundle.loadString(
+        'assets/map_styles/light_map_style.json',
+      );
+      _darkMapStyle = await rootBundle.loadString(
+        'assets/map_styles/dark_map_style.json',
+      );
+      setState(() {});
+    } catch (e) {
+      debugPrint('Error loading map styles: $e');
+    }
   }
 
   void _loadMapData() {
@@ -251,44 +293,40 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildMapView() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colorScheme.tertiaryContainer, colorScheme.surface],
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.map, size: 120, color: colorScheme.outline),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              'Vista de Mapa',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Integración de Google Maps aquí',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              '${_filteredContent.length} items en ${_searchRadius.toInt()}km',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    
+    return GoogleMap(
+      initialCameraPosition: _initialPosition,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: true,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
+      compassEnabled: true,
+      // Gestos de interacción habilitados
+      zoomGesturesEnabled: true,
+      scrollGesturesEnabled: true,
+      tiltGesturesEnabled: true,
+      rotateGesturesEnabled: true,
+      minMaxZoomPreference: const MinMaxZoomPreference(10.0, 20.0),
+      onMapCreated: (GoogleMapController controller) {
+        _mapController = controller;
+        _applyMapStyle(isDark);
+      },
     );
+  }
+  
+  Future<void> _applyMapStyle(bool isDark) async {
+    if (_mapController == null) return;
+    
+    try {
+      final style = isDark ? _darkMapStyle : _lightMapStyle;
+      if (style != null) {
+        await _mapController!.setMapStyle(style);
+      }
+    } catch (e) {
+      debugPrint('Error applying map style: $e');
+    }
   }
 
   Widget _buildListView() {

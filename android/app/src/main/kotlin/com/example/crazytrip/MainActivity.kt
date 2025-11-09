@@ -1,4 +1,4 @@
-package com.example.crazytrip
+package com.info.crazytrip
 
 import io.flutter.embedding.android.FlutterActivity
 
