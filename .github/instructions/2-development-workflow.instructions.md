@@ -275,20 +275,36 @@ echo "$ISSUE_DATA" | jq -r '.body' | grep -i "blocks"
 If "Blocked by" relationship exists:
 
 ```bash
-# Get blocking issue status
+# Get blocking issue state and project status
 BLOCKING_ISSUE_NUM=<number_from_blocked_by>
-BLOCKING_STATUS=$(./gh api repos/EloboAI/crazytrip/issues/$BLOCKING_ISSUE_NUM --jq '{state: .state, state_reason: .state_reason, title: .title}')
+ISSUE_STATE=$(./gh api repos/EloboAI/crazytrip/issues/$BLOCKING_ISSUE_NUM --jq '.state')
+PROJECT_STATUS=$(./gh api graphql -f query="{
+  repository(owner: \"EloboAI\", name: \"crazytrip\") {
+    issue(number: $BLOCKING_ISSUE_NUM) {
+      projectItems(first: 10) {
+        nodes {
+          fieldValueByName(name: \"Status\") {
+            ... on ProjectV2ItemFieldSingleSelectValue {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}" --jq '.data.repository.issue.projectItems.nodes[] | select(.fieldValueByName != null) | .fieldValueByName.name' | head -1)
 
-echo "$BLOCKING_STATUS"
+echo "State: $ISSUE_STATE"
+echo "Project Status: ${PROJECT_STATUS:-Unassigned}"
 ```
 
 ✅ **Safe to proceed if:**
-- Blocking issue state is `closed` with `state_reason: "completed"`
+- Issue state is `closed` **and** project status is `Done`
 → **Continue to Step 4**
 
 ❌ **BLOCKED - Cannot proceed if:**
-- Blocking issue state is `open`
-- Blocking issue state is `closed` with `state_reason: "not_planned"`
+- Issue state is `open`
+- Project status is empty or different from `Done`
 → **STOP and inform the developer:**
 
 ```
@@ -770,6 +786,9 @@ Una vez terminado, por favor:
 ¿Quieres ver los detalles del Task manual ahora?
 ```
 
+Incluye siempre el enlace directo al issue para que el usuario pueda abrirlo rápidamente:
+`https://github.com/EloboAI/crazytrip/issues/<new_task_number>`
+
 #### Common Manual Task Patterns
 
 **Pattern 1: API Key Configuration**
@@ -849,21 +868,35 @@ Verification:
 
 When user indicates they completed a manual Task (e.g., "ya está listo", "terminé", "está completo"):
 
-**Step 1: Verify the Task is marked as Done/Closed**
+**Step 1: Verify the Task is marked as `Done` in the project**
 
 ```bash
-# Check if the manual task is closed
-./gh api repos/EloboAI/crazytrip/issues/<manual_task_number> --jq '{state: .state, state_reason: .state_reason}'
+ISSUE_NUMBER=<manual_task_number>
+./gh api graphql -f query='{
+  repository(owner: "EloboAI", name: "crazytrip") {
+    issue(number: ISSUE_NUMBER) {
+      projectItems(first: 10) {
+        nodes {
+          fieldValueByName(name: "Status") {
+            ... on ProjectV2ItemFieldSingleSelectValue {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.issue.projectItems.nodes[] | select(.fieldValueByName != null) | .fieldValueByName.name'
 ```
 
-✅ **If Task state is `closed` with `state_reason: "completed"`:**
-- Thank the user for completing it
-- Continue with the original Task that required the manual action
-- Update any documentation or configuration files as needed
+✅ **If Status devuelve `"Done"`:**
+- Agradece al usuario por completarlo
+- Continúa con el Task técnico que dependía de esta acción manual
+- Actualiza cualquier archivo o configuración dependiente si es necesario
 
-❌ **If Task is still `open`:**
-- Inform user that the Task is not marked as completed in GitHub
-- Ask them to close it or confirm they want you to close it
+❌ **Si el resultado no es `"Done"` o no hay valor:**
+- Informa al usuario que el Task todavía no está marcado como `Done`
+- Pídele que actualice el Status del issue en el proyecto antes de continuar
 
 **Step 2: Verify completion through dialogue**
 
@@ -965,18 +998,54 @@ Wait for the developer to confirm the work is complete. Look for phrases like:
 
 ### 2. Mark Task as Completed
 
-Once developer confirms, close the task with `completed` state reason:
+Once developer confirms:
 
-```javascript
-mcp_githubmcp_issue_write({
-  method: "update",
-  owner: "EloboAI",
-  repo: "crazytrip",
-  issue_number: <number>,
-  state: "closed",
-  state_reason: "completed"
-})
-```
+1. **Cierra el issue en GitHub:**
+
+   ```javascript
+   mcp_githubmcp_issue_write({
+     method: "update",
+     owner: "EloboAI",
+     repo: "crazytrip",
+     issue_number: <number>,
+     state: "closed"
+   })
+   ```
+
+2. **Actualiza el Status del item en el proyecto a `Done`:**
+
+   ```bash
+   PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+   STATUS_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RobA"
+   STATUS_DONE_OPTION="98236657"
+   ISSUE_NUMBER=<number>
+
+   PROJECT_ITEM_ID=$(./gh api graphql -f query="{
+     repository(owner: \"EloboAI\", name: \"crazytrip\") {
+       issue(number: $ISSUE_NUMBER) {
+         projectItems(first: 10) {
+           nodes {
+             id
+             project {
+               id
+             }
+           }
+         }
+       }
+     }
+   }" --jq '.data.repository.issue.projectItems.nodes[] | select(.project.id == "'$PROJECT_ID'") | .id')
+
+   ./gh api graphql -f query="mutation {
+     updateProjectV2ItemFieldValue(input: {
+       projectId: \"$PROJECT_ID\"
+       itemId: \"$PROJECT_ITEM_ID\"
+       fieldId: \"$STATUS_FIELD_ID\"
+       value: { singleSelectOptionId: \"$STATUS_DONE_OPTION\" }
+     }) {
+       projectV2Item { id }
+     }
+   }"
+   ```
 
 ### 3. Check Parent and Siblings
 
@@ -997,7 +1066,7 @@ mcp_githubmcp_issue_read({
 
 #### Verify All Siblings are Complete
 Check the state of all sub-issues:
-- If ALL sub-issues are `closed` with `state_reason: "completed"`
+- If ALL sub-issues están cerrados **y** su Status en el proyecto es `Done`
 - AND all acceptance criteria in parent are checked (`[x]`)
 - THEN proceed to close the parent
 
@@ -1089,16 +1158,8 @@ Reason: Ambos son independientes, puedes elegir cualquiera
 ### 5. Close Parent if Complete
 
 **For User Stories:**
-```javascript
-mcp_githubmcp_issue_write({
-  method: "update",
-  owner: "EloboAI",
-  repo: "crazytrip",
-  issue_number: <parent_number>,
-  state: "closed",
-  state_reason: "completed"
-})
-```
+1. Cierra el issue del User Story (`state: "closed"`).
+2. Actualiza el Status del item en el proyecto a `Done` usando `STATUS_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RobA"` y `STATUS_DONE_OPTION="98236657"` (mismo proceso descrito en §2 paso 2).
 
 **Inform the developer:**
 ```
@@ -1151,8 +1212,8 @@ Before closing any work item:
 
 ```
 Developer says: "Ya está lista la tarea #X"
-    ↓
-Close Task #X with state_reason: "completed"
+  ↓
+Close Task #X (state: "closed" + Status "Done")
     ↓
 Check: Does Task have **Parent:** reference?
     ├─ NO → Report: "✅ Task completed (no parent)"
@@ -1165,7 +1226,7 @@ Check: Does Task have **Parent:** reference?
             ├─ NO → Report: "✅ Task completed. Parent #P has X pending tasks"
             │        Suggest next task
             │        END
-            └─ YES → Close Parent #P with state_reason: "completed"
+            └─ YES → Close Parent #P (state: "closed" + Status "Done")
                     ↓
                 Check: Does Parent have grandparent?
                     ├─ NO → Report: "✅ Task and Parent completed"
@@ -1234,7 +1295,7 @@ After completing work:
 18. ✅ **ALWAYS** explain why the suggested work item should be next
 19. ✅ **ALWAYS** check parent-child relationships
 20. ✅ **ALWAYS** verify all siblings before closing parent
-21. ✅ **ALWAYS** use `state_reason: "completed"` when closing
+21. ✅ **ALWAYS** set project Status to `Done` when closing an issue
 22. ❌ **NEVER** work on blocked User Stories without resolving blockers
 23. ❌ **NEVER** work on misaligned Tasks without developer confirmation
 24. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
