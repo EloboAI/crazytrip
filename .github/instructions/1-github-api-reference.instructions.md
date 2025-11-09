@@ -119,6 +119,183 @@ mcp_githubmcp_issue_write({
 })
 ```
 
+## Project Status Management
+
+### Status Field Information
+
+The project has a **Status** field that tracks the current state of each work item:
+
+- **Field ID**: `PVTSSF_lAHOCi99Ic4BHjd7zg4RobA`
+- **Project ID**: `PVT_kwHOCi99Ic4BHjd7`
+
+### Available Status Values
+
+| Status | Option ID | When to Use |
+|--------|-----------|-------------|
+| Backlog | `f75ad846` | Item hasn't been started |
+| Ready | `08afe404` | Item is ready to be picked up |
+| In progress | `47fc9ee4` | Currently being worked on |
+| In review | `4cc61d42` | Completed and awaiting review |
+| Done | `98236657` | Fully completed and verified |
+
+### Updating Issue Status
+
+**CRITICAL**: Always update the project status when starting or completing work on an issue.
+
+#### Before Starting Work (Set to "In progress")
+
+Use GraphQL API via `./gh`:
+
+```bash
+# Get issue node ID and project item ID
+ISSUE_NUM=123
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+STATUS_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RobA"
+IN_PROGRESS_ID="47fc9ee4"
+
+NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
+
+# Add to project if not already added
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$NODE_ID\"
+  }) {
+    item {
+      id
+    }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+
+# Update status to In progress
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$STATUS_FIELD_ID\"
+    value: {singleSelectOptionId: \"$IN_PROGRESS_ID\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+#### When Requesting Review (Set to "In review")
+
+```bash
+IN_REVIEW_ID="4cc61d42"
+
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$STATUS_FIELD_ID\"
+    value: {singleSelectOptionId: \"$IN_REVIEW_ID\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+#### After Completion (Set to "Done")
+
+```bash
+DONE_ID="98236657"
+
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$STATUS_FIELD_ID\"
+    value: {singleSelectOptionId: \"$DONE_ID\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+### Complete Workflow Example
+
+```bash
+# 1. Start working on Task #200
+ISSUE_NUM=200
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+STATUS_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RobA"
+
+# Get node ID
+NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
+
+# Add to project
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$NODE_ID\"
+  }) {
+    item { id }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+
+# Set status to "In progress"
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$STATUS_FIELD_ID\"
+    value: {singleSelectOptionId: \"47fc9ee4\"}
+  }) {
+    projectV2Item { id }
+  }
+}" > /dev/null
+
+echo "✅ Task #$ISSUE_NUM: Status set to 'In progress'"
+
+# ... do the work ...
+
+# 2. When done, set status to "Done"
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$STATUS_FIELD_ID\"
+    value: {singleSelectOptionId: \"98236657\"}
+  }) {
+    projectV2Item { id }
+  }
+}" > /dev/null
+
+echo "✅ Task #$ISSUE_NUM: Status set to 'Done'"
+
+# 3. Close the issue
+./gh api graphql -f query="
+mutation {
+  closeIssue(input: {
+    issueId: \"$NODE_ID\"
+    stateReason: COMPLETED
+  }) {
+    issue { id }
+  }
+}" > /dev/null
+
+echo "✅ Task #$ISSUE_NUM: Issue closed"
+```
+
 ## Iteration Management
 
 ### Project Structure

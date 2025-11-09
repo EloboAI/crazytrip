@@ -11,6 +11,7 @@ applyTo: "**"
 - Fetch the issue with `./gh api repos/EloboAI/crazytrip/issues/<number>` and read title, body, parent reference, acceptance criteria, and technical tasks.
 - Work only inside GitHub issues (Epic → Feature → User Story → Task). Never code without an explicit issue.
 - **CRITICAL**: After fetching the issue, ALWAYS analyze it completely BEFORE listing options or asking which task to do.
+- **CRITICAL**: BEFORE starting ANY work, update the issue status to "In progress" in the project using the GraphQL API (see section 6).
 
 ## 2. User Stories vs Tasks
 
@@ -171,7 +172,49 @@ Actions that ALWAYS require human intervention:
 - If no iteration is set, automatically assign the current iteration using the IDs from the API reference.
 - If it is in a different iteration, ask the developer whether to move it before changing anything.
 
-## 6. Working Within Scope
+## 6. Project Status Management
+
+**CRITICAL**: Update project status at EVERY key milestone:
+
+### When Starting Work
+Before implementing ANYTHING:
+```bash
+ISSUE_NUM=<issue_number>
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+STATUS_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RobA"
+IN_PROGRESS_ID="47fc9ee4"
+
+NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
+ITEM_RESULT=$(./gh api graphql -f query="mutation { addProjectV2ItemById(input: {projectId: \"$PROJECT_ID\" contentId: \"$NODE_ID\"}) { item { id } } }")
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+./gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: {projectId: \"$PROJECT_ID\" itemId: \"$PROJECT_ITEM_ID\" fieldId: \"$STATUS_FIELD_ID\" value: {singleSelectOptionId: \"$IN_PROGRESS_ID\"}}) { projectV2Item { id } } }" > /dev/null
+echo "✅ Status set to 'In progress'"
+```
+
+### When Requesting Review
+After completing work but before developer verification:
+```bash
+IN_REVIEW_ID="4cc61d42"
+./gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: {projectId: \"$PROJECT_ID\" itemId: \"$PROJECT_ITEM_ID\" fieldId: \"$STATUS_FIELD_ID\" value: {singleSelectOptionId: \"$IN_REVIEW_ID\"}}) { projectV2Item { id } } }" > /dev/null
+echo "✅ Status set to 'In review'"
+```
+
+### After Developer Confirms Completion
+Only after developer verification:
+```bash
+DONE_ID="98236657"
+./gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: {projectId: \"$PROJECT_ID\" itemId: \"$PROJECT_ITEM_ID\" fieldId: \"$STATUS_FIELD_ID\" value: {singleSelectOptionId: \"$DONE_ID\"}}) { projectV2Item { id } } }" > /dev/null
+echo "✅ Status set to 'Done'"
+```
+
+**Status Values:**
+- `Backlog` (`f75ad846`): Not started
+- `Ready` (`08afe404`): Ready to pick up
+- `In progress` (`47fc9ee4`): Currently working
+- `In review` (`4cc61d42`): Awaiting verification
+- `Done` (`98236657`): Completed and verified
+
+## 7. Working Within Scope
 - **CRITICAL**: Implement ONLY ONE Task at a time. Never work on multiple Tasks simultaneously.
 - **CRITICAL**: After completing a Task, STOP and ask the developer which Task to tackle next.
 - Implement only what is in the CURRENT Task's title and technical tasks list.
@@ -179,7 +222,7 @@ Actions that ALWAYS require human intervention:
 - Reject or escalate out-of-scope requests: offer to switch issues, open a new one, or stay within scope.
 - Keep code consistent with project standards (Theme colors, Material 3, existing widgets, accessibility, etc.).
 
-## 7. During Implementation
+## 8. During Implementation
 - **CRITICAL**: At the START of EVERY action (file read, file edit, command execution), state: "**[Task #X]** - [Brief description of what you're doing]"
 - **CRITICAL**: After EACH significant action (not just at the end), add a progress comment to the Task issue using `mcp_githubmcp_add_issue_comment`
 - Use theme-aware colors and shared styles; never hardcode palette values.
@@ -187,22 +230,23 @@ Actions that ALWAYS require human intervention:
 - Keep changes constrained to the affected feature; avoid broad refactors unless explicitly requested and approved.
 - **CRITICAL**: As you complete technical subtasks within the Task, add comments documenting what was done.
 
-## 8. Completion Flow
+## 9. Completion Flow
 1. **CRITICAL**: When ALL technical tasks in the current Task are completed:
    a. Add a final completion comment to the Task issue
-   b. Ask the developer to verify the implementation
+   b. Update project status to "In review" using GraphQL API
+   c. Ask the developer to verify the implementation
 2. **ONLY after developer confirms the Task is complete:**
-   a. Close the Task via `mcp_githubmcp_issue_write` (state = closed, state_reason = completed)
-   b. Update the project Status field to `Done` using the GraphQL API with proper project item ID
+   a. Update the project Status field to `Done` using the GraphQL API with proper project item ID
+   b. Close the Task via `mcp_githubmcp_issue_write` (state = closed, state_reason = completed)
    c. Check the parent User Story's acceptance criteria checkboxes
 3. **After closing the Task:**
    a. Fetch all sibling Tasks to check their status
    b. If all sibling Tasks are closed AND all acceptance criteria are met, ask developer if you should close the User Story
-   c. If User Story can be closed, follow the same pattern: close issue, update project status, check parent Feature
+   c. If User Story can be closed, follow the same pattern: update status to Done, close issue, check parent Feature
 4. **CRITICAL**: Never close multiple issues in one turn. Close one Task, ask developer what's next.
 5. Communicate what was closed, what remains open, and suggest the next logical Task with a short rationale.
 
-## 9. Communication Reference
+## 10. Communication Reference
 - **CRITICAL**: Always prefix your actions with the Task number: "**[Task #X]** - Action description"
 - Report progress after EACH significant action, not just at the end
 - After finishing a Task and closing it, list outstanding Tasks from the same User Story
@@ -210,7 +254,7 @@ Actions that ALWAYS require human intervention:
 - If blocked or out of scope, explain the reason and offer concrete options.
 - **CRITICAL**: Keep the developer informed throughout the process, not just at the beginning and end
 
-## 10. Critical Rules
+## 11. Critical Rules
 1. Always ask for the work item first and read it fully.
 2. Always create missing Tasks for User Stories before coding.
 3. Always analyze Tasks to determine if they are fully manual, fully automated, or partially manual.
@@ -222,8 +266,9 @@ Actions that ALWAYS require human intervention:
 9. **CRITICAL**: Always work on ONE Task at a time. Never implement multiple Tasks without explicit developer approval.
 10. **CRITICAL**: Always prefix actions with "**[Task #X]**" so developer knows what you're working on.
 11. **CRITICAL**: Always add progress comments to the Task issue as you work, not just at the end.
-12. **CRITICAL**: Always close Task issues and update project status ONLY after developer confirmation.
-13. Always communicate next steps and rationale after completing work.
-14. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
-15. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
-16. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
+12. **CRITICAL**: Always update project status to "In progress" BEFORE starting work, "In review" AFTER completing work, and "Done" ONLY after developer confirmation.
+13. **CRITICAL**: Always close Task issues ONLY after updating project status to Done and getting developer confirmation.
+14. Always communicate next steps and rationale after completing work.
+15. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
+16. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
+17. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
