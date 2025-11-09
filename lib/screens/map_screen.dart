@@ -49,6 +49,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   StreamSubscription<Position>? _locationStreamSubscription;
   bool _locationPermissionDenied = false;
 
+  // Selected item for bottom sheet
+  dynamic _selectedItem;
+
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(9.9281, -84.0907),
@@ -440,6 +443,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     _promotions = getMockPromotions().where((p) => p.isActive).toList();
     _items = getMockCrazyDexItems().where((i) => !i.isDiscovered).toList();
     _places = Discovery.getMockDiscoveries();
+    _updateContentMarkers();
   }
 
   List<dynamic> get _filteredContent {
@@ -491,6 +495,117 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     }
 
     return content;
+  }
+
+  /// Actualiza los marcadores del mapa según el contenido filtrado
+  void _updateContentMarkers() {
+    // Remover marcadores previos de contenido (mantener usuario)
+    _markers.removeWhere((marker) => marker.markerId.value != 'user_location');
+
+    final content = _filteredContent;
+    
+    for (int i = 0; i < content.length; i++) {
+      final item = content[i];
+      
+      if (item is Promotion) {
+        _addPromotionMarker(item, i);
+      } else if (item is CrazyDexItem) {
+        _addItemMarker(item, i);
+      } else if (item is Discovery) {
+        _addPlaceMarker(item, i);
+      }
+    }
+    
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Agrega un marcador para una promoción
+  void _addPromotionMarker(Promotion promotion, int index) {
+    // Generar posición aleatoria cercana al usuario o posición inicial
+    final baseLatLng = _userPosition != null
+        ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+        : _initialPosition.target;
+    
+    // Offset aleatorio de ±0.02 grados (~2km)
+    final random = (index * 13) % 100; // Pseudo-random basado en índice
+    final latOffset = ((random % 40) - 20) * 0.001;
+    final lngOffset = (((random * 7) % 40) - 20) * 0.001;
+    
+    final position = LatLng(
+      baseLatLng.latitude + latOffset,
+      baseLatLng.longitude + lngOffset,
+    );
+    
+    final marker = Marker(
+      markerId: MarkerId('promotion_$index'),
+      position: position,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+      infoWindow: InfoWindow(
+        title: '💰 ${promotion.businessName}',
+        snippet: '${promotion.discountPercent}% OFF - Toca para más info',
+      ),
+      onTap: () {
+        setState(() {
+          _selectedItem = promotion;
+        });
+      },
+    );
+    _markers.add(marker);
+  }
+
+  /// Agrega un marcador para un item del CrazyDex
+  void _addItemMarker(CrazyDexItem item, int index) {
+    // Generar posición aleatoria cercana al usuario o posición inicial
+    final baseLatLng = _userPosition != null
+        ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+        : _initialPosition.target;
+    
+    // Offset aleatorio de ±0.015 grados (~1.5km)
+    final random = (index * 17 + 50) % 100; // Pseudo-random diferente a promociones
+    final latOffset = ((random % 30) - 15) * 0.001;
+    final lngOffset = (((random * 11) % 30) - 15) * 0.001;
+    
+    final position = LatLng(
+      baseLatLng.latitude + latOffset,
+      baseLatLng.longitude + lngOffset,
+    );
+    
+    final marker = Marker(
+      markerId: MarkerId('item_$index'),
+      position: position,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+      infoWindow: InfoWindow(
+        title: '🔍 ${item.name}',
+        snippet: '${'⭐' * item.rarity} - Toca para más info',
+      ),
+      onTap: () {
+        setState(() {
+          _selectedItem = item;
+        });
+      },
+    );
+    _markers.add(marker);
+  }
+
+  /// Agrega un marcador para un lugar descubierto
+  void _addPlaceMarker(Discovery place, int index) {
+    final marker = Marker(
+      markerId: MarkerId('place_$index'),
+      position: LatLng(place.latitude, place.longitude),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      infoWindow: InfoWindow(
+        title: '📍 ${place.name}',
+        snippet: '${place.crazyDexItemsCollected}/${place.crazyDexItemsAvailable} items - Toca para más info',
+      ),
+      onTap: () {
+        setState(() {
+          _selectedItem = place;
+        });
+      },
+    );
+    _markers.add(marker);
   }
 
   @override
@@ -551,8 +666,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
             ),
           ),
 
-          // Bottom sheet with results
-          if (_viewMode == MapViewMode.map) _buildBottomSheet(),
+          // Bottom sheet with selected item details (solo en modo mapa)
+          if (_viewMode == MapViewMode.map && _selectedItem != null)
+            _buildSelectedItemBottomSheet(),
 
           // My Location Button (FloatingActionButton)
           // Solo mostrar si: modo mapa, no loading, permisos OK, y tenemos ubicación
@@ -674,7 +790,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
+                    _selectedItem = null; // Limpiar selección al buscar
                   });
+                  _updateContentMarkers(); // Actualizar marcadores según búsqueda
                 },
               ),
             ),
@@ -742,7 +860,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
             } else {
               _activeFilters.remove(filter);
             }
+            _selectedItem = null; // Limpiar selección al cambiar filtros
           });
+          _updateContentMarkers(); // Actualizar marcadores en el mapa
         },
         backgroundColor: colorScheme.surface,
         selectedColor: colorScheme.primaryContainer,
@@ -859,14 +979,13 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBottomSheet() {
+  Widget _buildSelectedItemBottomSheet() {
+    final colorScheme = Theme.of(context).colorScheme;
     return DraggableScrollableSheet(
-      initialChildSize: 0.3,
-      minChildSize: 0.15,
-      maxChildSize: 0.7,
+      initialChildSize: 0.35,
+      minChildSize: 0.2,
+      maxChildSize: 0.6,
       builder: (context, scrollController) {
-        final content = _filteredContent;
-        final colorScheme = Theme.of(context).colorScheme;
         return Container(
           decoration: BoxDecoration(
             color: colorScheme.surface,
@@ -893,63 +1012,331 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Header
+              // Close button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Resultados', style: AppTextStyles.titleLarge),
-                        Text(
-                          '${content.length} items en ${_searchRadius.toInt()}km',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: colorScheme.outline,
-                          ),
-                        ),
-                      ],
+                    Text('Detalles', style: AppTextStyles.titleLarge),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        setState(() {
+                          _selectedItem = null;
+                        });
+                      },
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.s),
-              // Results list
+              const Divider(),
+              // Selected item details
               Expanded(
-                child:
-                    content.isEmpty
-                        ? Center(
-                          child: Text(
-                            'No hay resultados',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: colorScheme.outline,
-                            ),
-                          ),
-                        )
-                        : ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.m,
-                          ),
-                          itemCount: content.length,
-                          itemBuilder: (context, index) {
-                            final item = content[index];
-                            if (item is Promotion) {
-                              return _buildPromotionListCard(item);
-                            } else if (item is CrazyDexItem) {
-                              return _buildItemListCard(item);
-                            } else if (item is Discovery) {
-                              return _buildPlaceListCard(item);
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        ),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.m,
+                  ),
+                  child: _buildSelectedItemCard(_selectedItem),
+                ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSelectedItemCard(dynamic item) {
+    if (item is Promotion) {
+      return _buildPromotionDetailCard(item);
+    } else if (item is CrazyDexItem) {
+      return _buildItemDetailCard(item);
+    } else if (item is Discovery) {
+      return _buildPlaceDetailCard(item);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPromotionDetailCard(Promotion promotion) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Icon grande
+        Center(
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.local_offer,
+                color: AppColors.primaryColor,
+                size: 50,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Título y descuento
+        Center(
+          child: Text(
+            promotion.businessName,
+            style: AppTextStyles.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+            ),
+            child: Text(
+              '${promotion.discountPercent}% OFF',
+              style: AppTextStyles.titleLarge.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Descripción
+        Text(
+          promotion.description,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Dirección
+        Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                promotion.address,
+                style: AppTextStyles.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Botón de acción
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () {
+              // Navegar a detalles completos
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+            ),
+            child: const Text('Ver detalles completos'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemDetailCard(CrazyDexItem item) {
+    final stars = '⭐' * item.rarity;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Emoji grande
+        Center(
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+            ),
+            child: Center(
+              child: Text(
+                item.imageUrl,
+                style: const TextStyle(fontSize: 50),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Nombre y rareza
+        Center(
+          child: Text(
+            item.name,
+            style: AppTextStyles.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Center(
+          child: Text(
+            stars,
+            style: const TextStyle(fontSize: 20),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Categoría
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+            ),
+            child: Text(
+              item.category.name,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: AppColors.secondaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Descripción
+        Text(
+          item.description,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Botón de acción
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () {
+              // Intentar capturar item
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.secondaryColor,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+            ),
+            child: const Text('Intentar capturar'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceDetailCard(Discovery place) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Emoji grande
+        Center(
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.tertiaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+            ),
+            child: Center(
+              child: Text(
+                place.imageUrl,
+                style: const TextStyle(fontSize: 50),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Nombre
+        Center(
+          child: Text(
+            place.name,
+            style: AppTextStyles.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        // Categoría
+        Center(
+          child: Text(
+            place.category,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Items disponibles
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.tertiaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.catching_pokemon,
+                  size: 20,
+                  color: AppColors.tertiaryColor,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  '${place.crazyDexItemsCollected}/${place.crazyDexItemsAvailable} items coleccionados',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.tertiaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Descripción
+        Text(
+          place.description,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Botón de acción
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () {
+              // Navegar a detalles del lugar
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.tertiaryColor,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+            ),
+            child: const Text('Explorar lugar'),
+          ),
+        ),
+      ],
     );
   }
 
