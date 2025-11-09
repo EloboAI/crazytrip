@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -45,6 +46,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
   bool _isLoadingLocation = true;
+  StreamSubscription<Position>? _locationStreamSubscription;
 
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
@@ -63,6 +65,13 @@ class _MapScreenState extends State<MapScreen> {
     _loadMapData();
     _loadMapStyles();
     _getUserLocation();
+    _startLocationTracking();
+  }
+
+  @override
+  void dispose() {
+    _locationStreamSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -125,6 +134,37 @@ class _MapScreenState extends State<MapScreen> {
         _isLoadingLocation = false;
       });
     }
+  }
+
+  /// Inicia el tracking en tiempo real de la ubicación del usuario
+  void _startLocationTracking() {
+    // Verificar permisos antes de iniciar el stream
+    LocationService.checkPermission().then((permission) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        // No hay permisos, no iniciar tracking
+        return;
+      }
+
+      // Iniciar el stream de ubicación
+      _locationStreamSubscription =
+          LocationService.getLocationStream().listen(
+        (Position position) {
+          if (mounted) {
+            setState(() {
+              _userPosition = position;
+            });
+            _updateUserLocationMarker(position);
+          }
+        },
+        onError: (error) {
+          debugPrint('Error in location stream: $error');
+        },
+        cancelOnError: false,
+      );
+    }).catchError((error) {
+      debugPrint('Error checking permissions: $error');
+    });
   }
 
   /// Re-centra el mapa en la ubicación actual del usuario
