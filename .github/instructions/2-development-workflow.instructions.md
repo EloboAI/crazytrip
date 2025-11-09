@@ -231,20 +231,80 @@ echo "✅ Status set to 'Done'"
 - **CRITICAL**: As you complete technical subtasks within the Task, add comments documenting what was done.
 
 ## 9. Completion Flow
+
+### 9.1 When Completing a Task
 1. **CRITICAL**: When ALL technical tasks in the current Task are completed:
    a. Add a final completion comment to the Task issue
-   b. Update project status to "In review" using GraphQL API
+   b. Update project status to "In review" using the workflow in section 6
    c. Ask the developer to verify the implementation
+   
 2. **ONLY after developer confirms the Task is complete:**
-   a. Update the project Status field to `Done` using the GraphQL API with proper project item ID
-   b. Close the Task via `mcp_githubmcp_issue_write` (state = closed, state_reason = completed)
-   c. Check the parent User Story's acceptance criteria checkboxes
+   a. First, update the project Status to `Done`:
+      ```bash
+      # Get the project item ID if not already cached
+      NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/$ISSUE_NUM --jq '.node_id')
+      ITEM_RESULT=$(./gh api graphql -f query="mutation { addProjectV2ItemById(input: {projectId: \"PVT_kwHOCi99Ic4BHjd7\" contentId: \"$NODE_ID\"}) { item { id } } }")
+      PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+      
+      # Update to Done
+      ./gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: {projectId: \"PVT_kwHOCi99Ic4BHjd7\" itemId: \"$PROJECT_ITEM_ID\" fieldId: \"PVTSSF_lAHOCi99Ic4BHjd7zg4RobA\" value: {singleSelectOptionId: \"98236657\"}}) { projectV2Item { id } } }"
+      ```
+   
+   b. Then close the Task issue:
+      ```javascript
+      mcp_githubmcp_issue_write({
+        method: "update",
+        owner: "EloboAI",
+        repo: "crazytrip",
+        issue_number: TASK_NUMBER,
+        state: "closed",
+        state_reason: "completed"
+      })
+      ```
+   
+   c. Check the corresponding acceptance criterion checkbox in the parent User Story
+
+### 9.2 Checking Parent Closure
 3. **After closing the Task:**
-   a. Fetch all sibling Tasks to check their status
-   b. If all sibling Tasks are closed AND all acceptance criteria are met, ask developer if you should close the User Story
-   c. If User Story can be closed, follow the same pattern: update status to Done, close issue, check parent Feature
-4. **CRITICAL**: Never close multiple issues in one turn. Close one Task, ask developer what's next.
-5. Communicate what was closed, what remains open, and suggest the next logical Task with a short rationale.
+   a. Fetch all sibling Tasks using `mcp_githubmcp_issue_read({method:"get_sub_issues", owner:"EloboAI", repo:"crazytrip", issue_number:USER_STORY_NUMBER})`
+   
+   b. Check if ALL sibling Tasks are:
+      - Closed (state = "closed")
+      - Have status "Done" in the project
+   
+   c. Verify all acceptance criteria in the User Story are checked
+   
+   d. **If ALL conditions are met:**
+      - Inform the developer: "All Tasks are complete and all acceptance criteria are met for User Story #X"
+      - Ask: "Should I close User Story #X and update its status to Done?"
+      - Wait for confirmation
+   
+   e. **If ANY condition is not met:**
+      - List which Tasks are still open or not Done
+      - List which acceptance criteria are not checked
+      - Do NOT suggest closing the User Story
+
+### 9.3 Closing Parent Issues
+4. **When closing a User Story (after ALL Tasks are Done):**
+   a. Update User Story status to "Done" in project
+   b. Close User Story issue with `state_reason: "completed"`
+   c. Fetch all sibling User Stories from parent Feature
+   d. Check if ALL sibling User Stories are closed and Done
+   e. If yes, ask developer if Feature should be closed
+   f. If no, report which User Stories remain open
+
+5. **When closing a Feature (after ALL User Stories are Done):**
+   a. Update Feature status to "Done" in project
+   b. Close Feature issue with `state_reason: "completed"`
+   c. Fetch all sibling Features from parent Epic
+   d. Check if ALL sibling Features are closed and Done
+   e. If yes, ask developer if Epic should be closed
+   f. If no, report which Features remain open
+
+### 9.4 General Rules
+6. **CRITICAL**: Never close multiple issues in one turn. Close one Task, check parent, then ask developer what's next.
+7. **CRITICAL**: Never close a parent issue without developer confirmation, even if all children are complete.
+8. Always communicate what was closed, what remains open, and suggest the next logical Task with rationale.
 
 ## 10. Communication Reference
 - **CRITICAL**: Always prefix your actions with the Task number: "**[Task #X]** - Action description"
@@ -266,9 +326,11 @@ echo "✅ Status set to 'Done'"
 9. **CRITICAL**: Always work on ONE Task at a time. Never implement multiple Tasks without explicit developer approval.
 10. **CRITICAL**: Always prefix actions with "**[Task #X]**" so developer knows what you're working on.
 11. **CRITICAL**: Always add progress comments to the Task issue as you work, not just at the end.
-12. **CRITICAL**: Always update project status to "In progress" BEFORE starting work, "In review" AFTER completing work, and "Done" ONLY after developer confirmation.
-13. **CRITICAL**: Always close Task issues ONLY after updating project status to Done and getting developer confirmation.
-14. Always communicate next steps and rationale after completing work.
-15. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
-16. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
-17. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
+12. **CRITICAL**: Always update project status in this order: "In progress" → work → "In review" → developer confirms → "Done" → close issue.
+13. **CRITICAL**: Always update project status to Done BEFORE closing the issue.
+14. **CRITICAL**: After closing ANY issue, check if ALL sibling issues are closed and Done before suggesting to close the parent.
+15. **CRITICAL**: Never close a parent issue without explicit developer confirmation, even if all children are complete.
+16. Always communicate next steps and rationale after completing work.
+17. Always use `./gh` for GitHub CLI calls and keep command usage transparent.
+18. Never proceed when blocked, misaligned, out of scope, or missing manual prerequisites.
+19. Never assume a Task is fully automated—always read ALL technical tasks and categorize each one.
