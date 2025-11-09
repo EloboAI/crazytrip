@@ -108,7 +108,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       // Primero verificar el estado de los permisos
       final permission = await LocationService.checkPermission();
-      
+
       if (permission == LocationPermission.denied) {
         // Permisos denegados, pero podemos pedir
         final hasPermission = await LocationService.requestLocationPermission();
@@ -195,27 +195,28 @@ class _MapScreenState extends State<MapScreen> {
   void _showPermissionPermanentlyDeniedDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permisos de Ubicación Requeridos'),
-        content: const Text(
-          'Para mostrar tu ubicación en el mapa, necesitamos acceso a tu ubicación.\n\n'
-          'Has denegado permanentemente los permisos. Por favor, ve a Configuración '
-          'y habilita los permisos de ubicación para esta app.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Ahora No'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Permisos de Ubicación Requeridos'),
+            content: const Text(
+              'Para mostrar tu ubicación en el mapa, necesitamos acceso a tu ubicación.\n\n'
+              'Has denegado permanentemente los permisos. Por favor, ve a Configuración '
+              'y habilita los permisos de ubicación para esta app.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Ahora No'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await LocationService.openAppSettings();
+                },
+                child: const Text('Ir a Configuración'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await LocationService.openAppSettings();
-            },
-            child: const Text('Ir a Configuración'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -223,26 +224,27 @@ class _MapScreenState extends State<MapScreen> {
   void _showLocationServiceDisabledDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Servicio de Ubicación Deshabilitado'),
-        content: const Text(
-          'El servicio de ubicación está deshabilitado en tu dispositivo.\n\n'
-          'Por favor, habilítalo en Configuración para usar la funcionalidad de ubicación.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Ahora No'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Servicio de Ubicación Deshabilitado'),
+            content: const Text(
+              'El servicio de ubicación está deshabilitado en tu dispositivo.\n\n'
+              'Por favor, habilítalo en Configuración para usar la funcionalidad de ubicación.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Ahora No'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await LocationService.openLocationSettings();
+                },
+                child: const Text('Abrir Configuración'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await LocationService.openLocationSettings();
-            },
-            child: const Text('Abrir Configuración'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -539,10 +541,7 @@ class _MapScreenState extends State<MapScreen> {
       decoration: BoxDecoration(
         color: colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        border: Border.all(
-          color: colorScheme.error.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: colorScheme.error.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -578,10 +577,7 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () async {
               await LocationService.openAppSettings();
             },
-            icon: Icon(
-              Icons.settings,
-              color: colorScheme.onErrorContainer,
-            ),
+            icon: Icon(Icons.settings, color: colorScheme.onErrorContainer),
             tooltip: 'Ir a Configuración',
           ),
         ],
