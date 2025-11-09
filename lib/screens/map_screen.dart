@@ -90,7 +90,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // Cuando la app vuelve a primer plano, re-verificar permisos
     if (state == AppLifecycleState.resumed) {
       _checkPermissionsOnResume();
@@ -100,7 +100,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// Verifica y actualiza el estado de permisos cuando la app vuelve a primer plano
   Future<void> _checkPermissionsOnResume() async {
     final permission = await LocationService.checkPermission();
-    final isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+    final isLocationServiceEnabled =
+        await Geolocator.isLocationServiceEnabled();
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
