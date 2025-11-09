@@ -619,6 +619,274 @@ mcp_githubmcp_add_issue_comment({
 })
 ```
 
+### 8. Handling Manual User Actions
+
+**CRITICAL**: When implementation requires manual actions by the user (cannot be automated), create a Task assigned to the user.
+
+#### When to Create Manual Tasks
+
+Create a manual Task when:
+- ✅ External service configuration (API keys, OAuth, cloud services)
+- ✅ Running scripts that require user credentials or permissions
+- ✅ Obtaining certificates, tokens, or secrets
+- ✅ Manual testing that requires physical devices
+- ✅ Deployment or release actions
+- ✅ Account setup or third-party registrations
+- ✅ Any action that cannot be automated by code changes alone
+
+#### How to Create Manual Tasks
+
+**Step 1: Create the Task Issue**
+
+Use the GitHub API to create a Task:
+
+```javascript
+mcp_githubmcp_issue_write({
+  method: "create",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  title: "[Task] [MANUAL] <descriptive_title>",
+  body: `**Parent:** #<current_user_story_number>
+
+**Tipo:** Acción Manual (requiere intervención del usuario)
+
+**Descripción:** <Clear description of what needs to be done>
+
+**Pasos a seguir:**
+1. <Step 1 with exact commands or actions>
+2. <Step 2 with exact commands or actions>
+3. <Step 3 with exact commands or actions>
+4. <etc>
+
+**Archivos o recursos necesarios:**
+- <File or resource 1>
+- <File or resource 2>
+
+**Resultado esperado:**
+<What should be the outcome after completing this task>
+
+**Verificación:**
+- [ ] <Checklist item 1 to verify completion>
+- [ ] <Checklist item 2 to verify completion>
+
+⚠️ **IMPORTANTE:** Este Task debe ser completado por el usuario antes de continuar con el desarrollo.`,
+  labels: ["manual-action"]
+})
+```
+
+**Step 2: Link as Sub-Issue**
+
+Link the manual Task to the current User Story:
+
+```bash
+# Get node IDs
+PARENT_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<user_story_number> --jq '.node_id')
+MANUAL_TASK_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<new_task_number> --jq '.node_id')
+
+# Add as sub-issue
+./gh api graphql -f query="
+mutation {
+  addSubIssue(input: {
+    issueId: \"$PARENT_NODE_ID\"
+    subIssueId: \"$MANUAL_TASK_NODE_ID\"
+  }) {
+    subIssue {
+      id
+    }
+  }
+}"
+```
+
+**Step 3: Add to Project and Set Type**
+
+```bash
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_TASK="86b0c338"
+
+# Add to project
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$MANUAL_TASK_NODE_ID\"
+  }) {
+    item {
+      id
+    }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+
+# Set type to Task
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$TYPE_FIELD_ID\"
+    value: {singleSelectOptionId: \"$TYPE_TASK\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+**Step 4: Assign to User**
+
+```javascript
+mcp_githubmcp_issue_write({
+  method: "update",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <new_task_number>,
+  assignees: ["EloboAI"]  // or the user's GitHub username
+})
+```
+
+**Step 5: Inform User**
+
+After creating the manual Task, inform the user:
+
+```
+⚠️ La implementación del Task #<current_task> requiere una acción manual de tu parte.
+
+✅ He creado el Task #<new_task_number>: [MANUAL] <title>
+
+**Este Task está asignado a ti y contiene:**
+- Pasos detallados a seguir
+- Comandos exactos a ejecutar
+- Checklist de verificación
+
+**Debes completar el Task #<new_task_number> antes de continuar.**
+
+Una vez terminado, por favor:
+1. Marca el Task #<new_task_number> como completado
+2. Avísame para continuar con el Task #<current_task>
+
+¿Quieres ver los detalles del Task manual ahora?
+```
+
+#### Common Manual Task Patterns
+
+**Pattern 1: API Key Configuration**
+```
+Title: [Task] [MANUAL] Obtener y configurar Google Maps API key
+Steps:
+1. Ir a Google Cloud Console (https://console.cloud.google.com)
+2. Crear/seleccionar proyecto
+3. Habilitar Google Maps SDK for Android/iOS
+4. Crear API key con restricciones apropiadas
+5. Copiar API key
+6. Ejecutar comando para configurar
+
+Verification:
+- [ ] API key obtenida y guardada de forma segura
+- [ ] API key configurada correctamente
+- [ ] Restricciones aplicadas en Google Cloud Console
+```
+
+**Pattern 2: Certificate/SHA-1 Generation**
+```
+Title: [Task] [MANUAL] Obtener SHA-1 fingerprint y configurar en Google Cloud
+Steps:
+1. Ejecutar comando para obtener SHA-1
+2. Copiar el SHA-1 fingerprint generado
+3. Ir a Google Cloud Console > Credentials
+4. Editar API key > Application restrictions
+5. Agregar package name y SHA-1 fingerprint
+
+Verification:
+- [ ] SHA-1 fingerprint obtenido
+- [ ] SHA-1 agregado a Google Cloud Console
+- [ ] Restricciones de API key configuradas
+```
+
+**Pattern 3: External Service Setup**
+```
+Title: [Task] [MANUAL] Configurar cuenta y credenciales de Firebase
+Steps:
+1. Crear cuenta en Firebase Console
+2. Crear nuevo proyecto
+3. Descargar archivos de configuración
+4. Colocar archivos en ubicaciones correctas
+
+Verification:
+- [ ] Proyecto creado
+- [ ] Archivos de configuración descargados
+- [ ] Archivos colocados en directorios correctos
+```
+
+#### Rules for Manual Tasks
+
+✅ **ALWAYS** create manual Tasks instead of:
+- Creating script files that the user must execute
+- Creating instruction documents or README files
+- Asking user to do something without tracking it
+
+✅ **ALWAYS** include in manual Tasks:
+- Clear step-by-step instructions
+- Exact commands with placeholder values clearly marked
+- Links to external services when needed
+- Verification checklist
+- Expected outcome description
+
+❌ **NEVER** create manual Tasks for:
+- Code implementation (that's your job)
+- Automated testing
+- File creation or modification (use tools)
+- Actions that can be scripted and automated
+
+❌ **NEVER** proceed with development if:
+- A manual Task is open and blocking
+- User hasn't confirmed completion of manual steps
+- External configuration is required but not done
+
+#### After Manual Task Completion
+
+When user indicates they completed a manual Task (e.g., "ya está listo", "terminé", "está completo"):
+
+**Step 1: Verify the Task is marked as Done/Closed**
+
+```bash
+# Check if the manual task is closed
+./gh api repos/EloboAI/crazytrip/issues/<manual_task_number> --jq '{state: .state, state_reason: .state_reason}'
+```
+
+✅ **If Task state is `closed` with `state_reason: "completed"`:**
+- Thank the user for completing it
+- Continue with the original Task that required the manual action
+- Update any documentation or configuration files as needed
+
+❌ **If Task is still `open`:**
+- Inform user that the Task is not marked as completed in GitHub
+- Ask them to close it or confirm they want you to close it
+
+**Step 2: Verify completion through dialogue**
+
+Ask specific questions about the outcome:
+
+```
+✅ Veo que el Task #<manual_task_number> está marcado como completado.
+
+Para verificar que todo está correcto:
+- ¿Obtuviste [lo que sea que necesitaban obtener]?
+- ¿Lo configuraste según las instrucciones?
+- ¿Verificaste que no hay errores?
+
+Si confirmas que todo está bien, continuaré con el Task #<original_task>.
+```
+
+**Step 3: Continue with dependent work**
+
+Once verified:
+1. Update any code/configuration that depends on the manual action
+2. Test that the manual configuration is working
+3. Continue with remaining technical tasks
+
 ## During Development
 
 ### Stay Within Scope
