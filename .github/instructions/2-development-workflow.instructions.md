@@ -10,25 +10,49 @@ applyTo: "**"
 - Always ask the developer which issue to tackle before doing anything else.
 - Fetch the issue with `./gh api repos/EloboAI/crazytrip/issues/<number>` and read title, body, parent reference, acceptance criteria, and technical tasks.
 - Work only inside GitHub issues (Epic → Feature → User Story → Task). Never code without an explicit issue.
+- **CRITICAL**: After fetching the issue, ALWAYS analyze it completely BEFORE listing options or asking which task to do.
 
 ## 2. User Stories vs Tasks
 **When the chosen issue is a User Story:**
 - Ensure it already has Tasks (one per acceptance criterion). If any criterion lacks a Task, create it immediately, linking back to the User Story and using the parent Feature label.
-- After Tasks exist, ask the developer which Task to start, then follow the Task workflow below.
+- **BEFORE asking which Task to start**: Analyze ALL Tasks for manual actions and dependencies.
+- **Create ALL required [MANUAL] Tasks FIRST** before presenting options to the developer.
+- After manual Tasks are created and identified, present the developer with:
+  1. List of manual Tasks with direct GitHub links that need completion first
+  2. List of automated Tasks in recommended execution order
+  3. Clear explanation of dependencies between tasks
+- Wait for developer to confirm manual Tasks are done before proceeding with automated Tasks.
 
 **When the chosen issue is a Task:**
 - Confirm the parent User Story via the `**Parent:** #<id>` header.
-- Compare the Task scope with the parent’s acceptance criteria. If it does not match, stop and clarify.
+- Compare the Task scope with the parent's acceptance criteria. If it does not match, stop and clarify.
 - Gather sibling Tasks with `mcp_githubmcp_issue_read({method:"get_sub_issues", ...})` and note their status for dependency checks.
+- **IMMEDIATELY check if this Task requires manual actions** (API keys, credentials, OAuth setup, etc.).
+- If manual actions are required, create a `[MANUAL]` Task, show the link to the developer, and STOP until they complete it.
 
 ## 3. Manual Actions
-- If completing the Task requires anything the assistant cannot do (API keys, OAuth, certificates, hardware tests, billing configuration, etc.), create a new `[Task] [MANUAL] ...` issue.
+- **ALWAYS check FIRST if the Task requires manual actions** before attempting to code anything.
+- If completing the Task requires anything the assistant cannot do (API keys, OAuth, certificates, hardware tests, billing configuration, cloud console setup, etc.), create a new `[Task] [MANUAL] ...` issue IMMEDIATELY.
 - Manual Task rules:
   - Parent is always the User Story, not the current Task.
   - Labels: `manual-action`, `AI-requirement`, plus the parent Feature label.
   - Body includes purpose, exact steps (with concrete commands), resources, and a verification checklist.
   - Link it to the User Story with `addSubIssue`, add it to the project, set Type = Task, and assign it to the user.
-  - Inform the developer and stop until they confirm completion and mark the manual Task status as Done.
+  - **CRITICAL**: Show the developer the direct GitHub link to the manual Task in this format: `https://github.com/EloboAI/crazytrip/issues/<number>`
+  - Explain clearly what needs to be done manually and why the assistant cannot do it.
+  - **STOP and wait** until the developer confirms completion and marks the manual Task as Done in the project.
+
+### Common Manual Actions That Require [MANUAL] Tasks:
+- Obtaining API keys from cloud providers (Google Cloud, AWS, Firebase, etc.)
+- OAuth application registration and client ID/secret generation
+- SSL certificate generation or purchase
+- Payment/billing setup in external services
+- Hardware testing or physical device setup
+- App store account creation or configuration
+- Domain registration or DNS configuration
+- Third-party service account creation
+- Code signing certificates
+- Environment secrets that cannot be committed to git
 
 ## 4. Dependency Validation
 **For Tasks:**
