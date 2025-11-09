@@ -30,14 +30,14 @@ class _MapScreenState extends State<MapScreen> {
   };
   double _searchRadius = 5.0; // km por defecto
   String _searchQuery = '';
-  
+
   // Google Maps Controller
   GoogleMapController? _mapController;
-  
+
   // Map styles
   String? _lightMapStyle;
   String? _darkMapStyle;
-  
+
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(9.9281, -84.0907),
@@ -295,7 +295,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget _buildMapView() {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
-    
+
     return GoogleMap(
       initialCameraPosition: _initialPosition,
       myLocationEnabled: true,
@@ -315,10 +315,10 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
-  
+
   Future<void> _applyMapStyle(bool isDark) async {
     if (_mapController == null) return;
-    
+
     try {
       final style = isDark ? _darkMapStyle : _lightMapStyle;
       if (style != null) {
