@@ -96,9 +96,273 @@ After creating Tasks:
 - It's unclear how to split into Tasks
 - Developer might want different Task breakdown
 
-### 4. Validate Work Item Dependencies
+### 4. Detect and Create Manual Tasks (Tasks Only)
 
-**CRITICAL**: Before starting work, validate dependencies based on the work item type.
+**CRITICAL**: Before validating dependencies, check if the Task requires manual actions from the user. If so, create a manual Task immediately.
+
+#### When to Create Manual Tasks
+
+Analyze the Task description and technical steps. Create a manual Task when:
+- ✅ External service configuration (API keys, OAuth, cloud services)
+- ✅ Running scripts that require user credentials or permissions
+- ✅ Obtaining certificates, tokens, or secrets
+- ✅ Manual testing that requires physical devices
+- ✅ Deployment or release actions
+- ✅ Account setup or third-party registrations
+- ✅ Any action that cannot be automated by code changes alone
+
+#### How to Create Manual Tasks
+
+**Step 1: Identify Parent User Story**
+
+Get the parent User Story number from the Task description:
+```bash
+./gh api repos/EloboAI/crazytrip/issues/<task_number> --jq '.body'
+```
+
+Look for `**Parent:** #<number>` at the top.
+
+**Step 2: Create the Manual Task Issue**
+
+Use the GitHub API to create a Task:
+
+```javascript
+mcp_githubmcp_issue_write({
+  method: "create",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  title: "[Task] [MANUAL] <descriptive_title>",
+  body: `**Parent:** #<parent_user_story_number>
+
+**Tipo:** Acción Manual (requiere intervención del usuario)
+
+**Descripción:** <Clear description of what needs to be done>
+
+**Pasos a seguir:**
+1. <Step 1 with exact commands or actions>
+2. <Step 2 with exact commands or actions>
+3. <Step 3 with exact commands or actions>
+4. <etc>
+
+**Archivos o recursos necesarios:**
+- <File or resource 1>
+- <File or resource 2>
+
+**Resultado esperado:**
+<What should be the outcome after completing this task>
+
+**Verificación:**
+- [ ] <Checklist item 1 to verify completion>
+- [ ] <Checklist item 2 to verify completion>
+
+⚠️ **IMPORTANTE:** Este Task debe ser completado por el usuario antes de continuar con el desarrollo.`,
+  labels: ["manual-action", "AI-requirement"]
+})
+```
+
+**Step 3: Link Manual Task to Parent User Story**
+
+Link the manual Task to the parent User Story (NOT to the current Task):
+
+```bash
+# Get node IDs
+PARENT_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<parent_user_story_number> --jq '.node_id')
+MANUAL_TASK_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<new_manual_task_number> --jq '.node_id')
+
+# Add as sub-issue to User Story
+./gh api graphql -f query="
+mutation {
+  addSubIssue(input: {
+    issueId: \"$PARENT_NODE_ID\"
+    subIssueId: \"$MANUAL_TASK_NODE_ID\"
+  }) {
+    subIssue {
+      id
+    }
+  }
+}"
+```
+
+**Step 4: Add to Project and Set Type**
+
+```bash
+PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_TASK="86b0c338"
+
+# Add to project
+ITEM_RESULT=$(./gh api graphql -f query="
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: \"$PROJECT_ID\"
+    contentId: \"$MANUAL_TASK_NODE_ID\"
+  }) {
+    item {
+      id
+    }
+  }
+}")
+
+PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+
+# Set type to Task
+./gh api graphql -f query="
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"$PROJECT_ID\"
+    itemId: \"$PROJECT_ITEM_ID\"
+    fieldId: \"$TYPE_FIELD_ID\"
+    value: {singleSelectOptionId: \"$TYPE_TASK\"}
+  }) {
+    projectV2Item {
+      id
+    }
+  }
+}"
+```
+
+**Step 5: Assign to User**
+
+```javascript
+mcp_githubmcp_issue_write({
+  method: "update",
+  owner: "EloboAI",
+  repo: "crazytrip",
+  issue_number: <new_manual_task_number>,
+  assignees: ["EloboAI"]  // or the user's GitHub username
+})
+```
+
+**Step 6: Inform User and STOP**
+
+After creating the manual Task, inform the user and STOP work:
+
+```
+⚠️ El Task #<current_task> requiere una acción manual de tu parte.
+
+✅ He creado el Task #<new_manual_task_number>: [MANUAL] <title>
+
+**Este Task está asignado a ti y contiene:**
+- Pasos detallados a seguir
+- Comandos exactos a ejecutar
+- Checklist de verificación
+
+**Debes completar el Task #<new_manual_task_number> antes de que yo pueda continuar con el Task #<current_task>.**
+
+Una vez terminado, por favor:
+1. Marca el Task como completado en el proyecto (Status: Done)
+2. Avísame para que yo pueda continuar
+
+Enlace directo: https://github.com/EloboAI/crazytrip/issues/<new_manual_task_number>
+```
+
+**DO NOT PROCEED with any other validation or implementation steps until the user confirms the manual Task is complete.**
+
+#### Common Manual Task Patterns
+
+**Pattern 1: API Key Configuration**
+```
+Title: [Task] [MANUAL] Obtener y configurar <Service> API key
+Steps:
+1. Ir a <Service> Console (<URL>)
+2. Crear/seleccionar proyecto
+3. Habilitar <API name>
+4. Crear API key con restricciones apropiadas
+5. Copiar API key
+
+Verification:
+- [ ] API key obtenida y guardada de forma segura
+- [ ] API key lista para configuración
+- [ ] Restricciones aplicadas en console
+```
+
+**Pattern 2: Certificate/SHA Fingerprint**
+```
+Title: [Task] [MANUAL] Obtener SHA-1/SHA-256 fingerprint
+Steps:
+1. Ejecutar comando: <exact command>
+2. Copiar el fingerprint generado
+3. Configurar en <external service>
+
+Verification:
+- [ ] Fingerprint obtenido
+- [ ] Fingerprint configurado en servicio externo
+```
+
+**Pattern 3: External Service Setup**
+```
+Title: [Task] [MANUAL] Configurar cuenta en <Service>
+Steps:
+1. Crear cuenta en <Service>
+2. Crear proyecto
+3. Descargar archivos de configuración
+4. Confirmar que tienes los archivos
+
+Verification:
+- [ ] Cuenta creada
+- [ ] Proyecto configurado
+- [ ] Archivos de configuración obtenidos
+```
+
+#### Rules for Manual Tasks
+
+✅ **ALWAYS** create manual Tasks proactively when detected
+✅ **ALWAYS** link manual Tasks to the parent User Story, not the current Task
+✅ **ALWAYS** add labels: ["manual-action", "AI-requirement"]
+✅ **ALWAYS** include clear step-by-step instructions
+✅ **ALWAYS** provide exact commands with placeholder values clearly marked
+✅ **ALWAYS** include verification checklist
+✅ **ALWAYS** STOP work and wait for user to complete manual Task
+
+❌ **NEVER** proceed with implementation if manual Task is required
+❌ **NEVER** create manual Tasks for code implementation
+❌ **NEVER** create manual Tasks for automated testing
+❌ **NEVER** link manual Tasks to the current Task (always link to User Story)
+
+#### After Manual Task Completion
+
+When user indicates they completed a manual Task:
+
+**Step 1: Verify Status is `Done` in project**
+
+```bash
+ISSUE_NUMBER=<manual_task_number>
+./gh api graphql -f query='{
+  repository(owner: "EloboAI", name: "crazytrip") {
+    issue(number: '$ISSUE_NUMBER') {
+      projectItems(first: 10) {
+        nodes {
+          fieldValueByName(name: "Status") {
+            ... on ProjectV2ItemFieldSingleSelectValue {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.issue.projectItems.nodes[] | select(.fieldValueByName != null) | .fieldValueByName.name'
+```
+
+✅ **If Status is `"Done"`:**
+- Thank the user
+- Continue with the original Task that required the manual action
+- Update any configuration files if needed
+
+❌ **If Status is NOT `"Done"`:**
+- Inform user that Task is not marked as Done yet
+- Ask them to update the Status before continuing
+
+**Step 2: Proceed with Original Task**
+
+Once manual Task is verified complete:
+1. Continue with validation workflow (Step 5: Validate Work Item Dependencies)
+2. Implement the technical work that depended on the manual action
+3. Test that manual configuration is working
+
+### 5. Validate Work Item Dependencies
+
+**CRITICAL**: After handling any manual actions, validate dependencies based on the work item type.
 
 #### For Tasks: Validate Against Parent User Story
 
@@ -426,7 +690,7 @@ Before starting work on a User Story, ensure:
 ✅ **ALWAYS** suggest working on prerequisite issues first when detected
 ✅ **ALWAYS** respect developer's decision to override dependency suggestions
 
-### 5. Validate Scope Before Starting
+### 6. Validate Scope Before Starting
 
 **CRITICAL**: Before starting any work, validate that the developer's request is within the scope of the work item:
 
@@ -464,7 +728,7 @@ Before starting work on a User Story, ensure:
 ✅ **ALWAYS** stick to the exact requirements in the work item
 ✅ **ALWAYS** ask for clarification if the scope is unclear
 
-### 6. Validate and Assign Iteration
+### 7. Validate and Assign Iteration
 
 **CRITICAL**: Before starting work on a Task or User Story, validate that it has an iteration assigned.
 
@@ -611,7 +875,7 @@ La iteración actual es diferente.
 
 If developer chooses option 1, execute the iteration assignment mutation above with the current iteration ID.
 
-### 7. Mark Task as In Progress
+### 8. Mark Task as In Progress
 
 After validating/assigning iteration, update the task state:
 
@@ -635,290 +899,7 @@ mcp_githubmcp_add_issue_comment({
 })
 ```
 
-### 8. Handling Manual User Actions
 
-**CRITICAL**: When implementation requires manual actions by the user (cannot be automated), create a Task assigned to the user.
-
-#### When to Create Manual Tasks
-
-Create a manual Task when:
-- ✅ External service configuration (API keys, OAuth, cloud services)
-- ✅ Running scripts that require user credentials or permissions
-- ✅ Obtaining certificates, tokens, or secrets
-- ✅ Manual testing that requires physical devices
-- ✅ Deployment or release actions
-- ✅ Account setup or third-party registrations
-- ✅ Any action that cannot be automated by code changes alone
-
-#### How to Create Manual Tasks
-
-**Step 1: Create the Task Issue**
-
-Use the GitHub API to create a Task:
-
-```javascript
-mcp_githubmcp_issue_write({
-  method: "create",
-  owner: "EloboAI",
-  repo: "crazytrip",
-  title: "[Task] [MANUAL] <descriptive_title>",
-  body: `**Parent:** #<current_user_story_number>
-
-**Tipo:** Acción Manual (requiere intervención del usuario)
-
-**Descripción:** <Clear description of what needs to be done>
-
-**Pasos a seguir:**
-1. <Step 1 with exact commands or actions>
-2. <Step 2 with exact commands or actions>
-3. <Step 3 with exact commands or actions>
-4. <etc>
-
-**Archivos o recursos necesarios:**
-- <File or resource 1>
-- <File or resource 2>
-
-**Resultado esperado:**
-<What should be the outcome after completing this task>
-
-**Verificación:**
-- [ ] <Checklist item 1 to verify completion>
-- [ ] <Checklist item 2 to verify completion>
-
-⚠️ **IMPORTANTE:** Este Task debe ser completado por el usuario antes de continuar con el desarrollo.`,
-  labels: ["manual-action"]
-})
-```
-
-**Step 2: Link as Sub-Issue**
-
-Link the manual Task to the current User Story:
-
-```bash
-# Get node IDs
-PARENT_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<user_story_number> --jq '.node_id')
-MANUAL_TASK_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<new_task_number> --jq '.node_id')
-
-# Add as sub-issue
-./gh api graphql -f query="
-mutation {
-  addSubIssue(input: {
-    issueId: \"$PARENT_NODE_ID\"
-    subIssueId: \"$MANUAL_TASK_NODE_ID\"
-  }) {
-    subIssue {
-      id
-    }
-  }
-}"
-```
-
-**Step 3: Add to Project and Set Type**
-
-```bash
-PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
-TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
-TYPE_TASK="86b0c338"
-
-# Add to project
-ITEM_RESULT=$(./gh api graphql -f query="
-mutation {
-  addProjectV2ItemById(input: {
-    projectId: \"$PROJECT_ID\"
-    contentId: \"$MANUAL_TASK_NODE_ID\"
-  }) {
-    item {
-      id
-    }
-  }
-}")
-
-PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
-
-# Set type to Task
-./gh api graphql -f query="
-mutation {
-  updateProjectV2ItemFieldValue(input: {
-    projectId: \"$PROJECT_ID\"
-    itemId: \"$PROJECT_ITEM_ID\"
-    fieldId: \"$TYPE_FIELD_ID\"
-    value: {singleSelectOptionId: \"$TYPE_TASK\"}
-  }) {
-    projectV2Item {
-      id
-    }
-  }
-}"
-```
-
-**Step 4: Assign to User**
-
-```javascript
-mcp_githubmcp_issue_write({
-  method: "update",
-  owner: "EloboAI",
-  repo: "crazytrip",
-  issue_number: <new_task_number>,
-  assignees: ["EloboAI"]  // or the user's GitHub username
-})
-```
-
-**Step 5: Inform User**
-
-After creating the manual Task, inform the user:
-
-```
-⚠️ La implementación del Task #<current_task> requiere una acción manual de tu parte.
-
-✅ He creado el Task #<new_task_number>: [MANUAL] <title>
-
-**Este Task está asignado a ti y contiene:**
-- Pasos detallados a seguir
-- Comandos exactos a ejecutar
-- Checklist de verificación
-
-**Debes completar el Task #<new_task_number> antes de continuar.**
-
-Una vez terminado, por favor:
-1. Marca el Task #<new_task_number> como completado
-2. Avísame para continuar con el Task #<current_task>
-
-¿Quieres ver los detalles del Task manual ahora?
-```
-
-Incluye siempre el enlace directo al issue para que el usuario pueda abrirlo rápidamente:
-`https://github.com/EloboAI/crazytrip/issues/<new_task_number>`
-
-#### Common Manual Task Patterns
-
-**Pattern 1: API Key Configuration**
-```
-Title: [Task] [MANUAL] Obtener y configurar Google Maps API key
-Steps:
-1. Ir a Google Cloud Console (https://console.cloud.google.com)
-2. Crear/seleccionar proyecto
-3. Habilitar Google Maps SDK for Android/iOS
-4. Crear API key con restricciones apropiadas
-5. Copiar API key
-6. Ejecutar comando para configurar
-
-Verification:
-- [ ] API key obtenida y guardada de forma segura
-- [ ] API key configurada correctamente
-- [ ] Restricciones aplicadas en Google Cloud Console
-```
-
-**Pattern 2: Certificate/SHA-1 Generation**
-```
-Title: [Task] [MANUAL] Obtener SHA-1 fingerprint y configurar en Google Cloud
-Steps:
-1. Ejecutar comando para obtener SHA-1
-2. Copiar el SHA-1 fingerprint generado
-3. Ir a Google Cloud Console > Credentials
-4. Editar API key > Application restrictions
-5. Agregar package name y SHA-1 fingerprint
-
-Verification:
-- [ ] SHA-1 fingerprint obtenido
-- [ ] SHA-1 agregado a Google Cloud Console
-- [ ] Restricciones de API key configuradas
-```
-
-**Pattern 3: External Service Setup**
-```
-Title: [Task] [MANUAL] Configurar cuenta y credenciales de Firebase
-Steps:
-1. Crear cuenta en Firebase Console
-2. Crear nuevo proyecto
-3. Descargar archivos de configuración
-4. Colocar archivos en ubicaciones correctas
-
-Verification:
-- [ ] Proyecto creado
-- [ ] Archivos de configuración descargados
-- [ ] Archivos colocados en directorios correctos
-```
-
-#### Rules for Manual Tasks
-
-✅ **ALWAYS** create manual Tasks instead of:
-- Creating script files that the user must execute
-- Creating instruction documents or README files
-- Asking user to do something without tracking it
-
-✅ **ALWAYS** include in manual Tasks:
-- Clear step-by-step instructions
-- Exact commands with placeholder values clearly marked
-- Links to external services when needed
-- Verification checklist
-- Expected outcome description
-
-❌ **NEVER** create manual Tasks for:
-- Code implementation (that's your job)
-- Automated testing
-- File creation or modification (use tools)
-- Actions that can be scripted and automated
-
-❌ **NEVER** proceed with development if:
-- A manual Task is open and blocking
-- User hasn't confirmed completion of manual steps
-- External configuration is required but not done
-
-#### After Manual Task Completion
-
-When user indicates they completed a manual Task (e.g., "ya está listo", "terminé", "está completo"):
-
-**Step 1: Verify the Task is marked as `Done` in the project**
-
-```bash
-ISSUE_NUMBER=<manual_task_number>
-./gh api graphql -f query='{
-  repository(owner: "EloboAI", name: "crazytrip") {
-    issue(number: ISSUE_NUMBER) {
-      projectItems(first: 10) {
-        nodes {
-          fieldValueByName(name: "Status") {
-            ... on ProjectV2ItemFieldSingleSelectValue {
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-}' --jq '.data.repository.issue.projectItems.nodes[] | select(.fieldValueByName != null) | .fieldValueByName.name'
-```
-
-✅ **If Status devuelve `"Done"`:**
-- Agradece al usuario por completarlo
-- Continúa con el Task técnico que dependía de esta acción manual
-- Actualiza cualquier archivo o configuración dependiente si es necesario
-
-❌ **Si el resultado no es `"Done"` o no hay valor:**
-- Informa al usuario que el Task todavía no está marcado como `Done`
-- Pídele que actualice el Status del issue en el proyecto antes de continuar
-
-**Step 2: Verify completion through dialogue**
-
-Ask specific questions about the outcome:
-
-```
-✅ Veo que el Task #<manual_task_number> está marcado como completado.
-
-Para verificar que todo está correcto:
-- ¿Obtuviste [lo que sea que necesitaban obtener]?
-- ¿Lo configuraste según las instrucciones?
-- ¿Verificaste que no hay errores?
-
-Si confirmas que todo está bien, continuaré con el Task #<original_task>.
-```
-
-**Step 3: Continue with dependent work**
-
-Once verified:
-1. Update any code/configuration that depends on the manual action
-2. Test that the manual configuration is working
-3. Continue with remaining technical tasks
 
 ## During Development
 
@@ -1277,36 +1258,42 @@ After completing work:
 
 1. ✅ **ALWAYS** ask for work item number before starting
 2. ✅ **ALWAYS** read and understand acceptance criteria
-3. ✅ **ALWAYS** validate Task alignment with parent User Story
-4. ✅ **ALWAYS** validate User Story against Feature and blocking issues
-5. ✅ **ALWAYS** check for "Blocked by" relationships in issue body
-6. ✅ **ALWAYS** verify blocking issues are closed before starting
-7. ✅ **ALWAYS** check acceptance criteria match before starting Task
-8. ✅ **ALWAYS** check sibling Tasks for dependencies before starting
-9. ✅ **ALWAYS** check sibling User Stories for dependencies within Feature
-10. ✅ **ALWAYS** suggest prerequisite issues when dependencies detected
-11. ✅ **ALWAYS** validate iteration assignment before starting work
-12. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
-13. ✅ **ALWAYS** ask developer before changing existing iteration
-14. ✅ **ALWAYS** validate that requests are within scope
-15. ✅ **ALWAYS** stop and ask if request is out of scope
-16. ✅ **ALWAYS** wait for developer confirmation before closing
-17. ✅ **ALWAYS** suggest next logical work item after completing one
-18. ✅ **ALWAYS** explain why the suggested work item should be next
-19. ✅ **ALWAYS** check parent-child relationships
-20. ✅ **ALWAYS** verify all siblings before closing parent
-21. ✅ **ALWAYS** set project Status to `Done` when closing an issue
-22. ❌ **NEVER** work on blocked User Stories without resolving blockers
-23. ❌ **NEVER** work on misaligned Tasks without developer confirmation
-24. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
-25. ❌ **NEVER** work on dependent User Stories before prerequisites in same Feature
-26. ❌ **NEVER** implement features outside the defined scope
-27. ❌ **NEVER** assume additional functionality should be included
-28. ❌ **NEVER** close work items prematurely
-29. ❌ **NEVER** skip hierarchy validation
-30. ❌ **NEVER** skip dependency validation (Tasks or User Stories)
-31. ❌ **NEVER** close parent before all children are done
-32. ❌ **NEVER** start coding without a specific work item
-33. ❌ **NEVER** start work without validating iteration assignment
-34. ❌ **NEVER** assume developer wants to continue without asking
+3. ✅ **ALWAYS** detect manual actions needed and create manual Tasks proactively
+4. ✅ **ALWAYS** link manual Tasks to parent User Story, not current Task
+5. ✅ **ALWAYS** add labels ["manual-action", "AI-requirement"] to manual Tasks
+6. ✅ **ALWAYS** STOP work when manual Task is created and wait for user completion
+7. ✅ **ALWAYS** validate Task alignment with parent User Story
+8. ✅ **ALWAYS** validate User Story against Feature and blocking issues
+9. ✅ **ALWAYS** check for "Blocked by" relationships in issue body
+10. ✅ **ALWAYS** verify blocking issues are closed before starting
+11. ✅ **ALWAYS** check acceptance criteria match before starting Task
+12. ✅ **ALWAYS** check sibling Tasks for dependencies before starting
+13. ✅ **ALWAYS** check sibling User Stories for dependencies within Feature
+14. ✅ **ALWAYS** suggest prerequisite issues when dependencies detected
+15. ✅ **ALWAYS** validate iteration assignment before starting work
+16. ✅ **ALWAYS** auto-assign to current iteration if none is assigned
+17. ✅ **ALWAYS** ask developer before changing existing iteration
+18. ✅ **ALWAYS** validate that requests are within scope
+19. ✅ **ALWAYS** stop and ask if request is out of scope
+20. ✅ **ALWAYS** wait for developer confirmation before closing
+21. ✅ **ALWAYS** suggest next logical work item after completing one
+22. ✅ **ALWAYS** explain why the suggested work item should be next
+23. ✅ **ALWAYS** check parent-child relationships
+24. ✅ **ALWAYS** verify all siblings before closing parent
+25. ✅ **ALWAYS** set project Status to `Done` when closing an issue
+26. ❌ **NEVER** proceed with implementation when manual Task is created
+27. ❌ **NEVER** link manual Tasks to the current Task (always User Story)
+28. ❌ **NEVER** work on blocked User Stories without resolving blockers
+29. ❌ **NEVER** work on misaligned Tasks without developer confirmation
+30. ❌ **NEVER** work on dependent Tasks before prerequisites are complete
+31. ❌ **NEVER** work on dependent User Stories before prerequisites in same Feature
+32. ❌ **NEVER** implement features outside the defined scope
+33. ❌ **NEVER** assume additional functionality should be included
+34. ❌ **NEVER** close work items prematurely
+35. ❌ **NEVER** skip hierarchy validation
+36. ❌ **NEVER** skip dependency validation (Tasks or User Stories)
+37. ❌ **NEVER** close parent before all children are done
+38. ❌ **NEVER** start coding without a specific work item
+39. ❌ **NEVER** start work without validating iteration assignment
+40. ❌ **NEVER** assume developer wants to continue without asking
 
