@@ -84,6 +84,10 @@ class CrazyDexItem {
   final List<String> userPhotos; // User's photos of this item
   final List<String> tags; // Additional search tags
 
+  // Geographic coordinates
+  final double latitude;
+  final double longitude;
+
   CrazyDexItem({
     required this.id,
     required this.name,
@@ -101,7 +105,10 @@ class CrazyDexItem {
     this.timesSpotted = 0,
     this.userPhotos = const [],
     this.tags = const [],
-  });
+    double? latitude,
+    double? longitude,
+  }) : latitude = latitude ?? 10.2099277,
+       longitude = longitude ?? -84.0147707;
 
   /// Get rarity display name
   String get rarityName {
@@ -151,6 +158,8 @@ class CrazyDexItem {
       timesSpotted: timesSpotted ?? this.timesSpotted,
       userPhotos: userPhotos ?? this.userPhotos,
       tags: tags,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }
@@ -282,6 +291,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
         'discovery_d3',
       ],
       isDiscovered: false,
+      latitude: 10.2085,
+      longitude: -84.0155,
     ),
     CrazyDexItem(
       id: 'fauna_004',
@@ -296,6 +307,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       aiLabels: ['bird', 'eagle', 'harpy eagle', 'raptor', 'large bird'],
       tags: ['ave', 'bird', 'raptor', 'predator', 'discovery_d3'],
       isDiscovered: false,
+      latitude: 10.2125,
+      longitude: -84.0110,
     ),
 
     // FAUNA - Animals
@@ -329,6 +342,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       aiLabels: ['monkey', 'primate', 'howler monkey', 'animal'],
       tags: ['monkey', 'primate', 'loud', 'howler', 'discovery_d2'],
       isDiscovered: false,
+      latitude: 10.2075,
+      longitude: -84.0180,
     ),
     CrazyDexItem(
       id: 'fauna_007',
@@ -350,6 +365,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
         'discovery_d3',
       ],
       isDiscovered: false,
+      latitude: 10.2115,
+      longitude: -84.0125,
     ),
 
     // FLORA
@@ -390,6 +407,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
       aiLabels: ['tree', 'ceiba', 'large tree', 'plant'],
       tags: ['tree', 'sacred', 'maya', 'tall', 'discovery_d3'],
       isDiscovered: false,
+      latitude: 10.2065,
+      longitude: -84.0165,
     ),
     CrazyDexItem(
       id: 'flora_003',
@@ -411,6 +430,8 @@ List<CrazyDexItem> getMockCrazyDexItems() {
         'discovery_d4',
       ],
       isDiscovered: false,
+      latitude: 10.2140,
+      longitude: -84.0100,
     ),
 
     // MOUNTAINS

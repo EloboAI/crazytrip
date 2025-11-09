@@ -52,9 +52,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   // Selected item for bottom sheet
   dynamic _selectedItem;
 
-  // Posición inicial del mapa (San José, Costa Rica)
+  // Posición inicial del mapa (Guápiles, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(9.9281, -84.0907),
+    target: LatLng(10.2099277, -84.0147707),
     zoom: 14.0,
   );
 
@@ -523,25 +523,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   /// Agrega un marcador para una promoción
   void _addPromotionMarker(Promotion promotion, int index) {
-    // Generar posición aleatoria cercana al usuario o posición inicial
-    final baseLatLng =
-        _userPosition != null
-            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-            : _initialPosition.target;
-
-    // Offset aleatorio de ±0.02 grados (~2km)
-    final random = (index * 13) % 100; // Pseudo-random basado en índice
-    final latOffset = ((random % 40) - 20) * 0.001;
-    final lngOffset = (((random * 7) % 40) - 20) * 0.001;
-
-    final position = LatLng(
-      baseLatLng.latitude + latOffset,
-      baseLatLng.longitude + lngOffset,
-    );
-
     final marker = Marker(
       markerId: MarkerId('promotion_$index'),
-      position: position,
+      position: LatLng(promotion.latitude, promotion.longitude),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
       infoWindow: InfoWindow(
         title: '💰 ${promotion.businessName}',
@@ -558,26 +542,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   /// Agrega un marcador para un item del CrazyDex
   void _addItemMarker(CrazyDexItem item, int index) {
-    // Generar posición aleatoria cercana al usuario o posición inicial
-    final baseLatLng =
-        _userPosition != null
-            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-            : _initialPosition.target;
-
-    // Offset aleatorio de ±0.015 grados (~1.5km)
-    final random =
-        (index * 17 + 50) % 100; // Pseudo-random diferente a promociones
-    final latOffset = ((random % 30) - 15) * 0.001;
-    final lngOffset = (((random * 11) % 30) - 15) * 0.001;
-
-    final position = LatLng(
-      baseLatLng.latitude + latOffset,
-      baseLatLng.longitude + lngOffset,
-    );
-
     final marker = Marker(
       markerId: MarkerId('item_$index'),
-      position: position,
+      position: LatLng(item.latitude, item.longitude),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
       infoWindow: InfoWindow(
         title: '🔍 ${item.name}',

@@ -22,6 +22,10 @@ class Promotion {
   final int maxClaims;
   final int claims;
 
+  // Geographic coordinates
+  final double latitude;
+  final double longitude;
+
   // User-specific fields for tracking participation and rewards
   final bool isParticipating;
   final int userProgress;
@@ -54,11 +58,15 @@ class Promotion {
     this.hasWon = false,
     this.isClaimed = false,
     this.claimedAt,
+    double? latitude,
+    double? longitude,
   }) : businessName = businessName ?? location,
        address = address ?? location,
        discountPercent = discountPercent ?? 0,
        maxClaims = maxClaims ?? 100,
-       claims = claims ?? 0;
+       claims = claims ?? 0,
+       latitude = latitude ?? 10.2099277,
+       longitude = longitude ?? -84.0147707;
 
   /// Check if promotion is currently active
   bool get isActive {
@@ -176,6 +184,8 @@ List<Promotion> getMockPromotions() {
       linkedAchievementId: 'ach_4',
       isParticipating: true,
       userProgress: 7,
+      latitude: 10.2099277,
+      longitude: -84.0147707,
     ),
     Promotion(
       id: 'promo_2',
@@ -199,6 +209,8 @@ List<Promotion> getMockPromotions() {
       linkedAchievementId: 'ach_3',
       isParticipating: true,
       userProgress: 2,
+      latitude: 10.2120,
+      longitude: -84.0180,
     ),
     Promotion(
       id: 'promo_3',
@@ -224,6 +236,8 @@ List<Promotion> getMockPromotions() {
       hasWon: true,
       isParticipating: true,
       userProgress: 4,
+      latitude: 10.2080,
+      longitude: -84.0120,
     ),
     Promotion(
       id: 'promo_4',
@@ -246,6 +260,11 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.discount,
       xpReward: 0,
       linkedAchievementId: null,
+      businessName: 'Café Central',
+      address: 'Centro de Guápiles',
+      discountPercent: 20,
+      latitude: 10.2110,
+      longitude: -84.0160,
     ),
 
     // Upcoming Promotions
@@ -270,6 +289,8 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.contest,
       xpReward: 2000,
       linkedAchievementId: 'ach_8', // Globe Trotter achievement
+      latitude: 10.2090,
+      longitude: -84.0135,
     ),
     Promotion(
       id: 'promo_6',
@@ -292,6 +313,8 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.event,
       xpReward: 300,
       linkedAchievementId: null,
+      latitude: 10.2070,
+      longitude: -84.0170,
     ),
 
     // Expired Promotions
@@ -320,6 +343,8 @@ List<Promotion> getMockPromotions() {
       claimedAt: DateTime(now.year, 11, 1),
       isParticipating: true,
       userProgress: 5,
+      latitude: 10.2130,
+      longitude: -84.0130,
     ),
     Promotion(
       id: 'promo_8',
@@ -341,6 +366,8 @@ List<Promotion> getMockPromotions() {
       type: PromotionType.event,
       xpReward: 200,
       linkedAchievementId: 'ach_3',
+      latitude: 10.2060,
+      longitude: -84.0190,
     ),
   ];
 }
