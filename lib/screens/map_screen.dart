@@ -503,10 +503,10 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     _markers.removeWhere((marker) => marker.markerId.value != 'user_location');
 
     final content = _filteredContent;
-    
+
     for (int i = 0; i < content.length; i++) {
       final item = content[i];
-      
+
       if (item is Promotion) {
         _addPromotionMarker(item, i);
       } else if (item is CrazyDexItem) {
@@ -515,7 +515,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         _addPlaceMarker(item, i);
       }
     }
-    
+
     if (mounted) {
       setState(() {});
     }
@@ -524,20 +524,21 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// Agrega un marcador para una promoción
   void _addPromotionMarker(Promotion promotion, int index) {
     // Generar posición aleatoria cercana al usuario o posición inicial
-    final baseLatLng = _userPosition != null
-        ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-        : _initialPosition.target;
-    
+    final baseLatLng =
+        _userPosition != null
+            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+            : _initialPosition.target;
+
     // Offset aleatorio de ±0.02 grados (~2km)
     final random = (index * 13) % 100; // Pseudo-random basado en índice
     final latOffset = ((random % 40) - 20) * 0.001;
     final lngOffset = (((random * 7) % 40) - 20) * 0.001;
-    
+
     final position = LatLng(
       baseLatLng.latitude + latOffset,
       baseLatLng.longitude + lngOffset,
     );
-    
+
     final marker = Marker(
       markerId: MarkerId('promotion_$index'),
       position: position,
@@ -558,20 +559,22 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// Agrega un marcador para un item del CrazyDex
   void _addItemMarker(CrazyDexItem item, int index) {
     // Generar posición aleatoria cercana al usuario o posición inicial
-    final baseLatLng = _userPosition != null
-        ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-        : _initialPosition.target;
-    
+    final baseLatLng =
+        _userPosition != null
+            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+            : _initialPosition.target;
+
     // Offset aleatorio de ±0.015 grados (~1.5km)
-    final random = (index * 17 + 50) % 100; // Pseudo-random diferente a promociones
+    final random =
+        (index * 17 + 50) % 100; // Pseudo-random diferente a promociones
     final latOffset = ((random % 30) - 15) * 0.001;
     final lngOffset = (((random * 11) % 30) - 15) * 0.001;
-    
+
     final position = LatLng(
       baseLatLng.latitude + latOffset,
       baseLatLng.longitude + lngOffset,
     );
-    
+
     final marker = Marker(
       markerId: MarkerId('item_$index'),
       position: position,
@@ -597,7 +600,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
       infoWindow: InfoWindow(
         title: '📍 ${place.name}',
-        snippet: '${place.crazyDexItemsCollected}/${place.crazyDexItemsAvailable} items - Toca para más info',
+        snippet:
+            '${place.crazyDexItemsCollected}/${place.crazyDexItemsAvailable} items - Toca para más info',
       ),
       onTap: () {
         setState(() {
@@ -1035,9 +1039,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.m,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
                   child: _buildSelectedItemCard(_selectedItem),
                 ),
               ),
@@ -1129,10 +1131,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(width: AppSpacing.xs),
             Expanded(
-              child: Text(
-                promotion.address,
-                style: AppTextStyles.bodyMedium,
-              ),
+              child: Text(promotion.address, style: AppTextStyles.bodyMedium),
             ),
           ],
         ),
@@ -1170,10 +1169,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
             ),
             child: Center(
-              child: Text(
-                item.imageUrl,
-                style: const TextStyle(fontSize: 50),
-              ),
+              child: Text(item.imageUrl, style: const TextStyle(fontSize: 50)),
             ),
           ),
         ),
@@ -1187,12 +1183,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Center(
-          child: Text(
-            stars,
-            style: const TextStyle(fontSize: 20),
-          ),
-        ),
+        Center(child: Text(stars, style: const TextStyle(fontSize: 20))),
         const SizedBox(height: AppSpacing.m),
         // Categoría
         Center(
@@ -1255,10 +1246,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
             ),
             child: Center(
-              child: Text(
-                place.imageUrl,
-                style: const TextStyle(fontSize: 50),
-              ),
+              child: Text(place.imageUrl, style: const TextStyle(fontSize: 50)),
             ),
           ),
         ),
