@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -9,6 +10,7 @@ import '../providers/theme_provider.dart';
 import '../models/promotion.dart';
 import '../models/crazydex_item.dart';
 import '../models/discovery.dart';
+import '../services/location_service.dart';
 
 enum MapViewMode { map, list }
 
@@ -38,6 +40,11 @@ class _MapScreenState extends State<MapScreen> {
   String? _lightMapStyle;
   String? _darkMapStyle;
 
+  // User location
+  Position? _userPosition;
+  final Set<Marker> _markers = {};
+  final Set<Circle> _circles = {};
+
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(9.9281, -84.0907),
@@ -54,6 +61,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     _loadMapData();
     _loadMapStyles();
+    _getUserLocation();
   }
 
   @override
@@ -78,6 +86,80 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       debugPrint('Error loading map styles: $e');
     }
+  }
+
+  /// Obtiene la ubicación actual del usuario y la muestra en el mapa
+  Future<void> _getUserLocation() async {
+    try {
+      final position = await LocationService.getCurrentLocation();
+      if (position != null && mounted) {
+        setState(() {
+          _userPosition = position;
+        });
+        _updateUserLocationMarker(position);
+        
+        // Centrar el mapa en la ubicación del usuario
+        if (_mapController != null) {
+          _mapController!.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(position.latitude, position.longitude),
+              15.0,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting user location: $e');
+    }
+  }
+
+  /// Actualiza el marcador de ubicación del usuario en el mapa
+  void _updateUserLocationMarker(Position position) {
+    final userLatLng = LatLng(position.latitude, position.longitude);
+    
+    // Remover marcadores previos del usuario
+    _markers.removeWhere((marker) => marker.markerId.value == 'user_location');
+    _circles.clear();
+
+    // Crear nuevo marcador para el usuario
+    final userMarker = Marker(
+      markerId: const MarkerId('user_location'),
+      position: userLatLng,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      anchor: const Offset(0.5, 0.5),
+      zIndex: 999, // Asegurar que esté por encima de otros marcadores
+      infoWindow: const InfoWindow(
+        title: '📍 Tu ubicación',
+        snippet: 'Ubicación actual',
+      ),
+    );
+
+    // Crear círculo de precisión
+    final accuracyCircle = Circle(
+      circleId: const CircleId('user_location_accuracy'),
+      center: userLatLng,
+      radius: position.accuracy,
+      fillColor: AppColors.primaryColor.withOpacity(0.1),
+      strokeColor: AppColors.primaryColor.withOpacity(0.3),
+      strokeWidth: 1,
+    );
+
+    // Crear círculo interior (punto distintivo)
+    final innerCircle = Circle(
+      circleId: const CircleId('user_location_inner'),
+      center: userLatLng,
+      radius: 8,
+      fillColor: AppColors.primaryColor,
+      strokeColor: Colors.white,
+      strokeWidth: 3,
+      zIndex: 998,
+    );
+
+    setState(() {
+      _markers.add(userMarker);
+      _circles.add(accuracyCircle);
+      _circles.add(innerCircle);
+    });
   }
 
   void _loadMapData() {
@@ -298,11 +380,13 @@ class _MapScreenState extends State<MapScreen> {
 
     return GoogleMap(
       initialCameraPosition: _initialPosition,
-      myLocationEnabled: true,
-      myLocationButtonEnabled: true,
+      myLocationEnabled: false, // Deshabilitado para usar marcador personalizado
+      myLocationButtonEnabled: false, // Usaremos botón personalizado
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
       compassEnabled: true,
+      markers: _markers,
+      circles: _circles,
       // Gestos de interacción habilitados
       zoomGesturesEnabled: true,
       scrollGesturesEnabled: true,
@@ -312,6 +396,15 @@ class _MapScreenState extends State<MapScreen> {
       onMapCreated: (GoogleMapController controller) {
         _mapController = controller;
         _applyMapStyle(isDark);
+        // Si ya tenemos ubicación, centrar el mapa
+        if (_userPosition != null) {
+          controller.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(_userPosition!.latitude, _userPosition!.longitude),
+              15.0,
+            ),
+          );
+        }
       },
     );
   }
