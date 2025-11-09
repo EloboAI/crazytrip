@@ -44,6 +44,7 @@ class _MapScreenState extends State<MapScreen> {
   Position? _userPosition;
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
+  bool _isLoadingLocation = true;
 
   // Posición inicial del mapa (San José, Costa Rica)
   static const CameraPosition _initialPosition = CameraPosition(
@@ -90,14 +91,19 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Obtiene la ubicación actual del usuario y la muestra en el mapa
   Future<void> _getUserLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+    
     try {
       final position = await LocationService.getCurrentLocation();
       if (position != null && mounted) {
         setState(() {
           _userPosition = position;
+          _isLoadingLocation = false;
         });
         _updateUserLocationMarker(position);
-
+        
         // Centrar el mapa en la ubicación del usuario
         if (_mapController != null) {
           _mapController!.animateCamera(
@@ -107,9 +113,80 @@ class _MapScreenState extends State<MapScreen> {
             ),
           );
         }
+      } else {
+        // No se pudo obtener la ubicación
+        setState(() {
+          _isLoadingLocation = false;
+        });
       }
     } catch (e) {
       debugPrint('Error getting user location: $e');
+      setState(() {
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
+  /// Re-centra el mapa en la ubicación actual del usuario
+  Future<void> _recenterOnUserLocation() async {
+    // Si ya tenemos una ubicación guardada, úsala
+    if (_userPosition != null && _mapController != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(_userPosition!.latitude, _userPosition!.longitude),
+          15.0,
+        ),
+      );
+      return;
+    }
+
+    // Si no tenemos ubicación, intenta obtenerla nuevamente
+    try {
+      final position = await LocationService.getCurrentLocation();
+      if (position != null && mounted) {
+        setState(() {
+          _userPosition = position;
+        });
+        _updateUserLocationMarker(position);
+        
+        if (_mapController != null) {
+          await _mapController!.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(position.latitude, position.longitude),
+              15.0,
+            ),
+          );
+        }
+      } else {
+        // No se pudo obtener la ubicación
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'No se pudo obtener tu ubicación. Verifica los permisos.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Reintentar',
+                textColor: Colors.white,
+                onPressed: _recenterOnUserLocation,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error recentering on user location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Error al obtener ubicación'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -227,6 +304,43 @@ class _MapScreenState extends State<MapScreen> {
           // Main content area
           _viewMode == MapViewMode.map ? _buildMapView() : _buildListView(),
 
+          // Loading indicator for location
+          if (_isLoadingLocation)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.l),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusMedium,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: AppSpacing.m),
+                        Text(
+                          'Obteniendo ubicación...',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Top controls
           SafeArea(
             child: Column(
@@ -240,6 +354,21 @@ class _MapScreenState extends State<MapScreen> {
 
           // Bottom sheet with results
           if (_viewMode == MapViewMode.map) _buildBottomSheet(),
+
+          // My Location Button (FloatingActionButton)
+          if (_viewMode == MapViewMode.map && !_isLoadingLocation)
+            Positioned(
+              right: AppSpacing.m,
+              bottom: 320, // Encima del bottom sheet
+              child: FloatingActionButton(
+                heroTag: 'myLocationButton',
+                onPressed: _recenterOnUserLocation,
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                child: const Icon(Icons.my_location, size: 28),
+              ),
+            ),
         ],
       ),
     );
