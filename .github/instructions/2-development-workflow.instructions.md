@@ -162,14 +162,22 @@ mcp_githubmcp_issue_write({
 
 **Step 3: Link Manual Task to Parent User Story**
 
-Link the manual Task to the parent User Story (NOT to the current Task):
+Link the manual Task to the parent User Story (NOT to the current Task). Execute these commands one by one.
 
+**Command 1: Get Parent User Story Node ID**
 ```bash
-# Get node IDs
 PARENT_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<parent_user_story_number> --jq '.node_id')
-MANUAL_TASK_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<new_manual_task_number> --jq '.node_id')
+echo "PARENT_NODE_ID=$PARENT_NODE_ID"
+```
 
-# Add as sub-issue to User Story
+**Command 2: Get Manual Task Node ID**
+```bash
+MANUAL_TASK_NODE_ID=$(./gh api repos/EloboAI/crazytrip/issues/<new_manual_task_number> --jq '.node_id')
+echo "MANUAL_TASK_NODE_ID=$MANUAL_TASK_NODE_ID"
+```
+
+**Command 3: Add as Sub-issue to User Story**
+```bash
 ./gh api graphql -f query="
 mutation {
   addSubIssue(input: {
@@ -185,12 +193,11 @@ mutation {
 
 **Step 4: Add to Project and Set Type**
 
+Execute these commands one by one.
+
+**Command 1: Add to Project and Get Project Item ID**
 ```bash
 PROJECT_ID="PVT_kwHOCi99Ic4BHjd7"
-TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
-TYPE_TASK="86b0c338"
-
-# Add to project
 ITEM_RESULT=$(./gh api graphql -f query="
 mutation {
   addProjectV2ItemById(input: {
@@ -202,10 +209,15 @@ mutation {
     }
   }
 }")
-
 PROJECT_ITEM_ID=$(echo "$ITEM_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+echo "PROJECT_ITEM_ID=$PROJECT_ITEM_ID"
+```
 
-# Set type to Task
+**Command 2: Set Type to Task**
+```bash
+TYPE_FIELD_ID="PVTSSF_lAHOCi99Ic4BHjd7zg4RozY"
+TYPE_TASK="86b0c338"
+
 ./gh api graphql -f query="
 mutation {
   updateProjectV2ItemFieldValue(input: {
