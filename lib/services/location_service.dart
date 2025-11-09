@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 /// Servicio para manejar permisos y obtención de ubicación del usuario
 class LocationService {
   /// Verifica y solicita permisos de ubicación
-  /// 
+  ///
   /// Retorna `true` si los permisos están concedidos o el usuario los acepta
   /// Retorna `false` si los permisos son denegados
   static Future<bool> requestLocationPermission() async {
@@ -19,7 +19,7 @@ class LocationService {
 
     // Verificar el estado actual de los permisos
     permission = await Geolocator.checkPermission();
-    
+
     if (permission == LocationPermission.denied) {
       // Los permisos están denegados, solicitar permisos
       permission = await Geolocator.requestPermission();
@@ -28,7 +28,7 @@ class LocationService {
         return false;
       }
     }
-    
+
     if (permission == LocationPermission.deniedForever) {
       // Los permisos están permanentemente denegados
       // El usuario debe habilitarlos manualmente desde configuración
@@ -40,7 +40,7 @@ class LocationService {
   }
 
   /// Obtiene la ubicación actual del usuario
-  /// 
+  ///
   /// Retorna `null` si no se puede obtener la ubicación
   static Future<Position?> getCurrentLocation() async {
     try {
@@ -66,7 +66,7 @@ class LocationService {
   }
 
   /// Crea un stream para escuchar cambios de ubicación en tiempo real
-  /// 
+  ///
   /// Este stream emite la nueva posición cada vez que el usuario se mueve
   static Stream<Position> getLocationStream() {
     return Geolocator.getPositionStream(
@@ -79,7 +79,7 @@ class LocationService {
   }
 
   /// Verifica el estado actual de los permisos sin solicitarlos
-  /// 
+  ///
   /// Retorna el estado actual del permiso de ubicación
   static Future<LocationPermission> checkPermission() async {
     return await Geolocator.checkPermission();

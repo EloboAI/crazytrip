@@ -97,7 +97,7 @@ class _MapScreenState extends State<MapScreen> {
           _userPosition = position;
         });
         _updateUserLocationMarker(position);
-        
+
         // Centrar el mapa en la ubicación del usuario
         if (_mapController != null) {
           _mapController!.animateCamera(
@@ -116,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
   /// Actualiza el marcador de ubicación del usuario en el mapa
   void _updateUserLocationMarker(Position position) {
     final userLatLng = LatLng(position.latitude, position.longitude);
-    
+
     // Remover marcadores previos del usuario
     _markers.removeWhere((marker) => marker.markerId.value == 'user_location');
     _circles.clear();
@@ -380,7 +380,8 @@ class _MapScreenState extends State<MapScreen> {
 
     return GoogleMap(
       initialCameraPosition: _initialPosition,
-      myLocationEnabled: false, // Deshabilitado para usar marcador personalizado
+      myLocationEnabled:
+          false, // Deshabilitado para usar marcador personalizado
       myLocationButtonEnabled: false, // Usaremos botón personalizado
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
