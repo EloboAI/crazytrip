@@ -55,6 +55,9 @@ dependencies:
   
   # Image processing for filters
   image: ^4.1.7
+  
+  # Video player for preview
+  video_player: ^2.8.2
 
 dev_dependencies:
   flutter_test:

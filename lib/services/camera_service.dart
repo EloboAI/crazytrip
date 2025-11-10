@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/camera_settings.dart';
 
 class CameraService {
@@ -7,6 +8,7 @@ class CameraService {
   List<CameraDescription> _cameras = [];
   CameraSettings _settings = const CameraSettings();
   DateTime? _recordingStartTime;
+  static const String _settingsKey = 'camera_settings';
   
   CameraController? get controller => _controller;
   CameraSettings get settings => _settings;
@@ -21,9 +23,38 @@ class CameraService {
     return initialize();
   }
 
+  /// Carga las configuraciones guardadas
+  Future<void> loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString(_settingsKey);
+      
+      if (settingsJson != null) {
+        _settings = CameraSettings.fromJson(settingsJson);
+      }
+    } catch (e) {
+      // Si hay error al cargar, usar configuraciones por defecto
+      _settings = const CameraSettings();
+    }
+  }
+
+  /// Guarda las configuraciones actuales
+  Future<void> saveSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_settingsKey, _settings.toJson());
+    } catch (e) {
+      // Error al guardar, pero no lanzamos excepción para no interrumpir el flujo
+      throw Exception('Error al guardar configuración: $e');
+    }
+  }
+
   /// Inicializa las cámaras disponibles
   Future<void> initialize() async {
     try {
+      // Cargar configuraciones guardadas primero
+      await loadSettings();
+      
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
         throw Exception('No hay cámaras disponibles');
@@ -108,6 +139,9 @@ class CameraService {
       // Configurar zoom
       await _controller!.setZoomLevel(newSettings.zoomLevel);
       
+      // Guardar configuraciones automáticamente
+      await saveSettings();
+      
       // Notificar cambios solo si el stream no está cerrado
       if (!_settingsController.isClosed) {
         _settingsController.add(_settings);
@@ -162,7 +196,13 @@ class CameraService {
         }
       }
       
+      _settings = newSettings;
       await initializeCamera(cameraIndex: cameraIndex);
+      // Guardar configuraciones después de reinicializar
+      await saveSettings();
+      if (!_settingsController.isClosed) {
+        _settingsController.add(_settings);
+      }
     } else {
       await applySettings(newSettings);
     }
@@ -244,6 +284,7 @@ class CameraService {
     try {
       await _controller!.setFlashMode(_getFlashMode(flashMode));
       _settings = _settings.copyWith(flashMode: flashMode);
+      await saveSettings();
       if (!_settingsController.isClosed) {
         _settingsController.add(_settings);
       }
@@ -259,6 +300,7 @@ class CameraService {
     try {
       await _controller!.setZoomLevel(zoomLevel);
       _settings = _settings.copyWith(zoomLevel: zoomLevel);
+      await saveSettings();
       if (!_settingsController.isClosed) {
         _settingsController.add(_settings);
       }

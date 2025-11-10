@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -10,6 +13,7 @@ import '../services/filter_service.dart';
 import '../models/image_filter.dart';
 import '../widgets/filter_selector.dart';
 import 'camera_settings_screen.dart';
+import 'video_preview_screen.dart';
 
 enum CameraMode { scan, reel }
 
@@ -32,6 +36,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   bool _isCameraInitialized = false;
   CameraSettings _cameraSettings = const CameraSettings();
   bool _showFilters = false;
+  Timer? _recordingTimer;
+  Duration _recordingDuration = Duration.zero;
+  static const Duration _maxRecordingDuration = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -90,6 +97,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   @override
   void dispose() {
     _scanController.dispose();
+    _recordingTimer?.cancel();
     _cameraController?.dispose();
     _cameraService.dispose();
     _filterService.dispose();
@@ -152,17 +160,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       } else {
         // Grabar video
         if (!_isRecording) {
-          await _cameraService.startVideoRecording();
-          setState(() {
-            _isRecording = true;
-          });
+          await _startVideoRecording();
         } else {
-          final XFile? video = await _cameraService.stopVideoRecording();
-          if (video == null) return;
-          setState(() {
-            _isRecording = false;
-          });
-          await _showVideoPreview(video);
+          await _stopVideoRecording();
         }
       }
     } catch (e) {
@@ -206,12 +206,143 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
   }
 
+  Future<void> _startVideoRecording() async {
+    try {
+      await _cameraService.startVideoRecording();
+      setState(() {
+        _isRecording = true;
+        _recordingDuration = Duration.zero;
+      });
+      
+      // Iniciar timer para actualizar el contador cada segundo
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        
+        final duration = _cameraService.getRecordingDuration();
+        setState(() {
+          _recordingDuration = duration;
+        });
+        
+        // Detener automáticamente a los 30 segundos
+        if (duration >= _maxRecordingDuration) {
+          timer.cancel();
+          await _stopVideoRecording();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al iniciar grabación: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopVideoRecording() async {
+    try {
+      _recordingTimer?.cancel();
+      _recordingTimer = null;
+      
+      final XFile? video = await _cameraService.stopVideoRecording();
+      if (video == null) return;
+      
+      setState(() {
+        _isRecording = false;
+        _recordingDuration = Duration.zero;
+      });
+      
+      await _showVideoPreview(video);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al detener grabación: $e')),
+        );
+      }
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
   Future<void> _showVideoPreview(XFile video) async {
-    // TODO: Implementar pantalla de preview para videos
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video grabado exitosamente')),
-      );
+    if (!mounted) return;
+    
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPreviewScreen(
+          videoFile: video,
+          onConfirm: () async {
+            await _saveVideo(video);
+          },
+          onDiscard: () async {
+            await _deleteVideo(video);
+          },
+          onRetake: () async {
+            await _deleteVideo(video);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveVideo(XFile video) async {
+    try {
+      // Obtener directorio de documentos de la app
+      final directory = await getApplicationDocumentsDirectory();
+      final videosDir = Directory('${directory.path}/videos');
+      
+      // Crear directorio si no existe
+      if (!await videosDir.exists()) {
+        await videosDir.create(recursive: true);
+      }
+      
+      // Generar nombre único para el video
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'video_$timestamp.mp4';
+      final savedPath = '${videosDir.path}/$fileName';
+      
+      // Leer el video y copiarlo al directorio de almacenamiento
+      final videoBytes = await video.readAsBytes();
+      final savedFile = File(savedPath);
+      await savedFile.writeAsBytes(videoBytes);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Video guardado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving video: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar video: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteVideo(XFile video) async {
+    try {
+      final file = File(video.path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('Error deleting video: $e');
     }
   }
 
@@ -493,41 +624,96 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     ],
                   ),
                   const SizedBox(height: AppSpacing.m),
-                  // Mode Description
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
-                      vertical: AppSpacing.s,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.arOverlayBackground,
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.radiusMedium,
+                  // Recording Timer (visible during recording)
+                  if (_isRecording && _mode == CameraMode.reel)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.s,
                       ),
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _mode == CameraMode.scan
-                              ? Icons.info_outline
-                              : Icons.video_library,
-                          color: Colors.white,
-                          size: 16,
+                      decoration: BoxDecoration(
+                        color: _recordingDuration.inSeconds >= 25
+                            ? Colors.red.withOpacity(0.9)
+                            : AppColors.arOverlayBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusPill,
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          _mode == CameraMode.scan
-                              ? 'Apunta a objetos para identificarlos'
-                              : 'Graba reels para compartir',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: Colors.white,
+                        border: Border.all(
+                          color: _recordingDuration.inSeconds >= 25
+                              ? Colors.red
+                              : Colors.white.withOpacity(0.3),
+                          width: _recordingDuration.inSeconds >= 25 ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red,
+                            ),
                           ),
+                          const SizedBox(width: AppSpacing.s),
+                          Text(
+                            _formatDuration(_recordingDuration),
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: [const FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          if (_recordingDuration.inSeconds >= 25)
+                            Padding(
+                              padding: const EdgeInsets.only(left: AppSpacing.s),
+                              child: Text(
+                                '/ ${_formatDuration(_maxRecordingDuration)}',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  else
+                    // Mode Description
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.arOverlayBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMedium,
                         ),
-                      ],
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _mode == CameraMode.scan
+                                ? Icons.info_outline
+                                : Icons.video_library,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            _mode == CameraMode.scan
+                                ? 'Apunta a objetos para identificarlos'
+                                : 'Graba reels para compartir',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
