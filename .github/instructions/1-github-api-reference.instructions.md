@@ -4,6 +4,77 @@ applyTo: "**"
 
 # GitHub Work Items Management Instructions
 
+
+## Issue Dependencies and "Blocked by" Relationships
+
+### Marking Dependencies ("Blocked by")
+
+To indicate that an issue is blocked by another (e.g., Issue #12 blocked by Issue #14), **use the GraphQL mutation `addBlockedBy`**. There is no direct CLI flag or UI option for this; the relationship must be set explicitly via API.
+
+**Example command:**
+
+```bash
+# Get the node_id of both issues
+ISSUE_ID=$(./gh api repos/EloboAI/crazytrip/issues/12 --jq '.node_id')
+BLOCKING_ID=$(./gh api repos/EloboAI/crazytrip/issues/14 --jq '.node_id')
+
+# Run the mutation to mark the dependency
+./gh api graphql -f query='
+mutation {
+  addBlockedBy(input: {
+    issueId: "'$ISSUE_ID'"
+    blockingIssueId: "'$BLOCKING_ID'"
+  }) {
+    issue { id }
+    blockingIssue { id }
+  }
+}'
+```
+
+**Important notes:**
+- Always use the `./gh` prefix for commands.
+- The "blocked by" relationship will appear in the GitHub UI and API.
+- You can repeat this process for multiple dependencies.
+
+### Sub-Issue vs Blocked By
+
+- **Sub-issue** (`addSubIssue`): For hierarchy (Epic → Feature → User Story → Task).
+- **Blocked by** (`addBlockedBy`): For technical or business dependencies (not hierarchical).
+
+**Never mix both types of relationships.**  
+- Use `addSubIssue` only for parent/child hierarchy.
+- Use `addBlockedBy` only for dependencies that prevent progress.
+
+### Documenting Dependencies in the Issue Body
+
+In addition to the API relationship, **document the dependency in the issue body**:
+
+```markdown
+**Blocked by:** #14
+```
+
+Place this at the top of the issue body for maximum visibility.
+
+### Recommended Automation
+
+- When creating or analyzing issues, check for technical dependencies.
+- If you find a dependency, run the `addBlockedBy` command and document it in the body.
+- If the dependency is resolved, you can remove the relationship using the inverse mutation (`removeBlockedBy`).
+
+### Complete Example
+
+```bash
+# Mark Issue #12 as blocked by Issue #14
+ISSUE_ID=$(./gh api repos/EloboAI/crazytrip/issues/12 --jq '.node_id')
+BLOCKING_ID=$(./gh api repos/EloboAI/crazytrip/issues/14 --jq '.node_id')
+./gh api graphql -f query='mutation { addBlockedBy(input: {issueId: "'$ISSUE_ID'", blockingIssueId: "'$BLOCKING_ID'"} ) { issue { id } blockingIssue { id } } }'
+```
+
+In the body of #12:
+```markdown
+**Blocked by:** #14
+```
+
 ## Issue Hierarchy and Types
 
 This project follows a strict hierarchical structure for issues:
