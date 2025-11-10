@@ -55,10 +55,10 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     try {
       _cameraService = CameraService();
       await _cameraService.initializeCameras();
-      
+
       // Obtener el controlador del servicio
       _cameraController = _cameraService.controller;
-      
+
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         // Escuchar cambios en la configuración
         _cameraService.settingsStream.listen((settings) {
@@ -68,14 +68,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             });
           }
         });
-        
+
         if (mounted) {
           setState(() {
             _isCameraInitialized = true;
           });
         }
       } else {
-        throw Exception('El controlador de cámara no se inicializó correctamente');
+        throw Exception(
+          'El controlador de cámara no se inicializó correctamente',
+        );
       }
     } catch (e) {
       debugPrint('Error initializing camera: $e');
@@ -117,7 +119,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   void _toggleFlash() {
     if (!_isCameraInitialized) return;
-    
+
     CameraFlashMode newFlashMode;
     switch (_cameraSettings.flashMode) {
       case CameraFlashMode.off:
@@ -130,7 +132,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         newFlashMode = CameraFlashMode.off;
         break;
     }
-    
+
     _cameraService.updateFlashMode(newFlashMode);
   }
 
@@ -142,7 +144,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         // Tomar foto
         final XFile? photo = await _cameraService.takePicture();
         if (photo == null) return;
-        
+
         // Aplicar filtro si no es el filtro "none"
         if (_filterService.currentFilter.type != FilterType.none) {
           final originalBytes = await photo.readAsBytes();
@@ -150,7 +152,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             originalBytes,
             _filterService.currentFilter,
           );
-          
+
           // Guardar la imagen filtrada
           final filteredPhoto = XFile.fromData(filteredBytes);
           await _showImagePreview(filteredPhoto);
@@ -167,9 +169,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -178,9 +180,8 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CameraSettingsScreen(
-          cameraService: _cameraService,
-        ),
+        builder:
+            (context) => CameraSettingsScreen(cameraService: _cameraService),
       ),
     );
   }
@@ -190,9 +191,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       await _cameraService.switchCamera();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cambiar cámara: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al cambiar cámara: $e')));
       }
     }
   }
@@ -213,19 +214,21 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         _isRecording = true;
         _recordingDuration = Duration.zero;
       });
-      
+
       // Iniciar timer para actualizar el contador cada segundo
-      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (
+        timer,
+      ) async {
         if (!mounted) {
           timer.cancel();
           return;
         }
-        
+
         final duration = _cameraService.getRecordingDuration();
         setState(() {
           _recordingDuration = duration;
         });
-        
+
         // Detener automáticamente a los 30 segundos
         if (duration >= _maxRecordingDuration) {
           timer.cancel();
@@ -245,15 +248,15 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     try {
       _recordingTimer?.cancel();
       _recordingTimer = null;
-      
+
       final XFile? video = await _cameraService.stopVideoRecording();
       if (video == null) return;
-      
+
       setState(() {
         _isRecording = false;
         _recordingDuration = Duration.zero;
       });
-      
+
       await _showVideoPreview(video);
     } catch (e) {
       if (mounted) {
@@ -273,22 +276,23 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   Future<void> _showVideoPreview(XFile video) async {
     if (!mounted) return;
-    
+
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoPreviewScreen(
-          videoFile: video,
-          onConfirm: () async {
-            await _saveVideo(video);
-          },
-          onDiscard: () async {
-            await _deleteVideo(video);
-          },
-          onRetake: () async {
-            await _deleteVideo(video);
-          },
-        ),
+        builder:
+            (context) => VideoPreviewScreen(
+              videoFile: video,
+              onConfirm: () async {
+                await _saveVideo(video);
+              },
+              onDiscard: () async {
+                await _deleteVideo(video);
+              },
+              onRetake: () async {
+                await _deleteVideo(video);
+              },
+            ),
       ),
     );
   }
@@ -298,22 +302,22 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       // Obtener directorio de documentos de la app
       final directory = await getApplicationDocumentsDirectory();
       final videosDir = Directory('${directory.path}/videos');
-      
+
       // Crear directorio si no existe
       if (!await videosDir.exists()) {
         await videosDir.create(recursive: true);
       }
-      
+
       // Generar nombre único para el video
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'video_$timestamp.mp4';
       final savedPath = '${videosDir.path}/$fileName';
-      
+
       // Leer el video y copiarlo al directorio de almacenamiento
       final videoBytes = await video.readAsBytes();
       final savedFile = File(savedPath);
       await savedFile.writeAsBytes(videoBytes);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -347,16 +351,17 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   }
 
   Widget _buildCameraPreview() {
-    if (_isCameraInitialized && 
-        _cameraController != null && 
+    if (_isCameraInitialized &&
+        _cameraController != null &&
         _cameraController!.value.isInitialized) {
-      final needsFilterOverlay = _showFilters && 
-          _mode == CameraMode.scan && 
+      final needsFilterOverlay =
+          _showFilters &&
+          _mode == CameraMode.scan &&
           _filterService.currentFilter.type != FilterType.none;
-      
+
       // Obtener el aspect ratio de la cámara
       final aspectRatio = _cameraController!.value.aspectRatio;
-      
+
       Widget preview = SizedBox.expand(
         child: FittedBox(
           fit: BoxFit.cover,
@@ -367,14 +372,14 @@ class _ARScannerScreenState extends State<ARScannerScreen>
           ),
         ),
       );
-      
+
       if (needsFilterOverlay) {
         preview = ColorFiltered(
           colorFilter: _previewColorFilterFor(_filterService.currentFilter),
           child: preview,
         );
       }
-      
+
       return preview;
     }
 
@@ -399,7 +404,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             ),
             const SizedBox(height: AppSpacing.m),
             Text(
-              _isCameraInitialized ? 'Cargando cámara...' : 'Inicializando cámara...',
+              _isCameraInitialized
+                  ? 'Cargando cámara...'
+                  : 'Inicializando cámara...',
               style: AppTextStyles.headlineSmall.copyWith(
                 color: Colors.white.withOpacity(0.5),
               ),
@@ -413,10 +420,26 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   ColorFilter _previewColorFilterFor(ImageFilter filter) {
     final t = filter.intensity.clamp(0.0, 1.0);
     List<double> identity() => [
-      1, 0, 0, 0, 0,
-      0, 1, 0, 0, 0,
-      0, 0, 1, 0, 0,
-      0, 0, 0, 1, 0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
 
     List<double> blend(List<double> a, List<double> b, double alpha) {
@@ -428,17 +451,49 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
 
     List<double> sepia = [
-      0.393, 0.769, 0.189, 0, 0,
-      0.349, 0.686, 0.168, 0, 0,
-      0.272, 0.534, 0.131, 0, 0,
-      0,     0,     0,     1, 0,
+      0.393,
+      0.769,
+      0.189,
+      0,
+      0,
+      0.349,
+      0.686,
+      0.168,
+      0,
+      0,
+      0.272,
+      0.534,
+      0.131,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
 
     List<double> grayscale = [
-      0.2126, 0.7152, 0.0722, 0, 0,
-      0.2126, 0.7152, 0.0722, 0, 0,
-      0.2126, 0.7152, 0.0722, 0, 0,
-      0,      0,      0,      1, 0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
 
     List<double> saturation(double s) {
@@ -452,32 +507,38 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       final g = (1 - s) * bw;
       final h = (1 - s) * bw;
       final i = (1 - s) * bw + s;
-      return [
-        a, d, g, 0, 0,
-        b, e, h, 0, 0,
-        c, f, i, 0, 0,
-        0, 0, 0, 1, 0,
-      ];
+      return [a, d, g, 0, 0, b, e, h, 0, 0, c, f, i, 0, 0, 0, 0, 0, 1, 0];
     }
 
     List<double> contrast(double c) {
       final o = 128.0 * (1 - c);
-      return [
-        c, 0, 0, 0, o,
-        0, c, 0, 0, o,
-        0, 0, c, 0, o,
-        0, 0, 0, 1, 0,
-      ];
+      return [c, 0, 0, 0, o, 0, c, 0, 0, o, 0, 0, c, 0, o, 0, 0, 0, 1, 0];
     }
 
     List<double> temperature(double f, {bool warm = true}) {
       final rScale = warm ? 1 + 0.2 * f : 1 - 0.1 * f;
       final bScale = warm ? 1 - 0.1 * f : 1 + 0.2 * f;
       return [
-        rScale, 0,      0,      0, 0,
-        0,      1,      0,      0, 0,
-        0,      0,      bScale, 0, 0,
-        0,      0,      0,      1, 0,
+        rScale,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        bScale,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
       ];
     }
 
@@ -525,7 +586,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         children: [
           // Camera View
           _buildCameraPreview(),
-          
+
           // Scanning Reticle
           Center(
             child: AnimatedBuilder(
@@ -542,7 +603,6 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             ),
           ),
 
-          
           // Top Controls with Glassmorphism
           SafeArea(
             child: Padding(
@@ -552,16 +612,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        _GlassButton(
-                          icon: Icons.close,
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        _GlassButton(
-                          icon: Icons.flip_camera_ios,
-                          onTap: _switchCamera,
-                        ),
+                      _GlassButton(
+                        icon: Icons.close,
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      _GlassButton(
+                        icon: Icons.flip_camera_ios,
+                        onTap: _switchCamera,
+                      ),
                       // Mode Switcher
                       Container(
                         decoration: BoxDecoration(
@@ -632,16 +692,18 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                         vertical: AppSpacing.s,
                       ),
                       decoration: BoxDecoration(
-                        color: _recordingDuration.inSeconds >= 25
-                            ? Colors.red.withOpacity(0.9)
-                            : AppColors.arOverlayBackground,
+                        color:
+                            _recordingDuration.inSeconds >= 25
+                                ? Colors.red.withOpacity(0.9)
+                                : AppColors.arOverlayBackground,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusPill,
                         ),
                         border: Border.all(
-                          color: _recordingDuration.inSeconds >= 25
-                              ? Colors.red
-                              : Colors.white.withOpacity(0.3),
+                          color:
+                              _recordingDuration.inSeconds >= 25
+                                  ? Colors.red
+                                  : Colors.white.withOpacity(0.3),
                           width: _recordingDuration.inSeconds >= 25 ? 2 : 1,
                         ),
                       ),
@@ -662,12 +724,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                             style: AppTextStyles.titleMedium.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontFeatures: [const FontFeature.tabularFigures()],
+                              fontFeatures: [
+                                const FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
                           if (_recordingDuration.inSeconds >= 25)
                             Padding(
-                              padding: const EdgeInsets.only(left: AppSpacing.s),
+                              padding: const EdgeInsets.only(
+                                left: AppSpacing.s,
+                              ),
                               child: Text(
                                 '/ ${_formatDuration(_maxRecordingDuration)}',
                                 style: AppTextStyles.bodySmall.copyWith(
@@ -690,7 +756,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMedium,
                         ),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
