@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:camera/camera.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../services/camera_service.dart';
+import '../models/camera_settings.dart';
+import '../services/filter_service.dart';
+import '../models/image_filter.dart';
+import '../widgets/filter_selector.dart';
+import 'camera_settings_screen.dart';
 
 enum CameraMode { scan, reel }
 
@@ -15,9 +23,15 @@ class ARScannerScreen extends StatefulWidget {
 class _ARScannerScreenState extends State<ARScannerScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _scanController;
+  late CameraService _cameraService;
+  late FilterService _filterService;
+  CameraController? _cameraController;
   bool _isScanning = false;
   CameraMode _mode = CameraMode.scan;
   bool _isRecording = false;
+  bool _isCameraInitialized = false;
+  CameraSettings _cameraSettings = const CameraSettings();
+  bool _showFilters = false;
 
   @override
   void initState() {
@@ -26,12 +40,350 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+    _filterService = FilterService();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      _cameraService = CameraService();
+      await _cameraService.initializeCameras();
+      
+      // Obtener el controlador del servicio
+      _cameraController = _cameraService.controller;
+      
+      if (_cameraController != null && _cameraController!.value.isInitialized) {
+        // Escuchar cambios en la configuración
+        _cameraService.settingsStream.listen((settings) {
+          if (mounted) {
+            setState(() {
+              _cameraSettings = settings;
+            });
+          }
+        });
+        
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      } else {
+        throw Exception('El controlador de cámara no se inicializó correctamente');
+      }
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al inicializar cámara: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _scanController.dispose();
+    _cameraController?.dispose();
+    _cameraService.dispose();
+    _filterService.dispose();
     super.dispose();
+  }
+
+  IconData _getFlashIcon() {
+    switch (_cameraSettings.flashMode) {
+      case CameraFlashMode.auto:
+        return Icons.flash_auto;
+      case CameraFlashMode.always:
+        return Icons.flash_on;
+      case CameraFlashMode.off:
+        return Icons.flash_off;
+    }
+  }
+
+  void _toggleFlash() {
+    if (!_isCameraInitialized) return;
+    
+    CameraFlashMode newFlashMode;
+    switch (_cameraSettings.flashMode) {
+      case CameraFlashMode.off:
+        newFlashMode = CameraFlashMode.always;
+        break;
+      case CameraFlashMode.always:
+        newFlashMode = CameraFlashMode.auto;
+        break;
+      case CameraFlashMode.auto:
+        newFlashMode = CameraFlashMode.off;
+        break;
+    }
+    
+    _cameraService.updateFlashMode(newFlashMode);
+  }
+
+  Future<void> _handleCapture() async {
+    if (!_isCameraInitialized || _cameraController == null) return;
+
+    try {
+      if (_mode == CameraMode.scan) {
+        // Tomar foto
+        final XFile? photo = await _cameraService.takePicture();
+        if (photo == null) return;
+        
+        // Aplicar filtro si no es el filtro "none"
+        if (_filterService.currentFilter.type != FilterType.none) {
+          final originalBytes = await photo.readAsBytes();
+          final filteredBytes = await _filterService.applyFilterToBytes(
+            originalBytes,
+            _filterService.currentFilter,
+          );
+          
+          // Guardar la imagen filtrada
+          final filteredPhoto = XFile.fromData(filteredBytes);
+          await _showImagePreview(filteredPhoto);
+        } else {
+          await _showImagePreview(photo);
+        }
+      } else {
+        // Grabar video
+        if (!_isRecording) {
+          await _cameraService.startVideoRecording();
+          setState(() {
+            _isRecording = true;
+          });
+        } else {
+          final XFile? video = await _cameraService.stopVideoRecording();
+          if (video == null) return;
+          setState(() {
+            _isRecording = false;
+          });
+          await _showVideoPreview(video);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _openCameraSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraSettingsScreen(
+          cameraService: _cameraService,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _switchCamera() async {
+    try {
+      await _cameraService.switchCamera();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cambiar cámara: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showImagePreview(XFile image) async {
+    // TODO: Implementar pantalla de preview para fotos
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto capturada exitosamente')),
+      );
+    }
+  }
+
+  Future<void> _showVideoPreview(XFile video) async {
+    // TODO: Implementar pantalla de preview para videos
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video grabado exitosamente')),
+      );
+    }
+  }
+
+  Widget _buildCameraPreview() {
+    if (_isCameraInitialized && 
+        _cameraController != null && 
+        _cameraController!.value.isInitialized) {
+      final needsFilterOverlay = _showFilters && 
+          _mode == CameraMode.scan && 
+          _filterService.currentFilter.type != FilterType.none;
+      
+      // Obtener el aspect ratio de la cámara
+      final aspectRatio = _cameraController!.value.aspectRatio;
+      
+      Widget preview = SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 1,
+            height: 1 / aspectRatio,
+            child: CameraPreview(_cameraController!),
+          ),
+        ),
+      );
+      
+      if (needsFilterOverlay) {
+        preview = ColorFiltered(
+          colorFilter: _previewColorFilterFor(_filterService.currentFilter),
+          child: preview,
+        );
+      }
+      
+      return preview;
+    }
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.0,
+          colors: [AppColors.primaryColor.withOpacity(0.2), Colors.black],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.camera_alt,
+              size: 120,
+              color: Colors.white.withOpacity(0.3),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              _isCameraInitialized ? 'Cargando cámara...' : 'Inicializando cámara...',
+              style: AppTextStyles.headlineSmall.copyWith(
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  ColorFilter _previewColorFilterFor(ImageFilter filter) {
+    final t = filter.intensity.clamp(0.0, 1.0);
+    List<double> identity() => [
+      1, 0, 0, 0, 0,
+      0, 1, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+
+    List<double> blend(List<double> a, List<double> b, double alpha) {
+      final out = List<double>.from(a);
+      for (int i = 0; i < out.length; i++) {
+        out[i] = a[i] * (1 - alpha) + b[i] * alpha;
+      }
+      return out;
+    }
+
+    List<double> sepia = [
+      0.393, 0.769, 0.189, 0, 0,
+      0.349, 0.686, 0.168, 0, 0,
+      0.272, 0.534, 0.131, 0, 0,
+      0,     0,     0,     1, 0,
+    ];
+
+    List<double> grayscale = [
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0,      0,      0,      1, 0,
+    ];
+
+    List<double> saturation(double s) {
+      const rw = 0.2126, gw = 0.7152, bw = 0.0722;
+      final a = (1 - s) * rw + s;
+      final b = (1 - s) * rw;
+      final c = (1 - s) * rw;
+      final d = (1 - s) * gw;
+      final e = (1 - s) * gw + s;
+      final f = (1 - s) * gw;
+      final g = (1 - s) * bw;
+      final h = (1 - s) * bw;
+      final i = (1 - s) * bw + s;
+      return [
+        a, d, g, 0, 0,
+        b, e, h, 0, 0,
+        c, f, i, 0, 0,
+        0, 0, 0, 1, 0,
+      ];
+    }
+
+    List<double> contrast(double c) {
+      final o = 128.0 * (1 - c);
+      return [
+        c, 0, 0, 0, o,
+        0, c, 0, 0, o,
+        0, 0, c, 0, o,
+        0, 0, 0, 1, 0,
+      ];
+    }
+
+    List<double> temperature(double f, {bool warm = true}) {
+      final rScale = warm ? 1 + 0.2 * f : 1 - 0.1 * f;
+      final bScale = warm ? 1 - 0.1 * f : 1 + 0.2 * f;
+      return [
+        rScale, 0,      0,      0, 0,
+        0,      1,      0,      0, 0,
+        0,      0,      bScale, 0, 0,
+        0,      0,      0,      1, 0,
+      ];
+    }
+
+    List<double> matrix;
+    switch (filter.type) {
+      case FilterType.none:
+        matrix = identity();
+        break;
+      case FilterType.sepia:
+        matrix = blend(identity(), sepia, t);
+        break;
+      case FilterType.blackAndWhite:
+        matrix = blend(identity(), grayscale, t);
+        break;
+      case FilterType.vintage:
+        // Slight sepia + slight desaturation
+        final m1 = blend(identity(), sepia, t * 0.6);
+        final m2 = saturation(1 - 0.3 * t);
+        // Multiply matrices approximately by blending again
+        matrix = blend(m1, m2, 0.5);
+        break;
+      case FilterType.vivid:
+        matrix = saturation(1 + 0.5 * t);
+        break;
+      case FilterType.warm:
+        matrix = temperature(t, warm: true);
+        break;
+      case FilterType.cool:
+        matrix = temperature(t, warm: false);
+        break;
+      case FilterType.dramatic:
+        final m1 = contrast(1 + 0.3 * t);
+        final m2 = saturation(1 - 0.2 * t);
+        matrix = blend(m1, m2, 0.5);
+        break;
+    }
+    return ColorFilter.matrix(matrix);
   }
 
   @override
@@ -40,36 +392,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Simulated Camera View
-          Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.0,
-                colors: [AppColors.primaryColor.withOpacity(0.2), Colors.black],
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.camera_alt,
-                    size: 120,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  Text(
-                    'AR Camera View',
-                    style: AppTextStyles.headlineSmall.copyWith(
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
+          // Camera View
+          _buildCameraPreview(),
+          
           // Scanning Reticle
           Center(
             child: AnimatedBuilder(
@@ -86,6 +411,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             ),
           ),
 
+          
           // Top Controls with Glassmorphism
           SafeArea(
             child: Padding(
@@ -95,12 +421,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _GlassButton(
-                        icon: Icons.close,
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
+                        _GlassButton(
+                          icon: Icons.close,
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                        _GlassButton(
+                          icon: Icons.flip_camera_ios,
+                          onTap: _switchCamera,
+                        ),
                       // Mode Switcher
                       Container(
                         decoration: BoxDecoration(
@@ -145,11 +475,20 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                           ],
                         ),
                       ),
-                      _GlassButton(
-                        icon: Icons.flash_off,
-                        onTap: () {
-                          // Toggle flash
-                        },
+                      Row(
+                        children: [
+                          _GlassButton(
+                            icon: Icons.settings,
+                            onTap: _openCameraSettings,
+                          ),
+                          const SizedBox(width: AppSpacing.s),
+                          _GlassButton(
+                            icon: _getFlashIcon(),
+                            onTap: () {
+                              _toggleFlash();
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -244,16 +583,22 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
                   const SizedBox(height: AppSpacing.l),
 
+                  // Filter Selector
+                  if (_showFilters && _mode == CameraMode.scan) ...[
+                    FilterSelector(
+                      filterService: _filterService,
+                      onFilterSelected: (filter) {
+                        // El filtro ya se aplica automáticamente
+                      },
+                      showIntensitySlider: true,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                  ],
+
                   // Capture Button
                   GestureDetector(
                     onTap: () {
-                      setState(() {
-                        if (_mode == CameraMode.scan) {
-                          _isScanning = !_isScanning;
-                        } else {
-                          _isRecording = !_isRecording;
-                        }
-                      });
+                      _handleCapture();
                     },
                     child: Container(
                       width: 80,

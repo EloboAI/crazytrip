@@ -46,6 +46,15 @@ dependencies:
   
   # Location
   geolocator: ^13.0.2
+  
+  # Camera
+  camera: ^0.10.5+9
+  
+  # Path provider for file storage
+  path_provider: ^2.1.1
+  
+  # Image processing for filters
+  image: ^4.1.7
 
 dev_dependencies:
   flutter_test:
