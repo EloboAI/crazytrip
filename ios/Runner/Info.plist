@@ -34,6 +34,8 @@
 	<string>La aplicación necesita acceso a tu ubicación para mostrar tu posición en el mapa.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>La aplicación necesita acceso al micrófono para grabar videos con audio.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>La aplicación necesita acceso a los sensores de movimiento para detectar la orientación de la cámara.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

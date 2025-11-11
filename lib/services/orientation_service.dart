@@ -55,27 +55,31 @@ class OrientationService {
         return null;
       }
 
-      // Obtener lectura de la brújula
-      CompassEvent? compassEvent;
-      try {
-        compassEvent = await FlutterCompass.events?.first.timeout(
-          const Duration(seconds: 2),
-        );
-      } catch (e) {
-        debugPrint('⚠️ Compass timeout: $e');
-        return null;
+      // Tomar múltiples lecturas y promediarlas para mayor precisión
+      final readings = <double>[];
+      CompassEvent? lastEvent;
+      
+      await for (final event in FlutterCompass.events!.take(5)) {
+        if (event.heading != null) {
+          readings.add(event.heading!);
+          lastEvent = event;
+        }
       }
 
-      if (compassEvent == null) {
+      if (readings.isEmpty || lastEvent == null) {
         debugPrint('⚠️ Could not read compass');
         return null;
       }
 
-      final bearing = compassEvent.heading ?? 0.0;
-      final accuracy = compassEvent.accuracy;
+      // Calcular bearing promedio (manejando el caso de 0°/360°)
+      final bearing = _calculateAverageBearing(readings);
+      final accuracy = lastEvent.accuracy;
 
       debugPrint(
-        '🧭 Compass: ${bearing.toStringAsFixed(1)}° (accuracy: ${accuracy?.toStringAsFixed(1) ?? "unknown"})',
+        '🧭 Compass readings: ${readings.map((r) => r.toStringAsFixed(1)).join(", ")}',
+      );
+      debugPrint(
+        '🧭 Average bearing: ${bearing.toStringAsFixed(1)}° (accuracy: ${accuracy?.toStringAsFixed(1) ?? "unknown"})',
       );
 
       _lastOrientation = CameraOrientation(
@@ -89,6 +93,36 @@ class OrientationService {
       debugPrint('OrientationService error: $e');
       return null;
     }
+  }
+
+  /// Calcula el promedio de múltiples lecturas de bearing
+  /// Maneja correctamente el caso de valores cerca de 0°/360°
+  double _calculateAverageBearing(List<double> bearings) {
+    if (bearings.isEmpty) return 0.0;
+    if (bearings.length == 1) return bearings.first;
+
+    // Convertir bearings a vectores y promediar
+    double sinSum = 0.0;
+    double cosSum = 0.0;
+
+    for (final bearing in bearings) {
+      final rad = _toRadians(bearing);
+      sinSum += math.sin(rad);
+      cosSum += math.cos(rad);
+    }
+
+    final avgSin = sinSum / bearings.length;
+    final avgCos = cosSum / bearings.length;
+
+    // Convertir de vuelta a bearing
+    var avgBearing = _toDegrees(math.atan2(avgSin, avgCos));
+    
+    // Normalizar a 0-360
+    if (avgBearing < 0) {
+      avgBearing += 360;
+    }
+
+    return avgBearing;
   }
 
   /// Inicia stream continuo de orientación (para actualizaciones en tiempo real)

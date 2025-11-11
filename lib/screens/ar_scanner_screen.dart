@@ -32,12 +32,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   late CameraService _cameraService;
   late FilterService _filterService;
   final VisionService _visionService = VisionService();
+  final OrientationService _orientationService = OrientationService();
   CameraController? _cameraController;
   CameraMode _mode = CameraMode.scan;
   bool _isCameraInitialized = false;
   bool _isRecording = false;
   bool _showFilters = false;
   bool _isScanning = false;
+  bool _showCompassDebug = true; // Mostrar indicador de brújula
+  CameraOrientation? _currentOrientation;
+  StreamSubscription<CameraOrientation>? _orientationSubscription;
   CameraSettings _cameraSettings = const CameraSettings();
   Timer? _recordingTimer;
   Duration _recordingDuration = Duration.zero;
@@ -56,6 +60,22 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     _filterService = FilterService();
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+    _startOrientationStream();
+  }
+
+  void _startOrientationStream() {
+    _orientationSubscription = _orientationService.getOrientationStream().listen(
+      (orientation) {
+        if (mounted) {
+          setState(() {
+            _currentOrientation = orientation;
+          });
+        }
+      },
+      onError: (error) {
+        debugPrint('Orientation stream error: $error');
+      },
+    );
   }
 
   Future<void> _initializeCamera() async {
@@ -92,10 +112,13 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   }
 
   @override
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scanAnim.dispose();
     _recordingTimer?.cancel();
+    _orientationSubscription?.cancel();
+    _orientationService.dispose();
     _cameraController?.dispose();
     _cameraService.dispose();
     _filterService.dispose();
@@ -969,6 +992,68 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                             isScanning: _isScanning,
                           ),
                         ),
+                  ),
+                ),
+              ),
+            // Indicador de brújula en tiempo real (DEBUG)
+            if (_showCompassDebug && _currentOrientation != null)
+              Positioned(
+                bottom: 120,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.explore,
+                            color: Colors.lightBlue,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Brújula',
+                            style: TextStyle(
+                              color: Colors.lightBlue.shade200,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_currentOrientation!.bearing.toStringAsFixed(0)}° ${_currentOrientation!.cardinalDirection}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      if (_currentOrientation!.accuracy != null)
+                        Text(
+                          'Precisión: ${_currentOrientation!.accuracy!.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
