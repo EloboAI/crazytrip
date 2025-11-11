@@ -19,7 +19,8 @@ class VisionResult {
   final String? broaderContext; // e.g., "Parte de la Cordillera de Talamanca"
   final String
   encounterRarity; // easy|medium|hard|epic - qué tan raro es ver esto AQUÍ
-  final String authenticity; // real|screen|print|unknown - autenticidad de la imagen
+  final String
+  authenticity; // real|screen|print|unknown - autenticidad de la imagen
   final Position? location;
   final LocationInfo? locationInfo;
   final CameraOrientation? orientation;
@@ -88,7 +89,9 @@ class VisionService {
             '\n- Encounter rarity: Consider if object is geographically common/rare HERE (arctic animal in tropics=epic)';
       } else if (location == null) {
         // Modo degradado: sin GPS
-        debugPrint('⚠️ Vision API - No location context available (GPS disabled)');
+        debugPrint(
+          '⚠️ Vision API - No location context available (GPS disabled)',
+        );
         locationContext =
             '\n\nNOTE: GPS unavailable. Identify without geographic context. Use generic international names for species/landmarks.';
       }

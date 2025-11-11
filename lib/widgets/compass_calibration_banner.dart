@@ -36,18 +36,12 @@ class _CompassCalibrationBannerState extends State<CompassCalibrationBanner>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
   }
@@ -76,9 +70,10 @@ class _CompassCalibrationBannerState extends State<CompassCalibrationBanner>
           margin: EdgeInsets.all(AppSpacing.m),
           padding: EdgeInsets.all(AppSpacing.m),
           decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.darkSurface.withOpacity(0.95)
-                : AppColors.lightSurface.withOpacity(0.95),
+            color:
+                isDark
+                    ? AppColors.darkSurface.withOpacity(0.95)
+                    : AppColors.lightSurface.withOpacity(0.95),
             borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
             border: Border.all(
               color: AppColors.warningColor.withOpacity(0.5),
@@ -118,17 +113,14 @@ class _CompassCalibrationBannerState extends State<CompassCalibrationBanner>
                     Text(
                       'Calibrar Brújula',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.warningColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.warningColor,
+                      ),
                     ),
                     SizedBox(height: AppSpacing.xxs),
                     Row(
                       children: [
-                        const Text(
-                          '📱',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        const Text('📱', style: TextStyle(fontSize: 16)),
                         SizedBox(width: AppSpacing.xxs),
                         Expanded(
                           child: Text(
@@ -148,9 +140,10 @@ class _CompassCalibrationBannerState extends State<CompassCalibrationBanner>
                   icon: Icon(
                     Icons.close,
                     size: AppSpacing.iconSmall,
-                    color: isDark
-                        ? AppColors.darkOnSurface.withOpacity(0.6)
-                        : AppColors.lightOnSurface.withOpacity(0.6),
+                    color:
+                        isDark
+                            ? AppColors.darkOnSurface.withOpacity(0.6)
+                            : AppColors.lightOnSurface.withOpacity(0.6),
                   ),
                   onPressed: _handleDismiss,
                   padding: EdgeInsets.zero,

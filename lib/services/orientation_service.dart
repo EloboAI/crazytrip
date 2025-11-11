@@ -9,18 +9,15 @@ class CameraOrientation {
   final double? accuracy; // Precisión de la brújula
   final bool isReliable; // Si la brújula es confiable (accuracy suficiente)
 
-  CameraOrientation({
-    required this.bearing,
-    this.pitch = 0.0,
-    this.accuracy,
-  }) : isReliable = _isAccuracyReliable(accuracy);
+  CameraOrientation({required this.bearing, this.pitch = 0.0, this.accuracy})
+    : isReliable = _isAccuracyReliable(accuracy);
 
   /// Define si el accuracy del sensor es suficiente para ser confiable
   /// iOS: accuracy de -1 a 1 (1 = más preciso)
   /// Android: accuracy de 0 a 3 (3 = alta precisión, 0 = sin calibración)
   static bool _isAccuracyReliable(double? accuracy) {
     if (accuracy == null) return false;
-    
+
     // En Android, accuracy < 2 indica que necesita calibración
     // En iOS, accuracy < 0.5 indica baja precisión
     // Usamos umbral conservador: >= 2 para Android (medio-alta precisión)

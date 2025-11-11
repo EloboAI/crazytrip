@@ -75,7 +75,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             if (mounted) {
               setState(() {
                 _currentOrientation = orientation;
-                
+
                 // Mostrar banner si la brújula es unreliable
                 // Ocultar banner si vuelve a ser reliable
                 _showCalibrationBanner = !orientation.isReliable;
@@ -140,9 +140,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                 size: AppSpacing.iconLarge,
               ),
               SizedBox(width: AppSpacing.xs),
-              const Expanded(
-                child: Text('GPS Desactivado'),
-              ),
+              const Expanded(child: Text('GPS Desactivado')),
             ],
           ),
           content: const Text(
@@ -174,7 +172,8 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       },
     );
 
-    return result ?? false; // Si se cierra el diálogo sin respuesta, retornar false
+    return result ??
+        false; // Si se cierra el diálogo sin respuesta, retornar false
   }
 
   @override
@@ -345,7 +344,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     try {
       // Verificar si GPS está activo ANTES de procesar
       final isGPSEnabled = await LocationService.isLocationServiceEnabled();
-      
+
       if (!isGPSEnabled && mounted) {
         // Mostrar diálogo informativo si GPS está deshabilitado
         final shouldContinue = await _showGPSDisabledDialog();
@@ -355,7 +354,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         }
         // Si shouldContinue es true, continuar en modo degradado (sin GPS)
       }
-      
+
       // Convertir XFile a File (si proviene de bytes, crear temporal)
       File file;
       if (image.path.isEmpty) {
@@ -372,10 +371,10 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       // Obtener ubicación actual (puede ser null si GPS está deshabilitado)
       Position? location;
       LocationInfo? locationInfo;
-      
+
       if (isGPSEnabled) {
         location = await LocationService.getCurrentLocation();
-        
+
         // Obtener información de ubicación (país, provincia, ciudad)
         if (location != null) {
           locationInfo = await GeocodingService().getLocationInfo(location);
@@ -1537,7 +1536,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   ),
                 ),
               ),
-            
+
             // Banner de calibración de brújula
             if (_showCalibrationBanner)
               Positioned(
@@ -1553,7 +1552,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   },
                 ),
               ),
-            
+
             Positioned(
               top: 8,
               left: 8,
