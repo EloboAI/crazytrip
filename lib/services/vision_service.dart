@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'env.dart';
 import 'geocoding_service.dart';
+import 'orientation_service.dart';
 
 class VisionResult {
   final String name;
@@ -15,6 +16,7 @@ class VisionResult {
   final String rarity;
   final Position? location;
   final LocationInfo? locationInfo;
+  final CameraOrientation? orientation;
   final File imageFile;
 
   VisionResult({
@@ -26,6 +28,7 @@ class VisionResult {
     required this.imageFile,
     this.location,
     this.locationInfo,
+    this.orientation,
   });
 }
 
@@ -39,6 +42,7 @@ class VisionService {
     File imageFile, {
     Position? location,
     LocationInfo? locationInfo,
+    CameraOrientation? orientation,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     try {
@@ -54,8 +58,19 @@ class VisionService {
         if (locationInfo.placeName != null) {
           locationContext += '\nNearby place: ${locationInfo.placeName}';
         }
+
+        // Agregar orientación de cámara si está disponible
+        if (orientation != null) {
+          locationContext +=
+              '\nCamera pointing at: ${orientation.bearing.toStringAsFixed(0)}° (${orientation.cardinalDirection})';
+          locationContext +=
+              '\n\nCRITICAL: Use the camera bearing to identify distant landmarks. The camera is pointing ${orientation.cardinalDirection} from the user location. If there are famous landmarks, mountains, volcanoes, or buildings in that direction, identify them by name.';
+          locationContext +=
+              '\nExample: User at coordinates near La Fortuna, Costa Rica, camera pointing West (270°) = Volcán Arenal is in that direction, so identify it as "Volcán Arenal".';
+        }
+
         locationContext +=
-            '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
+            '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location and camera direction to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
       }
 
       final prompt =
@@ -153,6 +168,7 @@ Examples:
         imageFile: imageFile,
         location: location,
         locationInfo: locationInfo,
+        orientation: orientation,
       );
     } on TimeoutException {
       debugPrint('VisionService timeout');

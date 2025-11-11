@@ -9,6 +9,7 @@ import '../theme/app_text_styles.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
 import '../services/geocoding_service.dart';
+import '../services/orientation_service.dart';
 import '../models/camera_settings.dart';
 import '../services/filter_service.dart';
 import '../models/image_filter.dart';
@@ -276,10 +277,21 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         locationInfo = await GeocodingService().getLocationInfo(location);
       }
 
+      // Obtener orientación de la cámara (hacia dónde apunta)
+      final orientationService = OrientationService();
+      final orientation = await orientationService.getCurrentOrientation();
+
+      if (orientation != null) {
+        debugPrint('🧭 Camera orientation: ${orientation.description}');
+      } else {
+        debugPrint('⚠️ Could not get camera orientation');
+      }
+
       final result = await _visionService.detectBestMatch(
         file,
         location: location,
         locationInfo: locationInfo,
+        orientation: orientation,
       );
       if (!mounted) return;
 
@@ -450,6 +462,56 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       ),
                     ],
                     const SizedBox(height: 12),
+                  ],
+
+                  // Orientación de la cámara
+                  if (result.orientation != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withAlpha(30),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue.withAlpha(60),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.explore,
+                            color: Colors.lightBlue,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Orientación',
+                                  style: TextStyle(
+                                    color: Colors.lightBlue,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${result.orientation!.cardinalDirection} (${result.orientation!.bearing.toStringAsFixed(0)}°)',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
 
                   // Coordenadas GPS

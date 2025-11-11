@@ -49,6 +49,9 @@ dependencies:
   # Location
   geolocator: ^13.0.2
   
+  # Compass/Orientation sensors
+  flutter_compass: ^0.8.0
+  
   # Camera
   camera: ^0.10.5+9
   
