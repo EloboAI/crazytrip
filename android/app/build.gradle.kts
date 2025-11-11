@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.info.crazytrip"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     // ndkVersion = flutter.ndkVersion  // Comentado temporalmente
 
     compileOptions {
