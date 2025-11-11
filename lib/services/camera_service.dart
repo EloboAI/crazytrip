@@ -202,6 +202,9 @@ class CameraService {
     CameraQuality? quality,
     bool? useFrontCamera,
     double? zoomLevel,
+    bool? compassEnabled,
+    bool? compassStyleCircular,
+    bool? compassShowDegrees,
   }) async {
     final newSettings = _settings.copyWith(
       flashMode: flashMode,
@@ -209,6 +212,9 @@ class CameraService {
       quality: quality,
       useFrontCamera: useFrontCamera,
       zoomLevel: zoomLevel,
+      compassEnabled: compassEnabled,
+      compassStyleCircular: compassStyleCircular,
+      compassShowDegrees: compassShowDegrees,
     );
 
     // Si cambia la calidad o la cámara, reinicializar
@@ -252,6 +258,31 @@ class CameraService {
       }
     } else {
       await applySettings(newSettings);
+    }
+  }
+
+  /// Actualiza únicamente las preferencias de la brújula (UI) sin tocar la cámara.
+  /// Evita llamadas a métodos del controlador para prevenir condiciones de carrera
+  /// que puedan ocurrir durante el rebuild del preview.
+  Future<void> updateCompassPreferences({
+    bool? compassEnabled,
+    bool? compassStyleCircular,
+    bool? compassShowDegrees,
+  }) async {
+    // Si no hay cambios, salir rápido
+    if (compassEnabled == null &&
+        compassStyleCircular == null &&
+        compassShowDegrees == null) {
+      return;
+    }
+    _settings = _settings.copyWith(
+      compassEnabled: compassEnabled,
+      compassStyleCircular: compassStyleCircular,
+      compassShowDegrees: compassShowDegrees,
+    );
+    await saveSettings();
+    if (!_settingsController.isClosed) {
+      _settingsController.add(_settings);
     }
   }
 

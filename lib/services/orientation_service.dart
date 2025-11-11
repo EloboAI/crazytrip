@@ -128,7 +128,11 @@ class OrientationService {
   /// Inicia stream continuo de orientación (para actualizaciones en tiempo real)
   Stream<CameraOrientation> getOrientationStream() {
     return FlutterCompass.events!.map((event) {
-      final bearing = event.heading ?? 0.0;
+      var bearing = event.heading ?? 0.0;
+      // Normalizar valores negativos (ej: -96° -> 264° Oeste)
+      if (bearing < 0) {
+        bearing += 360;
+      }
       final accuracy = event.accuracy;
 
       _lastOrientation = CameraOrientation(

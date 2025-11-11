@@ -10,6 +10,12 @@ class CameraSettings {
   final CameraQuality quality;
   final bool useFrontCamera;
   final double zoomLevel;
+  // Compass / orientation UI settings
+  final bool compassEnabled; // show any compass
+  final bool
+  compassStyleCircular; // true = circular dial, false = rectangular panel
+  final bool
+  compassShowDegrees; // show numeric degrees alongside cardinal direction
 
   const CameraSettings({
     this.flashMode = CameraFlashMode.auto,
@@ -17,6 +23,9 @@ class CameraSettings {
     this.quality = CameraQuality.high,
     this.useFrontCamera = false,
     this.zoomLevel = 1.0,
+    this.compassEnabled = true,
+    this.compassStyleCircular = true,
+    this.compassShowDegrees = true,
   });
 
   CameraSettings copyWith({
@@ -25,6 +34,9 @@ class CameraSettings {
     CameraQuality? quality,
     bool? useFrontCamera,
     double? zoomLevel,
+    bool? compassEnabled,
+    bool? compassStyleCircular,
+    bool? compassShowDegrees,
   }) {
     return CameraSettings(
       flashMode: flashMode ?? this.flashMode,
@@ -32,6 +44,9 @@ class CameraSettings {
       quality: quality ?? this.quality,
       useFrontCamera: useFrontCamera ?? this.useFrontCamera,
       zoomLevel: zoomLevel ?? this.zoomLevel,
+      compassEnabled: compassEnabled ?? this.compassEnabled,
+      compassStyleCircular: compassStyleCircular ?? this.compassStyleCircular,
+      compassShowDegrees: compassShowDegrees ?? this.compassShowDegrees,
     );
   }
 
@@ -42,6 +57,9 @@ class CameraSettings {
       'quality': quality.name,
       'useFrontCamera': useFrontCamera,
       'zoomLevel': zoomLevel,
+      'compassEnabled': compassEnabled,
+      'compassStyleCircular': compassStyleCircular,
+      'compassShowDegrees': compassShowDegrees,
     };
   }
 
@@ -58,6 +76,9 @@ class CameraSettings {
       ),
       useFrontCamera: map['useFrontCamera'] ?? false,
       zoomLevel: map['zoomLevel']?.toDouble() ?? 1.0,
+      compassEnabled: map['compassEnabled'] ?? true,
+      compassStyleCircular: map['compassStyleCircular'] ?? true,
+      compassShowDegrees: map['compassShowDegrees'] ?? true,
     );
   }
 
@@ -80,7 +101,10 @@ class CameraSettings {
         other.hdrEnabled == hdrEnabled &&
         other.quality == quality &&
         other.useFrontCamera == useFrontCamera &&
-        other.zoomLevel == zoomLevel;
+        other.zoomLevel == zoomLevel &&
+        other.compassEnabled == compassEnabled &&
+        other.compassStyleCircular == compassStyleCircular &&
+        other.compassShowDegrees == compassShowDegrees;
   }
 
   @override
@@ -89,6 +113,9 @@ class CameraSettings {
         hdrEnabled.hashCode ^
         quality.hashCode ^
         useFrontCamera.hashCode ^
-        zoomLevel.hashCode;
+        zoomLevel.hashCode ^
+        compassEnabled.hashCode ^
+        compassStyleCircular.hashCode ^
+        compassShowDegrees.hashCode;
   }
 }

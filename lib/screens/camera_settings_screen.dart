@@ -65,6 +65,8 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
                   const SizedBox(height: AppSpacing.m),
                   _buildCameraSettings(),
                   const SizedBox(height: AppSpacing.m),
+                  _buildCompassToggle(),
+                  const SizedBox(height: AppSpacing.m),
                   _buildZoomSettings(),
                   const SizedBox(height: AppSpacing.l),
                   _buildSaveButton(),
@@ -274,6 +276,67 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Solo toggle maestro para brújula; estilo se elige en la propia UI con long-press.
+  Widget _buildCompassToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.arOverlayBackground,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            child: Text(
+              'Brújula / Orientación',
+              style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+            ),
+          ),
+          SwitchListTile(
+            title: Text(
+              'Activar brújula',
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+            ),
+            subtitle: Text(
+              'Útil para identificar landmarks lejanos según dirección',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+            value: _currentSettings.compassEnabled,
+            onChanged: (v) {
+              setState(() {
+                _currentSettings = _currentSettings.copyWith(compassEnabled: v);
+              });
+            },
+            activeColor: AppColors.primaryColor,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+            ),
+          ),
+          if (_currentSettings.compassEnabled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.m,
+                0,
+                AppSpacing.m,
+                AppSpacing.m,
+              ),
+              child: Text(
+                'Mantén presionado la brújula en la cámara para cambiar estilo.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white54,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
         ],
       ),
     );

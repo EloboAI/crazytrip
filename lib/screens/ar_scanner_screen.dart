@@ -14,6 +14,7 @@ import '../models/camera_settings.dart';
 import '../services/filter_service.dart';
 import '../models/image_filter.dart';
 import '../widgets/filter_selector.dart';
+import '../widgets/compass_indicator.dart';
 import 'camera_settings_screen.dart';
 import 'video_preview_screen.dart';
 import '../services/vision_service.dart';
@@ -39,7 +40,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   bool _isRecording = false;
   bool _showFilters = false;
   bool _isScanning = false;
-  bool _showCompassDebug = true; // Mostrar indicador de brújula
+  bool _ghostCompass = false; // si true, mostrar estilo fantasma
   CameraOrientation? _currentOrientation;
   StreamSubscription<CameraOrientation>? _orientationSubscription;
   CameraSettings _cameraSettings = const CameraSettings();
@@ -584,6 +585,203 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
   }
 
+  Widget _buildCompassPanel() {
+    if (_currentOrientation == null) return const SizedBox();
+    final o = _currentOrientation!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.blueGrey.withOpacity(0.5), width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.explore,
+                size: 16,
+                color: Colors.lightBlueAccent,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Orientación',
+                style: TextStyle(
+                  color: Colors.lightBlueAccent.shade100,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _cameraSettings.compassShowDegrees
+                ? '${o.cardinalDirection} (${o.bearing.toStringAsFixed(0)}°)'
+                : o.cardinalDirection,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (o.accuracy != null)
+            Text(
+              '±${o.accuracy!.toStringAsFixed(0)}',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.55),
+                fontSize: 10,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompassStyleSelector() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (c) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Estilo de Brújula',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.pop(c),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildCompassStyleOption(
+                icon: Icons.radio_button_checked,
+                title: 'Circular (clásico)',
+                subtitle: 'Muestra un dial con aguja y cardinales',
+                selected: _cameraSettings.compassStyleCircular,
+                onTap: () => _updateCompassStyle(true),
+              ),
+              const SizedBox(height: 10),
+              _buildCompassStyleOption(
+                icon: Icons.crop_square,
+                title: 'Panel compacto',
+                subtitle: 'Muestra dirección y grados en formato reducido',
+                selected: !_cameraSettings.compassStyleCircular,
+                onTap: () => _updateCompassStyle(false),
+              ),
+              const SizedBox(height: 18),
+              SwitchListTile(
+                value: _cameraSettings.compassShowDegrees,
+                onChanged: (v) => _updateCompassDegrees(v),
+                title: const Text(
+                  'Mostrar grados numéricos',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Ej: 264° Oeste además del nombre cardinal',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                activeColor: Colors.lightBlueAccent,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompassStyleOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? Colors.blueGrey.withOpacity(0.35) : Colors.white10,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? Colors.lightBlueAccent : Colors.white24,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.lightBlueAccent, size: 26),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check_circle, color: Colors.lightBlueAccent),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _updateCompassStyle(bool circular) async {
+    setState(() {
+      _cameraSettings = _cameraSettings.copyWith(
+        compassStyleCircular: circular,
+      );
+    });
+    // Solo preferencias de UI: no tocar controlador de cámara
+    await _cameraService.updateCompassPreferences(
+      compassStyleCircular: circular,
+    );
+    if (mounted) Navigator.pop(context);
+  }
+
+  void _updateCompassDegrees(bool show) async {
+    setState(() {
+      _cameraSettings = _cameraSettings.copyWith(compassShowDegrees: show);
+    });
+    // Solo preferencias de UI: no tocar controlador de cámara
+    await _cameraService.updateCompassPreferences(compassShowDegrees: show);
+  }
+
   Future<void> _startVideoRecording() async {
     try {
       await _cameraService.startVideoRecording();
@@ -997,65 +1195,24 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   ),
                 ),
               ),
-            // Indicador de brújula en tiempo real (DEBUG)
-            if (_showCompassDebug && _currentOrientation != null)
+            // Indicador de brújula compacto
+            if (_currentOrientation != null && _cameraSettings.compassEnabled)
               Positioned(
-                bottom: 120,
+                bottom: 110,
                 left: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.blue.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.explore,
-                            color: Colors.lightBlue,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Brújula',
-                            style: TextStyle(
-                              color: Colors.lightBlue.shade200,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_currentOrientation!.bearing.toStringAsFixed(0)}° ${_currentOrientation!.cardinalDirection}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                      if (_currentOrientation!.accuracy != null)
-                        Text(
-                          'Precisión: ${_currentOrientation!.accuracy!.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 10,
-                          ),
-                        ),
-                    ],
+                child: GestureDetector(
+                  onTap: () => setState(() => _ghostCompass = !_ghostCompass),
+                  onLongPress: _showCompassStyleSelector,
+                  child: Opacity(
+                    opacity: _ghostCompass ? 0.35 : 1.0,
+                    child:
+                        _cameraSettings.compassStyleCircular
+                            ? CompassIndicator(
+                              orientation: _currentOrientation!,
+                              showDegrees: _cameraSettings.compassShowDegrees,
+                              size: 76,
+                            )
+                            : _buildCompassPanel(),
                   ),
                 ),
               ),
