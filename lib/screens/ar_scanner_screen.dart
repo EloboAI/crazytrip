@@ -101,15 +101,31 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     final controller = _cameraController;
-    if (controller == null || !controller.value.isInitialized) {
-      return;
-    }
-    if (state == AppLifecycleState.inactive) {
-      // App va a background, pausar cámara
-      controller.dispose();
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      // Si está grabando, detener grabación antes de pausar
+      if (_isRecording && mounted) {
+        _recordingTimer?.cancel();
+        _recordingTimer = null;
+        _cameraService.stopVideoRecording().catchError((_) => null);
+      }
+      // App va a background, marcar como no inicializada y pausar cámara
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+          _isRecording = false;
+          _recordingDuration = Duration.zero;
+        });
+      }
+      if (controller != null && controller.value.isInitialized) {
+        controller.dispose();
+      }
     } else if (state == AppLifecycleState.resumed) {
       // App regresa a foreground, reiniciar cámara
-      _initializeCamera();
+      if (mounted) {
+        _initializeCamera();
+      }
     }
   }
 
@@ -629,6 +645,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     icon: Icons.document_scanner,
                     label: 'SCAN',
                     isActive: _mode == CameraMode.scan,
+                    isDisabled: _isRecording,
                     onTap: () => _changeCameraMode(CameraMode.scan, false),
                   ),
                   const SizedBox(width: AppSpacing.s),
@@ -636,6 +653,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     icon: Icons.videocam,
                     label: 'REEL',
                     isActive: _mode == CameraMode.reel,
+                    isDisabled: _isScanning,
                     onTap: () => _changeCameraMode(CameraMode.reel, true),
                   ),
                 ],
@@ -749,42 +767,47 @@ class _ModeButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool isDisabled;
   final VoidCallback onTap;
   const _ModeButton({
     required this.icon,
     required this.label,
     required this.isActive,
+    this.isDisabled = false,
     required this.onTap,
   });
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.m,
-          vertical: AppSpacing.s,
-        ),
-        decoration: BoxDecoration(
-          color:
-              isActive
-                  ? AppColors.primaryColor.withOpacity(0.8)
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              label,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+    return Opacity(
+      opacity: isDisabled ? 0.4 : 1.0,
+      child: GestureDetector(
+        onTap: isDisabled ? null : onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.m,
+            vertical: AppSpacing.s,
+          ),
+          decoration: BoxDecoration(
+            color:
+                isActive
+                    ? AppColors.primaryColor.withOpacity(0.8)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label,
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: Colors.white,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
