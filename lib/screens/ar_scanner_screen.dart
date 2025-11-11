@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import '../theme/app_colors.dart';
@@ -19,77 +18,68 @@ enum CameraMode { scan, reel }
 
 class ARScannerScreen extends StatefulWidget {
   const ARScannerScreen({super.key});
-
   @override
   State<ARScannerScreen> createState() => _ARScannerScreenState();
 }
 
 class _ARScannerScreenState extends State<ARScannerScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _scanController;
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  late AnimationController _scanAnim;
   late CameraService _cameraService;
   late FilterService _filterService;
   CameraController? _cameraController;
-  bool _isScanning = false;
   CameraMode _mode = CameraMode.scan;
-  bool _isRecording = false;
   bool _isCameraInitialized = false;
-  CameraSettings _cameraSettings = const CameraSettings();
+  bool _isRecording = false;
   bool _showFilters = false;
+  bool _isScanning = false;
+  CameraSettings _cameraSettings = const CameraSettings();
   Timer? _recordingTimer;
   Duration _recordingDuration = Duration.zero;
   static const Duration _maxRecordingDuration = Duration(seconds: 30);
-
-  @override
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _baseZoom = 1.0;
+  double _currentZoom = 1.0;
+  int _pointers = 0; // contar dedos para pinch
   void initState() {
     super.initState();
-    _scanController = AnimationController(
+    _scanAnim = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
     _filterService = FilterService();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
   }
 
   Future<void> _initializeCamera() async {
     try {
       _cameraService = CameraService();
-      await _cameraService.initializeCameras();
-
-      // Obtener el controlador del servicio
+      // Activar audio solo en modo REEL (grabación video)
+      await _cameraService.initializeCameras(
+        enableAudio: _mode == CameraMode.reel,
+      );
       _cameraController = _cameraService.controller;
-
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        // Escuchar cambios en la configuración
-        _cameraService.settingsStream.listen((settings) {
-          if (mounted) {
-            setState(() {
-              _cameraSettings = settings;
-            });
-          }
-        });
-
-        if (mounted) {
-          setState(() {
-            _isCameraInitialized = true;
-          });
-        }
-      } else {
-        throw Exception(
-          'El controlador de cámara no se inicializó correctamente',
-        );
+      if (_cameraController == null ||
+          !_cameraController!.value.isInitialized) {
+        throw Exception('Controlador de cámara no inicializado');
       }
+      // Valores de zoom soportados
+      _minZoom = await _cameraController!.getMinZoomLevel();
+      _maxZoom = await _cameraController!.getMaxZoomLevel();
+      _currentZoom = _cameraSettings.zoomLevel;
+      _cameraService.settingsStream.listen((s) {
+        if (mounted) setState(() => _cameraSettings = s);
+      });
+      if (mounted) setState(() => _isCameraInitialized = true);
     } catch (e) {
-      debugPrint('Error initializing camera: $e');
+      debugPrint('Init cam error: $e');
       if (mounted) {
-        setState(() {
-          _isCameraInitialized = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al inicializar cámara: $e'),
+            content: Text('Error cámara: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -98,7 +88,8 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   @override
   void dispose() {
-    _scanController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _scanAnim.dispose();
     _recordingTimer?.cancel();
     _cameraController?.dispose();
     _cameraService.dispose();
@@ -106,7 +97,23 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     super.dispose();
   }
 
-  IconData _getFlashIcon() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive) {
+      // App va a background, pausar cámara
+      controller.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      // App regresa a foreground, reiniciar cámara
+      _initializeCamera();
+    }
+  }
+
+  IconData _flashIcon() {
     switch (_cameraSettings.flashMode) {
       case CameraFlashMode.auto:
         return Icons.flash_auto;
@@ -119,48 +126,38 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   void _toggleFlash() {
     if (!_isCameraInitialized) return;
-
-    CameraFlashMode newFlashMode;
+    CameraFlashMode next;
     switch (_cameraSettings.flashMode) {
       case CameraFlashMode.off:
-        newFlashMode = CameraFlashMode.always;
+        next = CameraFlashMode.always;
         break;
       case CameraFlashMode.always:
-        newFlashMode = CameraFlashMode.auto;
+        next = CameraFlashMode.auto;
         break;
       case CameraFlashMode.auto:
-        newFlashMode = CameraFlashMode.off;
+        next = CameraFlashMode.off;
         break;
     }
-
-    _cameraService.updateFlashMode(newFlashMode);
+    _cameraService.updateFlashMode(next);
   }
 
   Future<void> _handleCapture() async {
     if (!_isCameraInitialized || _cameraController == null) return;
-
     try {
       if (_mode == CameraMode.scan) {
-        // Tomar foto
-        final XFile? photo = await _cameraService.takePicture();
+        final photo = await _cameraService.takePicture();
         if (photo == null) return;
-
-        // Aplicar filtro si no es el filtro "none"
         if (_filterService.currentFilter.type != FilterType.none) {
-          final originalBytes = await photo.readAsBytes();
-          final filteredBytes = await _filterService.applyFilterToBytes(
-            originalBytes,
+          final bytes = await photo.readAsBytes();
+          final filtered = await _filterService.applyFilterToBytes(
+            bytes,
             _filterService.currentFilter,
           );
-
-          // Guardar la imagen filtrada
-          final filteredPhoto = XFile.fromData(filteredBytes);
-          await _showImagePreview(filteredPhoto);
+          await _showImagePreview(XFile.fromData(filtered));
         } else {
           await _showImagePreview(photo);
         }
       } else {
-        // Grabar video
         if (!_isRecording) {
           await _startVideoRecording();
         } else {
@@ -180,30 +177,62 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => CameraSettingsScreen(cameraService: _cameraService),
+        builder: (c) => CameraSettingsScreen(cameraService: _cameraService),
       ),
     );
   }
 
   Future<void> _switchCamera() async {
+    if (!_isCameraInitialized) return;
     try {
+      setState(() => _isCameraInitialized = false);
       await _cameraService.switchCamera();
+      await _cameraService.setEnableAudio(_mode == CameraMode.reel);
+      _cameraController = _cameraService.controller;
+      if (mounted &&
+          _cameraController != null &&
+          _cameraController!.value.isInitialized) {
+        setState(() => _isCameraInitialized = true);
+      }
     } catch (e) {
       if (mounted) {
+        _cameraController = _cameraService.controller;
+        final ok = _cameraController?.value.isInitialized ?? false;
+        setState(() => _isCameraInitialized = ok);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al cambiar cámara: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error cambio cámara: $e')));
       }
     }
   }
 
+  Future<void> _changeCameraMode(CameraMode newMode, bool enableAudio) async {
+    if (_mode == newMode) return;
+    setState(() {
+      _mode = newMode;
+      if (newMode == CameraMode.scan) _isRecording = false;
+      if (newMode == CameraMode.reel) _isScanning = false;
+      _isCameraInitialized = false;
+    });
+    Future.microtask(() async {
+      try {
+        await _cameraService.setEnableAudio(enableAudio);
+        _cameraController = _cameraService.controller;
+        if (mounted && _cameraController?.value.isInitialized == true) {
+          setState(() => _isCameraInitialized = true);
+        }
+      } catch (e) {
+        debugPrint('Error setting audio: $e');
+        if (mounted) setState(() => _isCameraInitialized = true);
+      }
+    });
+  }
+
   Future<void> _showImagePreview(XFile image) async {
-    // TODO: Implementar pantalla de preview para fotos
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto capturada exitosamente')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Foto capturada')));
     }
   }
 
@@ -214,8 +243,6 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         _isRecording = true;
         _recordingDuration = Duration.zero;
       });
-
-      // Iniciar timer para actualizar el contador cada segundo
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (
         timer,
       ) async {
@@ -223,24 +250,18 @@ class _ARScannerScreenState extends State<ARScannerScreen>
           timer.cancel();
           return;
         }
-
-        final duration = _cameraService.getRecordingDuration();
-        setState(() {
-          _recordingDuration = duration;
-        });
-
-        // Detener automáticamente a los 30 segundos
-        if (duration >= _maxRecordingDuration) {
+        final d = _cameraService.getRecordingDuration();
+        setState(() => _recordingDuration = d);
+        if (d >= _maxRecordingDuration) {
           timer.cancel();
           await _stopVideoRecording();
         }
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al iniciar grabación: $e')),
-        );
-      }
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error inicio grabación: $e')));
     }
   }
 
@@ -248,50 +269,37 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     try {
       _recordingTimer?.cancel();
       _recordingTimer = null;
-
-      final XFile? video = await _cameraService.stopVideoRecording();
+      final video = await _cameraService.stopVideoRecording();
       if (video == null) return;
-
       setState(() {
         _isRecording = false;
         _recordingDuration = Duration.zero;
       });
-
       await _showVideoPreview(video);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al detener grabación: $e')),
-        );
-      }
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error detener grabación: $e')));
     }
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
+  String _formatDuration(Duration d) {
+    String td(int n) => n.toString().padLeft(2, '0');
+    return '${td(d.inMinutes.remainder(60))}:${td(d.inSeconds.remainder(60))}';
   }
 
   Future<void> _showVideoPreview(XFile video) async {
     if (!mounted) return;
-
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
-            (context) => VideoPreviewScreen(
+            (c) => VideoPreviewScreen(
               videoFile: video,
-              onConfirm: () async {
-                await _saveVideo(video);
-              },
-              onDiscard: () async {
-                await _deleteVideo(video);
-              },
-              onRetake: () async {
-                await _deleteVideo(video);
-              },
+              onConfirm: () async => _saveVideo(video),
+              onDiscard: () async => _deleteVideo(video),
+              onRetake: () async => _deleteVideo(video),
             ),
       ),
     );
@@ -299,120 +307,114 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   Future<void> _saveVideo(XFile video) async {
     try {
-      // Obtener directorio de documentos de la app
-      final directory = await getApplicationDocumentsDirectory();
-      final videosDir = Directory('${directory.path}/videos');
-
-      // Crear directorio si no existe
-      if (!await videosDir.exists()) {
-        await videosDir.create(recursive: true);
-      }
-
-      // Generar nombre único para el video
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'video_$timestamp.mp4';
-      final savedPath = '${videosDir.path}/$fileName';
-
-      // Leer el video y copiarlo al directorio de almacenamiento
-      final videoBytes = await video.readAsBytes();
-      final savedFile = File(savedPath);
-      await savedFile.writeAsBytes(videoBytes);
-
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/videos');
+      if (!await folder.exists()) await folder.create(recursive: true);
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final path = '${folder.path}/video_$ts.mp4';
+      final bytes = await video.readAsBytes();
+      await File(path).writeAsBytes(bytes);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video guardado exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Video guardado')));
       }
     } catch (e) {
-      debugPrint('Error saving video: $e');
-      if (mounted) {
+      debugPrint('Save video error: $e');
+      if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar video: $e'),
+            content: Text('Error guardar video: $e'),
             backgroundColor: Colors.red,
           ),
         );
-      }
     }
   }
 
   Future<void> _deleteVideo(XFile video) async {
     try {
-      final file = File(video.path);
-      if (await file.exists()) {
-        await file.delete();
-      }
+      final f = File(video.path);
+      if (await f.exists()) await f.delete();
     } catch (e) {
-      debugPrint('Error deleting video: $e');
+      debugPrint('Delete video error: $e');
     }
   }
 
-  Widget _buildCameraPreview() {
-    if (_isCameraInitialized &&
-        _cameraController != null &&
-        _cameraController!.value.isInitialized) {
-      final needsFilterOverlay =
-          _showFilters &&
-          _mode == CameraMode.scan &&
-          _filterService.currentFilter.type != FilterType.none;
-
-      // Obtener el aspect ratio de la cámara
-      final aspectRatio = _cameraController!.value.aspectRatio;
-
-      Widget preview = SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: 1,
-            height: 1 / aspectRatio,
-            child: CameraPreview(_cameraController!),
-          ),
-        ),
-      );
-
-      if (needsFilterOverlay) {
-        preview = ColorFiltered(
-          colorFilter: _previewColorFilterFor(_filterService.currentFilter),
-          child: preview,
-        );
+  Widget _buildPreview() {
+    final controller = _cameraService.controller ?? _cameraController;
+    if (!_isCameraInitialized ||
+        controller == null ||
+        !controller.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    // Calcular aspect ratio correcto basado en previewSize y orientación.
+    final orientation = MediaQuery.of(context).orientation;
+    final size = controller.value.previewSize;
+    double displayAspect;
+    if (size != null) {
+      final w = size.width;
+      final h = size.height;
+      if (orientation == Orientation.portrait) {
+        // Si los datos están en landscape (w>h) invertimos.
+        displayAspect = w > h ? h / w : w / h;
+      } else {
+        // Landscape: usar width/height directamente.
+        displayAspect = w / h;
       }
-
-      return preview;
+    } else {
+      // Fallback: invertir el aspectRatio reportado (históricamente height/width)
+      final raw = controller.value.aspectRatio;
+      displayAspect = 1 / raw;
     }
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment.center,
-          radius: 1.0,
-          colors: [AppColors.primaryColor.withOpacity(0.2), Colors.black],
+    final screenSize = MediaQuery.of(context).size;
+    final screenRatio = screenSize.width / screenSize.height;
+    // Factor de escala para cubrir pantalla sin distorsión.
+    double scale = displayAspect / screenRatio;
+    if (scale < 1) scale = 1 / scale;
+
+    Widget preview = ClipRect(
+      child: Transform.scale(
+        scale: scale,
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: displayAspect,
+            child: CameraPreview(controller),
+          ),
         ),
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.camera_alt,
-              size: 120,
-              color: Colors.white.withOpacity(0.3),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              _isCameraInitialized
-                  ? 'Cargando cámara...'
-                  : 'Inicializando cámara...',
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: Colors.white.withOpacity(0.5),
-              ),
-            ),
-          ],
-        ),
+    );
+
+    final needsFilter =
+        _showFilters &&
+        _mode == CameraMode.scan &&
+        _filterService.currentFilter.type != FilterType.none;
+    if (needsFilter) {
+      preview = ColorFiltered(
+        colorFilter: _previewColorFilterFor(_filterService.currentFilter),
+        child: preview,
+      );
+    }
+
+    // Gestos para zoom: contamos dedos pero exigimos >=2; Listener cubre toda el área
+    return Listener(
+      onPointerDown: (_) => _pointers = (_pointers + 1).clamp(0, 10),
+      onPointerUp: (_) => _pointers = (_pointers - 1).clamp(0, 10),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onScaleStart: (_) => _baseZoom = _currentZoom,
+        onScaleUpdate: (details) async {
+          if (_pointers < 2) return; // requerir al menos dos dedos
+          final desired = (_baseZoom * details.scale).clamp(_minZoom, _maxZoom);
+          if ((desired - _currentZoom).abs() >= 0.01) {
+            _currentZoom = desired;
+            try {
+              await _cameraService.updateZoomLevel(_currentZoom);
+              if (mounted) setState(() {}); // reflejar cambios si es necesario
+            } catch (_) {}
+          }
+        },
+        child: preview,
       ),
     );
   }
@@ -441,13 +443,12 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       1,
       0,
     ];
-
     List<double> blend(List<double> a, List<double> b, double alpha) {
-      final out = List<double>.from(a);
-      for (int i = 0; i < out.length; i++) {
-        out[i] = a[i] * (1 - alpha) + b[i] * alpha;
+      final o = List<double>.from(a);
+      for (int i = 0; i < o.length; i++) {
+        o[i] = a[i] * (1 - alpha) + b[i] * alpha;
       }
-      return out;
+      return o;
     }
 
     List<double> sepia = [
@@ -472,7 +473,6 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       1,
       0,
     ];
-
     List<double> grayscale = [
       0.2126,
       0.7152,
@@ -495,7 +495,6 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       1,
       0,
     ];
-
     List<double> saturation(double s) {
       const rw = 0.2126, gw = 0.7152, bw = 0.0722;
       final a = (1 - s) * rw + s;
@@ -516,32 +515,22 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
 
     List<double> temperature(double f, {bool warm = true}) {
-      final rScale = warm ? 1 + 0.2 * f : 1 - 0.1 * f;
-      final bScale = warm ? 1 - 0.1 * f : 1 + 0.2 * f;
-      return [
-        rScale,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        bScale,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-      ];
+      final r = warm ? 1 + 0.2 * f : 1 - 0.1 * f;
+      final b = warm ? 1 - 0.1 * f : 1 + 0.2 * f;
+      return [r, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, b, 0, 0, 0, 0, 0, 1, 0];
     }
 
+    List<double> vivid = saturation(1 + 0.5 * t);
+    List<double> cool = temperature(
+      t,
+      warm: false,
+    ); // reuse temperature if needed
+    List<double> warm = temperature(t, warm: true);
+    List<double> dramatic = blend(
+      contrast(1 + 0.3 * t),
+      saturation(1 - 0.2 * t),
+      0.5,
+    );
     List<double> matrix;
     switch (filter.type) {
       case FilterType.none:
@@ -554,25 +543,23 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         matrix = blend(identity(), grayscale, t);
         break;
       case FilterType.vintage:
-        // Slight sepia + slight desaturation
-        final m1 = blend(identity(), sepia, t * 0.6);
-        final m2 = saturation(1 - 0.3 * t);
-        // Multiply matrices approximately by blending again
-        matrix = blend(m1, m2, 0.5);
+        matrix = blend(
+          blend(identity(), sepia, t * 0.6),
+          saturation(1 - 0.3 * t),
+          0.5,
+        );
         break;
       case FilterType.vivid:
-        matrix = saturation(1 + 0.5 * t);
+        matrix = vivid;
         break;
       case FilterType.warm:
-        matrix = temperature(t, warm: true);
+        matrix = warm;
         break;
       case FilterType.cool:
-        matrix = temperature(t, warm: false);
+        matrix = cool;
         break;
       case FilterType.dramatic:
-        final m1 = contrast(1 + 0.3 * t);
-        final m2 = saturation(1 - 0.2 * t);
-        matrix = blend(m1, m2, 0.5);
+        matrix = dramatic;
         break;
     }
     return ColorFilter.matrix(matrix);
@@ -582,281 +569,108 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Camera View
-          _buildCameraPreview(),
-
-          // Scanning Reticle
-          Center(
-            child: AnimatedBuilder(
-              animation: _scanController,
-              builder: (context, child) {
-                return CustomPaint(
-                  size: const Size(250, 250),
-                  painter: _ScanReticlePainter(
-                    progress: _scanController.value,
-                    isScanning: _isScanning,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(child: _buildPreview()),
+            if (_mode == CameraMode.scan)
+              IgnorePointer(
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _scanAnim,
+                    builder:
+                        (_, __) => CustomPaint(
+                          size: const Size(220, 220),
+                          painter: _ScanReticlePainter(
+                            progress: _scanAnim.value,
+                            isScanning: _isScanning,
+                          ),
+                        ),
                   ),
-                );
-              },
-            ),
-          ),
-
-          // Top Controls with Glassmorphism
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              child: Column(
+                ),
+              ),
+            Positioned(
+              top: 8,
+              left: 8,
+              right: 8,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  _GlassButton(
+                    icon: Icons.close,
+                    onTap: () => Navigator.pop(context),
+                  ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _GlassButton(
-                        icon: Icons.close,
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
                       _GlassButton(
                         icon: Icons.flip_camera_ios,
                         onTap: _switchCamera,
                       ),
-                      // Mode Switcher
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.arOverlayBackground,
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusPill,
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ModeButton(
-                              icon: Icons.document_scanner,
-                              label: 'SCAN',
-                              isActive: _mode == CameraMode.scan,
-                              onTap: () {
-                                setState(() {
-                                  _mode = CameraMode.scan;
-                                  _isRecording = false;
-                                });
-                              },
-                            ),
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.white.withOpacity(0.2),
-                            ),
-                            _ModeButton(
-                              icon: Icons.videocam,
-                              label: 'REEL',
-                              isActive: _mode == CameraMode.reel,
-                              onTap: () {
-                                setState(() {
-                                  _mode = CameraMode.reel;
-                                  _isScanning = false;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          _GlassButton(
-                            icon: Icons.settings,
-                            onTap: _openCameraSettings,
-                          ),
-                          const SizedBox(width: AppSpacing.s),
-                          _GlassButton(
-                            icon: _getFlashIcon(),
-                            onTap: () {
-                              _toggleFlash();
-                            },
-                          ),
-                        ],
+                      const SizedBox(width: AppSpacing.s),
+                      _GlassButton(icon: _flashIcon(), onTap: _toggleFlash),
+                      const SizedBox(width: AppSpacing.s),
+                      _GlassButton(
+                        icon: Icons.settings,
+                        onTap: _openCameraSettings,
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.m),
-                  // Recording Timer (visible during recording)
-                  if (_isRecording && _mode == CameraMode.reel)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            _recordingDuration.inSeconds >= 25
-                                ? Colors.red.withOpacity(0.9)
-                                : AppColors.arOverlayBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusPill,
-                        ),
-                        border: Border.all(
-                          color:
-                              _recordingDuration.inSeconds >= 25
-                                  ? Colors.red
-                                  : Colors.white.withOpacity(0.3),
-                          width: _recordingDuration.inSeconds >= 25 ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.red,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.s),
-                          Text(
-                            _formatDuration(_recordingDuration),
-                            style: AppTextStyles.titleMedium.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontFeatures: [
-                                const FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          if (_recordingDuration.inSeconds >= 25)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: AppSpacing.s,
-                              ),
-                              child: Text(
-                                '/ ${_formatDuration(_maxRecordingDuration)}',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    )
-                  else
-                    // Mode Description
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.arOverlayBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusMedium,
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _mode == CameraMode.scan
-                                ? Icons.info_outline
-                                : Icons.video_library,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            _mode == CameraMode.scan
-                                ? 'Apunta a objetos para identificarlos'
-                                : 'Graba reels para compartir',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
             ),
-          ),
-
-          // Bottom Controls
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Column(
+            Positioned(
+              top: 70,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Scanning Status
-                  if (_isScanning)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.arOverlayBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusPill,
-                        ),
-                        border: Border.all(
-                          color: AppColors.primaryColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppColors.primaryColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.s),
-                          Text(
-                            'Scanning for discoveries...',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                  _ModeButton(
+                    icon: Icons.document_scanner,
+                    label: 'SCAN',
+                    isActive: _mode == CameraMode.scan,
+                    onTap: () => _changeCameraMode(CameraMode.scan, false),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  _ModeButton(
+                    icon: Icons.videocam,
+                    label: 'REEL',
+                    isActive: _mode == CameraMode.reel,
+                    onTap: () => _changeCameraMode(CameraMode.reel, true),
+                  ),
+                ],
+              ),
+            ),
+            if (_mode == CameraMode.scan && _showFilters)
+              Positioned(
+                bottom: 170,
+                left: 0,
+                right: 0,
+                child: FilterSelector(
+                  filterService: _filterService,
+                  onFilterSelected: (_) {},
+                  showIntensitySlider: true,
+                ),
+              ),
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isRecording && _mode == CameraMode.reel)
+                    _RecordingBanner(
+                      duration: _recordingDuration,
+                      format: _formatDuration,
+                      maxDuration: _maxRecordingDuration,
                     ),
-
-                  const SizedBox(height: AppSpacing.l),
-
-                  // Filter Selector
-                  if (_showFilters && _mode == CameraMode.scan) ...[
-                    FilterSelector(
-                      filterService: _filterService,
-                      onFilterSelected: (filter) {
-                        // El filtro ya se aplica automáticamente
-                      },
-                      showIntensitySlider: true,
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                  ],
-
-                  // Capture Button
+                  const SizedBox(height: AppSpacing.m),
                   GestureDetector(
-                    onTap: () {
-                      _handleCapture();
-                    },
+                    onTap: _handleCapture,
                     child: Container(
-                      width: 80,
-                      height: 80,
+                      width: 78,
+                      height: 78,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -867,101 +681,43 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                           width: 4,
                         ),
                       ),
-                      child: Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape:
-                              _mode == CameraMode.scan
-                                  ? BoxShape.circle
-                                  : (_isRecording
-                                      ? BoxShape.rectangle
-                                      : BoxShape.circle),
-                          color:
-                              _mode == CameraMode.scan
-                                  ? (_isScanning
-                                      ? AppColors.primaryColor
-                                      : Colors.white)
-                                  : (_isRecording
-                                      ? Colors.red
-                                      : Colors.red.withOpacity(0.8)),
-                          borderRadius:
-                              _mode == CameraMode.reel && _isRecording
-                                  ? BorderRadius.circular(8)
-                                  : null,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: _isRecording ? 32 : 54,
+                          height: _isRecording ? 32 : 54,
+                          decoration: BoxDecoration(
+                            color:
+                                _mode == CameraMode.scan
+                                    ? (_isScanning
+                                        ? AppColors.primaryColor
+                                        : Colors.white)
+                                    : (_isRecording
+                                        ? Colors.red
+                                        : Colors.red.withOpacity(0.8)),
+                            borderRadius:
+                                _isRecording && _mode == CameraMode.reel
+                                    ? BorderRadius.circular(8)
+                                    : BorderRadius.circular(100),
+                          ),
                         ),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: AppSpacing.s),
-
-                  // Instructions
                   Text(
                     _mode == CameraMode.scan
-                        ? (_isScanning
-                            ? 'Identificando...'
-                            : 'Toca para escanear')
-                        : (_isRecording
-                            ? 'Grabando reel...'
-                            : 'Toca para grabar'),
+                        ? (_isScanning ? 'Escaneando...' : 'Toca para escanear')
+                        : (_isRecording ? 'Grabando...' : 'Toca para grabar'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white.withOpacity(0.8),
                     ),
                   ),
-
-                  const SizedBox(height: AppSpacing.l),
-
-                  // Quick Stats
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.m),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.arOverlayBackground,
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.radiusMedium,
-                      ),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _ARStat(
-                          icon: Icons.explore,
-                          value: '47',
-                          label: 'Scanned',
-                        ),
-                        Container(
-                          width: 1,
-                          height: 30,
-                          color: Colors.white.withOpacity(0.2),
-                        ),
-                        _ARStat(
-                          icon: Icons.stars,
-                          value: '3.4k',
-                          label: 'XP Earned',
-                        ),
-                        Container(
-                          width: 1,
-                          height: 30,
-                          color: Colors.white.withOpacity(0.2),
-                        ),
-                        _ARStat(
-                          icon: Icons.local_fire_department,
-                          value: '9',
-                          label: 'Streak',
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.m),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -970,9 +726,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 class _GlassButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-
   const _GlassButton({required this.icon, required this.onTap});
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -996,14 +750,12 @@ class _ModeButton extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
-
   const _ModeButton({
     required this.icon,
     required this.label,
     required this.isActive,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1039,34 +791,63 @@ class _ModeButton extends StatelessWidget {
   }
 }
 
-class _ARStat extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _ARStat({required this.icon, required this.value, required this.label});
-
+class _RecordingBanner extends StatelessWidget {
+  final Duration duration;
+  final String Function(Duration) format;
+  final Duration maxDuration;
+  const _RecordingBanner({
+    required this.duration,
+    required this.format,
+    required this.maxDuration,
+  });
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: AppColors.primaryColor, size: AppSpacing.iconSmall),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: AppTextStyles.titleMedium.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+    final warn = duration.inSeconds >= 25;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
+      ),
+      decoration: BoxDecoration(
+        color:
+            warn ? Colors.red.withOpacity(0.85) : AppColors.arOverlayBackground,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        border: Border.all(
+          color: warn ? Colors.red : Colors.white.withOpacity(0.3),
+          width: warn ? 2 : 1,
         ),
-        Text(
-          label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withOpacity(0.7),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.s),
+          Text(
+            format(duration),
+            style: AppTextStyles.titleMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (warn)
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.s),
+              child: Text(
+                '/ ${format(maxDuration)}',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -1074,93 +855,40 @@ class _ARStat extends StatelessWidget {
 class _ScanReticlePainter extends CustomPainter {
   final double progress;
   final bool isScanning;
-
   _ScanReticlePainter({required this.progress, required this.isScanning});
-
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2;
+    final l = r * 0.28;
+    final base =
         Paint()
-          ..color =
-              isScanning
-                  ? AppColors.primaryColor.withOpacity(0.8)
-                  : Colors.white.withOpacity(0.5)
+          ..color = (isScanning ? AppColors.primaryColor : Colors.white)
+              .withOpacity(isScanning ? 0.85 : 0.5)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3;
+    void corner(double sx, double sy, double dx, double dy) {
+      canvas.drawLine(Offset(sx, sy), Offset(dx, sy), base);
+      canvas.drawLine(Offset(sx, sy), Offset(sx, dy), base);
+    }
 
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    // Draw corner brackets
-    final cornerLength = radius * 0.3;
-
-    // Top-left
-    canvas.drawLine(
-      Offset(center.dx - radius, center.dy - radius),
-      Offset(center.dx - radius + cornerLength, center.dy - radius),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx - radius, center.dy - radius),
-      Offset(center.dx - radius, center.dy - radius + cornerLength),
-      paint,
-    );
-
-    // Top-right
-    canvas.drawLine(
-      Offset(center.dx + radius, center.dy - radius),
-      Offset(center.dx + radius - cornerLength, center.dy - radius),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx + radius, center.dy - radius),
-      Offset(center.dx + radius, center.dy - radius + cornerLength),
-      paint,
-    );
-
-    // Bottom-left
-    canvas.drawLine(
-      Offset(center.dx - radius, center.dy + radius),
-      Offset(center.dx - radius + cornerLength, center.dy + radius),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx - radius, center.dy + radius),
-      Offset(center.dx - radius, center.dy + radius - cornerLength),
-      paint,
-    );
-
-    // Bottom-right
-    canvas.drawLine(
-      Offset(center.dx + radius, center.dy + radius),
-      Offset(center.dx + radius - cornerLength, center.dy + radius),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx + radius, center.dy + radius),
-      Offset(center.dx + radius, center.dy + radius - cornerLength),
-      paint,
-    );
-
-    // Animated scanning line
+    corner(c.dx - r, c.dy - r, c.dx - r + l, c.dy - r + l);
+    corner(c.dx + r, c.dy - r, c.dx + r - l, c.dy - r + l);
+    corner(c.dx - r, c.dy + r, c.dx - r + l, c.dy + r - l);
+    corner(c.dx + r, c.dy + r, c.dx + r - l, c.dy + r - l);
     if (isScanning) {
-      final scanY = center.dy - radius + (radius * 2 * progress);
-      final scanPaint =
-          Paint()
-            ..color = AppColors.primaryColor.withOpacity(0.6)
-            ..strokeWidth = 2;
-
+      final y = c.dy - r + (r * 2 * progress);
       canvas.drawLine(
-        Offset(center.dx - radius, scanY),
-        Offset(center.dx + radius, scanY),
-        scanPaint,
+        Offset(c.dx - r, y),
+        Offset(c.dx + r, y),
+        Paint()
+          ..color = AppColors.primaryColor.withOpacity(0.6)
+          ..strokeWidth = 2,
       );
     }
   }
 
   @override
-  bool shouldRepaint(_ScanReticlePainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.isScanning != isScanning;
-  }
+  bool shouldRepaint(_ScanReticlePainter o) =>
+      o.progress != progress || o.isScanning != isScanning;
 }

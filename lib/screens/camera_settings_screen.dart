@@ -7,11 +7,8 @@ import '../theme/app_text_styles.dart';
 
 class CameraSettingsScreen extends StatefulWidget {
   final CameraService cameraService;
-  
-  const CameraSettingsScreen({
-    super.key,
-    required this.cameraService,
-  });
+
+  const CameraSettingsScreen({super.key, required this.cameraService});
 
   @override
   State<CameraSettingsScreen> createState() => _CameraSettingsScreenState();
@@ -25,7 +22,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
   void initState() {
     super.initState();
     _currentSettings = widget.cameraService.settings;
-    
+
     // Escuchar cambios en la configuración
     widget.cameraService.settingsStream.listen((settings) {
       if (mounted) {
@@ -52,24 +49,27 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
-          : ListView(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              children: [
-                _buildFlashSettings(),
-                const SizedBox(height: AppSpacing.m),
-                _buildHDRSetting(),
-                const SizedBox(height: AppSpacing.m),
-                _buildQualitySettings(),
-                const SizedBox(height: AppSpacing.m),
-                _buildCameraSettings(),
-                const SizedBox(height: AppSpacing.m),
-                _buildZoomSettings(),
-                const SizedBox(height: AppSpacing.l),
-                _buildSaveButton(),
-              ],
-            ),
+      body:
+          _isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryColor),
+              )
+              : ListView(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                children: [
+                  _buildFlashSettings(),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildHDRSetting(),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildQualitySettings(),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildCameraSettings(),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildZoomSettings(),
+                  const SizedBox(height: AppSpacing.l),
+                  _buildSaveButton(),
+                ],
+              ),
     );
   }
 
@@ -90,8 +90,8 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
             ),
           ),
-          ...CameraFlashMode.values.map((mode) => 
-            RadioListTile<CameraFlashMode>(
+          ...CameraFlashMode.values.map(
+            (mode) => RadioListTile<CameraFlashMode>(
               title: Text(
                 _getFlashModeText(mode),
                 style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
@@ -101,12 +101,16 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    _currentSettings = _currentSettings.copyWith(flashMode: value);
+                    _currentSettings = _currentSettings.copyWith(
+                      flashMode: value,
+                    );
                   });
                 }
               },
               activeColor: AppColors.primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.m,
+              ),
             ),
           ),
         ],
@@ -128,7 +132,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
         ),
         subtitle: Text(
           'Mejora la calidad de imagen en condiciones de poca luz',
-          style: AppTextStyles.bodySmall.copyWith(color: Colors.white.withOpacity(0.7)),
+          style: AppTextStyles.bodySmall.copyWith(
+            color: Colors.white.withOpacity(0.7),
+          ),
         ),
         value: _currentSettings.hdrEnabled,
         onChanged: (value) {
@@ -159,8 +165,8 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
             ),
           ),
-          ...CameraQuality.values.map((quality) => 
-            RadioListTile<CameraQuality>(
+          ...CameraQuality.values.map(
+            (quality) => RadioListTile<CameraQuality>(
               title: Text(
                 _getQualityText(quality),
                 style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
@@ -170,12 +176,16 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    _currentSettings = _currentSettings.copyWith(quality: value);
+                    _currentSettings = _currentSettings.copyWith(
+                      quality: value,
+                    );
                   });
                 }
               },
               activeColor: AppColors.primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.m,
+              ),
             ),
           ),
         ],
@@ -197,7 +207,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
         ),
         subtitle: Text(
           'Cambiar entre cámara frontal y trasera',
-          style: AppTextStyles.bodySmall.copyWith(color: Colors.white.withOpacity(0.7)),
+          style: AppTextStyles.bodySmall.copyWith(
+            color: Colors.white.withOpacity(0.7),
+          ),
         ),
         value: _currentSettings.useFrontCamera,
         onChanged: (value) {
@@ -216,14 +228,14 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
     const double minZoom = 1.0;
     const double maxZoom = 5.0;
     double currentZoom = _currentSettings.zoomLevel;
-    
+
     // Asegurar que el zoom esté dentro de límites razonables
     if (currentZoom < minZoom) {
       currentZoom = minZoom;
     } else if (currentZoom > maxZoom) {
       currentZoom = maxZoom;
     }
-    
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.arOverlayBackground,
@@ -257,7 +269,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
             child: Text(
               '${currentZoom.toStringAsFixed(1)}x',
-              style: AppTextStyles.bodySmall.copyWith(color: Colors.white.withOpacity(0.7)),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.white.withOpacity(0.7),
+              ),
             ),
           ),
         ],
@@ -307,9 +321,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al guardar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
       }
     } finally {
       if (mounted) {
@@ -339,6 +353,8 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
         return 'Media (balanceado)';
       case CameraQuality.high:
         return 'Alta (máxima calidad)';
+      case CameraQuality.max:
+        return 'Máxima (nativa del dispositivo)';
     }
   }
 }

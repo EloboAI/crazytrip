@@ -1,16 +1,8 @@
 import 'dart:convert';
 
-enum CameraFlashMode {
-  off,
-  auto,
-  always,
-}
+enum CameraFlashMode { off, auto, always }
 
-enum CameraQuality {
-  low,
-  medium,
-  high,
-}
+enum CameraQuality { low, medium, high, max }
 
 class CameraSettings {
   final CameraFlashMode flashMode;
@@ -82,21 +74,21 @@ class CameraSettings {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-  
+
     return other is CameraSettings &&
-      other.flashMode == flashMode &&
-      other.hdrEnabled == hdrEnabled &&
-      other.quality == quality &&
-      other.useFrontCamera == useFrontCamera &&
-      other.zoomLevel == zoomLevel;
+        other.flashMode == flashMode &&
+        other.hdrEnabled == hdrEnabled &&
+        other.quality == quality &&
+        other.useFrontCamera == useFrontCamera &&
+        other.zoomLevel == zoomLevel;
   }
 
   @override
   int get hashCode {
     return flashMode.hashCode ^
-      hdrEnabled.hashCode ^
-      quality.hashCode ^
-      useFrontCamera.hashCode ^
-      zoomLevel.hashCode;
+        hdrEnabled.hashCode ^
+        quality.hashCode ^
+        useFrontCamera.hashCode ^
+        zoomLevel.hashCode;
   }
 }

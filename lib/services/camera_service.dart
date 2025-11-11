@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/camera_settings.dart';
 
@@ -9,18 +10,21 @@ class CameraService {
   CameraSettings _settings = const CameraSettings();
   DateTime? _recordingStartTime;
   static const String _settingsKey = 'camera_settings';
-  
+  bool _initializing = false; // Previene inicializaciones concurrentes
+  bool _enableAudio = true; // control de audio según modo actual
+
   CameraController? get controller => _controller;
   CameraSettings get settings => _settings;
   bool get isInitialized => _controller?.value.isInitialized ?? false;
-  
+
   // Stream para notificar cambios en la configuración
   final _settingsController = StreamController<CameraSettings>.broadcast();
   Stream<CameraSettings> get settingsStream => _settingsController.stream;
 
   /// Inicializa las cámaras disponibles (alias para initialize)
-  Future<void> initializeCameras() async {
-    return initialize();
+  Future<void> initializeCameras({bool enableAudio = true}) async {
+    _enableAudio = enableAudio;
+    return initialize(enableAudio: enableAudio);
   }
 
   /// Carga las configuraciones guardadas
@@ -28,7 +32,7 @@ class CameraService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final settingsJson = prefs.getString(_settingsKey);
-      
+
       if (settingsJson != null) {
         _settings = CameraSettings.fromJson(settingsJson);
       }
@@ -50,16 +54,16 @@ class CameraService {
   }
 
   /// Inicializa las cámaras disponibles
-  Future<void> initialize() async {
+  Future<void> initialize({bool enableAudio = true}) async {
     try {
       // Cargar configuraciones guardadas primero
       await loadSettings();
-      
+
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
         throw Exception('No hay cámaras disponibles');
       }
-      
+
       // Encontrar el índice correcto de la cámara
       int cameraIndex = 0;
       if (_settings.useFrontCamera) {
@@ -85,17 +89,24 @@ class CameraService {
           cameraIndex = 0;
         }
       }
-      
-      await initializeCamera(cameraIndex: cameraIndex);
+
+      await initializeCamera(
+        cameraIndex: cameraIndex,
+        enableAudio: enableAudio,
+      );
     } catch (e) {
       throw Exception('Error al inicializar cámara: $e');
     }
   }
 
   /// Inicializa una cámara específica
-  Future<void> initializeCamera({int cameraIndex = 0}) async {
+  Future<void> initializeCamera({
+    int cameraIndex = 0,
+    bool? enableAudio,
+  }) async {
+    if (_initializing) return; // Evitar doble init concurrente
+    _initializing = true;
     try {
-      // Dispose solo del controlador anterior, no del StreamController
       await _controller?.dispose();
       _controller = null;
 
@@ -104,25 +115,58 @@ class CameraService {
       }
 
       final camera = _cameras[cameraIndex];
-      
-      _controller = CameraController(
-        camera,
-        _getResolutionPreset(_settings.quality),
-        enableAudio: true,
-      );
+      // Determinar si audio debe estar activo (scan vs reel)
+      if (enableAudio != null) {
+        _enableAudio = enableAudio;
+      }
 
-      await _controller!.initialize();
-      
-      // Establecer el zoom a 1.0 (sin zoom) por defecto
-      // Esto asegura que la cámara no tenga zoom excesivo al iniciar
-      // Actualizar la configuración con zoom 1.0 antes de aplicar
+      final preset = _getResolutionPreset(_settings.quality);
+      CameraController? created;
+      // Intento con preset elegido; si falla, degradar secuencialmente
+      // Priorizar presets altos para mejor calidad
+      final fallbackPresets =
+          <ResolutionPreset>[
+            ResolutionPreset.ultraHigh,
+            ResolutionPreset.veryHigh,
+            ResolutionPreset.max,
+            preset,
+            ResolutionPreset.high,
+            ResolutionPreset.medium,
+            ResolutionPreset.low,
+          ].toSet().toList(); // Eliminar duplicados
+      for (final p in fallbackPresets) {
+        try {
+          created = CameraController(camera, p, enableAudio: _enableAudio);
+          await created.initialize();
+          // Éxito
+          break;
+        } catch (_) {
+          await created?.dispose();
+          created = null;
+          continue; // probar siguiente
+        }
+      }
+      if (created == null) {
+        throw Exception('No se pudo inicializar cámara con ningún preset');
+      }
+      _controller = created;
+
+      // Intentar aplicar el flash actual; si falla, degradar a off
+      if (_settings.flashMode != CameraFlashMode.off) {
+        try {
+          await _controller!.setFlashMode(_getFlashMode(_settings.flashMode));
+        } catch (_) {
+          _settings = _settings.copyWith(flashMode: CameraFlashMode.off);
+        }
+      }
+
+      // Establecer el zoom a 1.0 y aplicar ajustes iniciales
       final settingsWithNoZoom = _settings.copyWith(zoomLevel: 1.0);
-      
-      // Aplicar configuración inicial (esto establecerá el zoom a 1.0)
       await applySettings(settingsWithNoZoom);
-      
     } catch (e) {
       throw Exception('Error al inicializar cámara $cameraIndex: $e');
+    } finally {
+      _initializing = false;
     }
   }
 
@@ -132,21 +176,20 @@ class CameraService {
 
     try {
       _settings = newSettings;
-      
+
       // Configurar flash
       await _controller!.setFlashMode(_getFlashMode(newSettings.flashMode));
-      
+
       // Configurar zoom
       await _controller!.setZoomLevel(newSettings.zoomLevel);
-      
+
       // Guardar configuraciones automáticamente
       await saveSettings();
-      
+
       // Notificar cambios solo si el stream no está cerrado
       if (!_settingsController.isClosed) {
         _settingsController.add(_settings);
       }
-      
     } catch (e) {
       throw Exception('Error al aplicar configuración: $e');
     }
@@ -169,7 +212,8 @@ class CameraService {
     );
 
     // Si cambia la calidad o la cámara, reinicializar
-    if (quality != _settings.quality || useFrontCamera != _settings.useFrontCamera) {
+    if (quality != _settings.quality ||
+        useFrontCamera != _settings.useFrontCamera) {
       // Encontrar el índice correcto de la cámara
       int cameraIndex = 0;
       if (newSettings.useFrontCamera) {
@@ -195,9 +239,12 @@ class CameraService {
           cameraIndex = 0;
         }
       }
-      
+
       _settings = newSettings;
-      await initializeCamera(cameraIndex: cameraIndex);
+      await initializeCamera(
+        cameraIndex: cameraIndex,
+        enableAudio: _enableAudio,
+      );
       // Guardar configuraciones después de reinicializar
       await saveSettings();
       if (!_settingsController.isClosed) {
@@ -251,17 +298,60 @@ class CameraService {
     }
   }
 
-
-
   /// Convierte CameraQuality a ResolutionPreset
   ResolutionPreset _getResolutionPreset(CameraQuality quality) {
     switch (quality) {
       case CameraQuality.low:
-        return ResolutionPreset.low;
+        return ResolutionPreset.medium; // Mejorar mínimo
       case CameraQuality.medium:
-        return ResolutionPreset.medium;
-      case CameraQuality.high:
         return ResolutionPreset.high;
+      case CameraQuality.high:
+        return ResolutionPreset.veryHigh;
+      case CameraQuality.max:
+        // Buscar el preset más alto disponible
+        return ResolutionPreset.ultraHigh;
+    }
+  }
+
+  /// Permite cambiar si el audio está habilitado sin modificar otros ajustes.
+  Future<void> setEnableAudio(bool value) async {
+    if (_enableAudio == value && isInitialized) return;
+    if (_initializing) {
+      // Evitar reinit concurrente durante cambio de audio
+      debugPrint('Skipping audio change: camera initializing');
+      return;
+    }
+
+    // Guardar zoom actual antes de reinicializar
+    final currentZoom = _settings.zoomLevel;
+    _enableAudio = value;
+
+    // Reinicializar cámara actual para aplicar cambio de audio
+    // Obtener índice actual de la cámara según configuración
+    int cameraIndex = 0;
+    if (_settings.useFrontCamera) {
+      final frontIndex = _cameras.indexWhere(
+        (c) => c.lensDirection == CameraLensDirection.front,
+      );
+      if (frontIndex != -1) cameraIndex = frontIndex;
+    } else {
+      final backIndex = _cameras.indexWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+      );
+      if (backIndex != -1) cameraIndex = backIndex;
+    }
+    try {
+      await initializeCamera(
+        cameraIndex: cameraIndex,
+        enableAudio: _enableAudio,
+      );
+      // Restaurar zoom
+      if (currentZoom != 1.0 && isInitialized) {
+        await _controller!.setZoomLevel(currentZoom);
+      }
+    } catch (e) {
+      debugPrint('Error reinitializing camera for audio change: $e');
+      rethrow;
     }
   }
 
@@ -273,14 +363,15 @@ class CameraService {
       case CameraFlashMode.auto:
         return FlashMode.auto;
       case CameraFlashMode.always:
-        return FlashMode.always;
+        // Usamos torch para mantener luz encendida en preview; FlashMode.always solo aplica al disparo
+        return FlashMode.torch;
     }
   }
 
   /// Actualiza el modo de flash
   Future<void> updateFlashMode(CameraFlashMode flashMode) async {
     if (!isInitialized) return;
-    
+
     try {
       await _controller!.setFlashMode(_getFlashMode(flashMode));
       _settings = _settings.copyWith(flashMode: flashMode);
@@ -289,6 +380,13 @@ class CameraService {
         _settingsController.add(_settings);
       }
     } catch (e) {
+      // Si falla y no era off, degradar a off
+      if (flashMode != CameraFlashMode.off) {
+        _settings = _settings.copyWith(flashMode: CameraFlashMode.off);
+        if (!_settingsController.isClosed) {
+          _settingsController.add(_settings);
+        }
+      }
       throw Exception('Error al actualizar flash: $e');
     }
   }
@@ -296,7 +394,7 @@ class CameraService {
   /// Actualiza el nivel de zoom
   Future<void> updateZoomLevel(double zoomLevel) async {
     if (!isInitialized) return;
-    
+
     try {
       await _controller!.setZoomLevel(zoomLevel);
       _settings = _settings.copyWith(zoomLevel: zoomLevel);
@@ -313,15 +411,22 @@ class CameraService {
   Future<void> switchCamera() async {
     if (_cameras.length < 2) return;
 
+    // Evitar cambio mientras se graba o toma foto
+    if (_controller?.value.isRecordingVideo == true ||
+        _controller?.value.isTakingPicture == true) {
+      throw Exception('No se puede cambiar cámara durante captura/grabación');
+    }
+
     // Encontrar el índice de la cámara opuesta
-    final oppositeLensDirection = _settings.useFrontCamera 
-        ? CameraLensDirection.back 
-        : CameraLensDirection.front;
-    
+    final oppositeLensDirection =
+        _settings.useFrontCamera
+            ? CameraLensDirection.back
+            : CameraLensDirection.front;
+
     final oppositeCameraIndex = _cameras.indexWhere(
       (camera) => camera.lensDirection == oppositeLensDirection,
     );
-    
+
     if (oppositeCameraIndex != -1) {
       await updateSettings(useFrontCamera: !_settings.useFrontCamera);
     }

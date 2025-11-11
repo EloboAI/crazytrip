@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 
@@ -73,41 +72,54 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = (pixel.r * 0.9 * intensity + pixel.r * (1 - intensity)).toInt();
         int g = (pixel.g * 0.8 * intensity + pixel.g * (1 - intensity)).toInt();
         int b = (pixel.b * 0.6 * intensity + pixel.b * (1 - intensity)).toInt();
-        
+
         r = r.clamp(0, 255);
         g = g.clamp(0, 255);
         b = b.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(r, g, b, pixel.a.toInt()));
       }
     }
     return Uint8List.fromList(img.encodeJpg(image));
   }
 
-  static Uint8List _applyBlackAndWhiteFilter(img.Image image, double intensity) {
+  static Uint8List _applyBlackAndWhiteFilter(
+    img.Image image,
+    double intensity,
+  ) {
     img.Image bwImage = img.grayscale(image);
-    
+
     if (intensity < 1.0) {
       // Mezclar con la imagen original para ajustar intensidad
       for (int y = 0; y < image.height; y++) {
         for (int x = 0; x < image.width; x++) {
           img.Pixel originalPixel = image.getPixel(x, y);
           img.Pixel bwPixel = bwImage.getPixel(x, y);
-          
-          int r = (bwPixel.r * intensity + originalPixel.r * (1 - intensity)).toInt();
-          int g = (bwPixel.g * intensity + originalPixel.g * (1 - intensity)).toInt();
-          int b = (bwPixel.b * intensity + originalPixel.b * (1 - intensity)).toInt();
-          
-          image.setPixel(x, y, img.ColorRgba8(r, g, b, originalPixel.a.toInt()));
+
+          int r =
+              (bwPixel.r * intensity + originalPixel.r * (1 - intensity))
+                  .toInt();
+          int g =
+              (bwPixel.g * intensity + originalPixel.g * (1 - intensity))
+                  .toInt();
+          int b =
+              (bwPixel.b * intensity + originalPixel.b * (1 - intensity))
+                  .toInt();
+
+          image.setPixel(
+            x,
+            y,
+            img.ColorRgba8(r, g, b, originalPixel.a.toInt()),
+          );
         }
       }
       return Uint8List.fromList(img.encodeJpg(image));
     }
-    
+
     return Uint8List.fromList(img.encodeJpg(bwImage));
   }
 
@@ -115,23 +127,23 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = pixel.r.toInt();
         int g = pixel.g.toInt();
         int b = pixel.b.toInt();
-        
+
         int tr = (0.393 * r + 0.769 * g + 0.189 * b).toInt();
         int tg = (0.349 * r + 0.686 * g + 0.168 * b).toInt();
         int tb = (0.272 * r + 0.534 * g + 0.131 * b).toInt();
-        
+
         tr = (tr * intensity + r * (1 - intensity)).toInt();
         tg = (tg * intensity + g * (1 - intensity)).toInt();
         tb = (tb * intensity + b * (1 - intensity)).toInt();
-        
+
         tr = tr.clamp(0, 255);
         tg = tg.clamp(0, 255);
         tb = tb.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(tr, tg, tb, pixel.a.toInt()));
       }
     }
@@ -142,15 +154,16 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = (pixel.r * 1.2 * intensity + pixel.r * (1 - intensity)).toInt();
-        int g = (pixel.g * 1.15 * intensity + pixel.g * (1 - intensity)).toInt();
+        int g =
+            (pixel.g * 1.15 * intensity + pixel.g * (1 - intensity)).toInt();
         int b = (pixel.b * 1.1 * intensity + pixel.b * (1 - intensity)).toInt();
-        
+
         r = r.clamp(0, 255);
         g = g.clamp(0, 255);
         b = b.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(r, g, b, pixel.a.toInt()));
       }
     }
@@ -161,14 +174,14 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = (pixel.r * 1.2 * intensity + pixel.r * (1 - intensity)).toInt();
         int g = pixel.g.toInt();
         int b = (pixel.b * 0.8 * intensity + pixel.b * (1 - intensity)).toInt();
-        
+
         r = r.clamp(0, 255);
         b = b.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(r, g, b, pixel.a.toInt()));
       }
     }
@@ -179,14 +192,14 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = (pixel.r * 0.8 * intensity + pixel.r * (1 - intensity)).toInt();
         int g = pixel.g.toInt();
         int b = (pixel.b * 1.2 * intensity + pixel.b * (1 - intensity)).toInt();
-        
+
         r = r.clamp(0, 255);
         b = b.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(r, g, b, pixel.a.toInt()));
       }
     }
@@ -197,20 +210,20 @@ class ImageFilter {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         img.Pixel pixel = image.getPixel(x, y);
-        
+
         int r = (pixel.r * 0.9 * intensity + pixel.r * (1 - intensity)).toInt();
         int g = (pixel.g * 0.9 * intensity + pixel.g * (1 - intensity)).toInt();
         int b = (pixel.b * 0.9 * intensity + pixel.b * (1 - intensity)).toInt();
-        
+
         // Aumentar contraste
         r = ((r - 128) * 1.2 + 128).toInt();
         g = ((g - 128) * 1.2 + 128).toInt();
         b = ((b - 128) * 1.2 + 128).toInt();
-        
+
         r = r.clamp(0, 255);
         g = g.clamp(0, 255);
         b = b.clamp(0, 255);
-        
+
         image.setPixel(x, y, img.ColorRgba8(r, g, b, pixel.a.toInt()));
       }
     }
