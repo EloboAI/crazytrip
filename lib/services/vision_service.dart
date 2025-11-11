@@ -14,6 +14,11 @@ class VisionResult {
   final String category;
   final String description;
   final String rarity;
+  final double confidence; // 0.0-1.0 confidence score
+  final String specificityLevel; // specific|general|group|unknown
+  final String? broaderContext; // e.g., "Parte de la Cordillera de Talamanca"
+  final String
+  encounterRarity; // easy|medium|hard|epic - qué tan raro es ver esto AQUÍ
   final Position? location;
   final LocationInfo? locationInfo;
   final CameraOrientation? orientation;
@@ -25,6 +30,10 @@ class VisionResult {
     required this.category,
     required this.description,
     required this.rarity,
+    required this.confidence,
+    required this.specificityLevel,
+    this.broaderContext,
+    required this.encounterRarity,
     required this.imageFile,
     this.location,
     this.locationInfo,
@@ -43,7 +52,7 @@ class VisionService {
     Position? location,
     LocationInfo? locationInfo,
     CameraOrientation? orientation,
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     try {
       final apiKey = Env.googleGeminiApiKey;
@@ -62,44 +71,54 @@ class VisionService {
         // Agregar orientación de cámara si está disponible
         if (orientation != null) {
           locationContext +=
-              '\nCamera pointing at: ${orientation.bearing.toStringAsFixed(0)}° (${orientation.cardinalDirection})';
+              '\nCamera: ${orientation.bearing.toStringAsFixed(0)}° ${orientation.cardinalDirection}';
           locationContext +=
-              '\n\nCRITICAL: Use the camera bearing to identify distant landmarks. The camera is pointing ${orientation.cardinalDirection} from the user location. If there are famous landmarks, mountains, volcanoes, or buildings in that direction, identify them by name.';
-          locationContext +=
-              '\nExample: User at coordinates near La Fortuna, Costa Rica, camera pointing West (270°) = Volcán Arenal is in that direction, so identify it as "Volcán Arenal".';
+              '\nUse bearing to identify landmarks (e.g., volcano, mountain) in that direction by EXACT name.';
         }
 
         locationContext +=
-            '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location and camera direction to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
+            '\n\nRULES:\n- Landmarks: Use GPS+bearing for EXACT names (not generic terms)';
         locationContext +=
-            '\n\nIMPORTANT FOR LANDMARKS AND MONUMENTS:\n- Real vs Replica: If you see a famous monument (e.g., Eiffel Tower, Statue of Liberty) but GPS shows it\'s NOT in the original location, identify it as a REPLICA. Example: Eiffel Tower photo in Las Vegas = "Torre Eiffel (Réplica de Las Vegas)", NOT "Torre Eiffel".';
+            '\n- Replicas: If monument GPS doesn\'t match origin, mark as replica';
         locationContext +=
-            '\n- Miniatures/Souvenirs: If the scale/context suggests it\'s a miniature, keychain, or souvenir (visible hands holding it, indoor setting, small size), identify it as such. Example: "Torre Eiffel (Llavero/Miniatura)", NOT the real monument.';
+            '\n- Species: Use LOCAL regional names based on country (e.g., "Tucán Pico Iris" in Costa Rica)';
         locationContext +=
-            '\n- Local Replicas: Many countries have replicas of famous monuments. Always specify the location. Example: "Torre Eiffel (Réplica en Parque de la Paz, Guatemala)" or "Estatua de la Libertad (Réplica en Tokio, Japón)".';
-        locationContext +=
-            '\n\nIMPORTANT FOR SPECIES IDENTIFICATION:\n- Trees/Plants: Geographic location is CRITICAL. Many trees look similar but are different species depending on the country. Example: "Ceiba" in Costa Rica vs "Kapok" in Asia - same family, different species. Use country/region to identify the EXACT species name and local name.';
-        locationContext +=
-            '\n- Animals: Some animals have regional variations or subspecies. Example: "Tucán Pico Iris" in Central America vs other toucan species in South America. Always specify the regional species.';
-        locationContext +=
-            '\n- Fruits: Many tropical fruits have regional names and varieties. Example: "Guanábana" in Costa Rica, "Soursop" elsewhere, "Graviola" in Brazil - botanically Annona muricata. Use the LOCAL name for the country.';
-        locationContext +=
-            '\n- Regional Endemic Species: If the species is endemic or native to this specific region/country, mention it in the description (e.g., "Endémico de Costa Rica").';
+            '\n- Encounter rarity: Consider if object is geographically common/rare HERE (arctic animal in tropics=epic)';
       }
 
       final prompt =
-          '''Identify the main object in this image and respond ONLY with this JSON (no markdown, no code blocks):
-{"name": "specific object name", "type": "specific type/breed/model", "category": "landmark|animal|food|building|nature|product|vehicle|other", "description": "brief description in Spanish", "rarity": "common|uncommon|rare|epic|legendary"}$locationContext
+          '''Identify objects/landmarks with precision. Analyze image and provide JSON response.
 
-Examples:
-- Animal: {"name": "Perro", "type": "Pomerania", "category": "animal", "description": "Peludo y adorable", "rarity": "common"}
-- Real Landmark (Paris, France): {"name": "Torre Eiffel", "type": "Monumento icónico", "category": "landmark", "description": "Torre de hierro de 330m en París", "rarity": "legendary"}
-- Replica (Las Vegas, USA): {"name": "Torre Eiffel (Réplica)", "type": "Réplica a escala 1:2", "category": "landmark", "description": "Réplica del Hotel Paris en Las Vegas", "rarity": "rare"}
-- Miniature/Souvenir: {"name": "Torre Eiffel (Llavero)", "type": "Souvenir miniatura", "category": "product", "description": "Llavero decorativo de la Torre Eiffel", "rarity": "common"}
-- Tree with GPS (Costa Rica): {"name": "Ceiba", "type": "Ceiba pentandra", "category": "nature", "description": "Árbol sagrado maya nativo de Centroamérica", "rarity": "rare"}
-- Animal with GPS (Costa Rica): {"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave nacional de Belice, común en Costa Rica", "rarity": "uncommon"}
-- Landmark with GPS: {"name": "Volcán Arenal", "type": "Volcán estratovolcán", "category": "landmark", "description": "Volcán activo en Costa Rica", "rarity": "epic"}
-- Food: {"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles costarricense", "rarity": "uncommon"}''';
+RULES:
+- Use GPS+bearing for EXACT landmark names ("Volcán Turrialba" not "Cordillera")
+- If uncertain (confidence<0.6): name="Objeto no identificado"
+- Prefer specific over general identification
+- Never guess
+
+ENCOUNTER RARITY (how rare to see THIS object HERE):
+- easy: Very common here (gallo pinto in Costa Rica)
+- medium: Somewhat common, needs luck (toucan in Costa Rica)
+- hard: Rare here (jaguar in Costa Rica)
+- epic: Geographically impossible/extreme (polar bear in tropics)
+
+RESPONSE (JSON only, no markdown):
+{
+  "name": "specific name OR 'Objeto no identificado'",
+  "type": "specific type/species OR 'Desconocido'",
+  "category": "landmark|animal|food|building|nature|product|vehicle|other|unknown",
+  "description": "brief Spanish description",
+  "rarity": "common|uncommon|rare|epic|legendary",
+  "confidence": 0.0-1.0,
+  "specificity_level": "specific|general|group|unknown",
+  "broader_context": "optional context",
+  "encounter_rarity": "easy|medium|hard|epic"
+}$locationContext
+
+EXAMPLES:
+{"name": "Volcán Turrialba", "type": "Volcán estratovolcán activo", "category": "landmark", "description": "Volcán activo de 3340m en Costa Rica", "rarity": "epic", "confidence": 0.95, "specificity_level": "specific", "broader_context": "Cordillera Volcánica Central", "encounter_rarity": "medium"}
+{"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave emblemática de Centroamérica", "rarity": "uncommon", "confidence": 0.93, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "medium"}
+{"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles tradicional", "rarity": "uncommon", "confidence": 0.91, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "easy"}
+{"name": "Jaguar", "type": "Panthera onca", "category": "animal", "description": "Felino en peligro de extinción", "rarity": "legendary", "confidence": 0.89, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "epic"}''';
 
       final body = jsonEncode({
         'contents': [
@@ -113,10 +132,10 @@ Examples:
           },
         ],
         'generationConfig': {
-          'temperature': 0.2,
+          'temperature': 0.1, // Más determinístico para mayor precisión
           'topK': 1,
           'topP': 0.8,
-          'maxOutputTokens': 600,
+          'maxOutputTokens': 2048,
         },
       });
 
@@ -170,13 +189,20 @@ Examples:
       final jsonText = jsonMatch.group(0)!;
       final result = jsonDecode(jsonText) as Map<String, dynamic>;
 
-      final name = result['name'] as String? ?? 'Unknown Object';
-      final type = result['type'] as String? ?? 'Unknown Type';
-      final category = result['category'] as String? ?? 'other';
+      final name = result['name'] as String? ?? 'Objeto no identificado';
+      final type = result['type'] as String? ?? 'Desconocido';
+      final category = result['category'] as String? ?? 'unknown';
       final description = result['description'] as String? ?? '';
       final rarity = result['rarity'] as String? ?? 'common';
+      final confidence = (result['confidence'] as num?)?.toDouble() ?? 0.5;
+      final specificityLevel =
+          result['specificity_level'] as String? ?? 'unknown';
+      final broaderContext = result['broader_context'] as String?;
+      final encounterRarity = result['encounter_rarity'] as String? ?? 'easy';
 
-      debugPrint('✅ Detected: $name ($type) - $rarity');
+      debugPrint(
+        '✅ Detected: $name ($type) - $rarity (confidence: ${(confidence * 100).toStringAsFixed(0)}%, specificity: $specificityLevel, encounter: $encounterRarity)',
+      );
 
       return VisionResult(
         name: name,
@@ -184,6 +210,10 @@ Examples:
         category: category,
         description: description,
         rarity: rarity,
+        confidence: confidence,
+        specificityLevel: specificityLevel,
+        broaderContext: broaderContext,
+        encounterRarity: encounterRarity,
         imageFile: imageFile,
         location: location,
         locationInfo: locationInfo,

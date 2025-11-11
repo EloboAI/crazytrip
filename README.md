@@ -1,4 +1,7 @@
 # 🌎 CrazyTrip
+**DEBUG**
+export PATH=$PATH:$HOME/Library/Android/sdk/platform-tools
+adb connect 192.168.100.4:45225  
 
 **Descubre, Colecciona, Comparte** - La red social de viajes con gamificación estilo Pokémon GO
 

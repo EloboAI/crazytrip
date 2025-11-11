@@ -437,6 +437,74 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 8),
+                                // Confidence indicator
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _getConfidenceColor(
+                                      result.confidence,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getConfidenceIcon(result.confidence),
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${(result.confidence * 100).toStringAsFixed(0)}%',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Encounter rarity indicator
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _getEncounterRarityColor(
+                                      result.encounterRarity,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getEncounterRarityIcon(
+                                          result.encounterRarity,
+                                        ),
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        result.encounterRarity.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -449,6 +517,42 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     result.description,
                     style: const TextStyle(color: Colors.white70, fontSize: 15),
                   ),
+
+                  // Broader context if available
+                  if (result.broaderContext != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: Colors.white60,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              result.broaderContext!,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   // Información de ubicación detallada
                   if (result.locationInfo != null) ...[
@@ -1143,6 +1247,60 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       case 'common':
       default:
         return Colors.grey;
+    }
+  }
+
+  Color _getConfidenceColor(double confidence) {
+    if (confidence >= 0.9) {
+      return const Color(0xFF4CAF50); // Verde - Alta confianza
+    } else if (confidence >= 0.7) {
+      return const Color(0xFF2196F3); // Azul - Buena confianza
+    } else if (confidence >= 0.5) {
+      return const Color(0xFFFFA726); // Naranja - Media confianza
+    } else {
+      return const Color(0xFFF44336); // Rojo - Baja confianza
+    }
+  }
+
+  IconData _getConfidenceIcon(double confidence) {
+    if (confidence >= 0.9) {
+      return Icons.verified;
+    } else if (confidence >= 0.7) {
+      return Icons.check_circle_outline;
+    } else if (confidence >= 0.5) {
+      return Icons.help_outline;
+    } else {
+      return Icons.error_outline;
+    }
+  }
+
+  Color _getEncounterRarityColor(String encounterRarity) {
+    switch (encounterRarity.toLowerCase()) {
+      case 'easy':
+        return const Color(0xFF4CAF50); // Verde - Muy común
+      case 'medium':
+        return const Color(0xFF2196F3); // Azul - Algo común
+      case 'hard':
+        return const Color(0xFFFFA726); // Naranja - Raro
+      case 'epic':
+        return const Color(0xFFE91E63); // Rosa/Magenta - Épico
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getEncounterRarityIcon(String encounterRarity) {
+    switch (encounterRarity.toLowerCase()) {
+      case 'easy':
+        return Icons.location_on; // Común en esta ubicación
+      case 'medium':
+        return Icons.star_half; // Requiere suerte
+      case 'hard':
+        return Icons.star; // Raro aquí
+      case 'epic':
+        return Icons.workspace_premium; // Extremadamente raro/épico
+      default:
+        return Icons.help_outline;
     }
   }
 
