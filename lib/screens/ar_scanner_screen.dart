@@ -650,61 +650,80 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (c) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        bool localCircular = _cameraSettings.compassStyleCircular;
+        bool localShowDegrees = _cameraSettings.compassShowDegrees;
+        return StatefulBuilder(
+          builder: (context, modalSetState) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Estilo de Brújula',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Estilo de Brújula',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(c),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(c),
+                  const SizedBox(height: 12),
+                  _buildCompassStyleOption(
+                    icon: Icons.radio_button_checked,
+                    title: 'Circular (clásico)',
+                    subtitle: 'Muestra un dial con aguja y cardinales',
+                    selected: localCircular,
+                    onTap: () {
+                      if (!localCircular) {
+                        modalSetState(() => localCircular = true);
+                        _updateCompassStyle(true); // cierra sheet
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildCompassStyleOption(
+                    icon: Icons.crop_square,
+                    title: 'Panel compacto',
+                    subtitle: 'Muestra dirección y grados en formato reducido',
+                    selected: !localCircular,
+                    onTap: () {
+                      if (localCircular) {
+                        modalSetState(() => localCircular = false);
+                        _updateCompassStyle(false); // cierra sheet
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  SwitchListTile(
+                    value: localShowDegrees,
+                    onChanged: (v) {
+                      modalSetState(() => localShowDegrees = v);
+                      _updateCompassDegrees(v);
+                    },
+                    title: const Text(
+                      'Mostrar grados numéricos',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    subtitle: const Text(
+                      'Ej: 264° Oeste además del nombre cardinal',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    activeColor: Colors.lightBlueAccent,
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _buildCompassStyleOption(
-                icon: Icons.radio_button_checked,
-                title: 'Circular (clásico)',
-                subtitle: 'Muestra un dial con aguja y cardinales',
-                selected: _cameraSettings.compassStyleCircular,
-                onTap: () => _updateCompassStyle(true),
-              ),
-              const SizedBox(height: 10),
-              _buildCompassStyleOption(
-                icon: Icons.crop_square,
-                title: 'Panel compacto',
-                subtitle: 'Muestra dirección y grados en formato reducido',
-                selected: !_cameraSettings.compassStyleCircular,
-                onTap: () => _updateCompassStyle(false),
-              ),
-              const SizedBox(height: 18),
-              SwitchListTile(
-                value: _cameraSettings.compassShowDegrees,
-                onChanged: (v) => _updateCompassDegrees(v),
-                title: const Text(
-                  'Mostrar grados numéricos',
-                  style: TextStyle(color: Colors.white),
-                ),
-                subtitle: const Text(
-                  'Ej: 264° Oeste además del nombre cardinal',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                activeColor: Colors.lightBlueAccent,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
