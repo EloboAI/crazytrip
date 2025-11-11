@@ -7,12 +7,14 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../services/camera_service.dart';
+import '../services/location_service.dart';
 import '../models/camera_settings.dart';
 import '../services/filter_service.dart';
 import '../models/image_filter.dart';
 import '../widgets/filter_selector.dart';
 import 'camera_settings_screen.dart';
 import 'video_preview_screen.dart';
+import '../services/vision_service.dart';
 
 enum CameraMode { scan, reel }
 
@@ -27,6 +29,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   late AnimationController _scanAnim;
   late CameraService _cameraService;
   late FilterService _filterService;
+  final VisionService _visionService = VisionService();
   CameraController? _cameraController;
   CameraMode _mode = CameraMode.scan;
   bool _isCameraInitialized = false;
@@ -161,6 +164,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     if (!_isCameraInitialized || _cameraController == null) return;
     try {
       if (_mode == CameraMode.scan) {
+        setState(() => _isScanning = true);
         final photo = await _cameraService.takePicture();
         if (photo == null) return;
         if (_filterService.currentFilter.type != FilterType.none) {
@@ -169,10 +173,11 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             bytes,
             _filterService.currentFilter,
           );
-          await _showImagePreview(XFile.fromData(filtered));
+          await _analyzePhoto(XFile.fromData(filtered));
         } else {
-          await _showImagePreview(photo);
+          await _analyzePhoto(photo);
         }
+        if (mounted) setState(() => _isScanning = false);
       } else {
         if (!_isRecording) {
           await _startVideoRecording();
@@ -244,11 +249,184 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     });
   }
 
-  Future<void> _showImagePreview(XFile image) async {
-    if (mounted) {
+  // Eliminado preview simple; ahora se analiza directamente la foto.
+
+  Future<void> _analyzePhoto(XFile image) async {
+    try {
+      // Convertir XFile a File (si proviene de bytes, crear temporal)
+      File file;
+      if (image.path.isEmpty) {
+        final dir = await getTemporaryDirectory();
+        final tmpPath =
+            '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final bytes = await image.readAsBytes();
+        file = File(tmpPath);
+        await file.writeAsBytes(bytes, flush: true);
+      } else {
+        file = File(image.path);
+      }
+
+      // Obtener ubicación actual
+      final location = await LocationService.getCurrentLocation();
+
+      final result = await _visionService.detectBestMatch(
+        file,
+        location: location,
+      );
+      if (!mounted) return;
+
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo identificar el objeto')),
+        );
+        return;
+      }
+
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.black87,
+        isScrollControlled: false,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (c) {
+          final icon = _getCategoryIcon(result.category);
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          'Vision AI',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(c),
+                    ),
+                  ],
+                ),
+                const Divider(color: Colors.white24, height: 32),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            result.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            result.type,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getRarityColor(result.rarity),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  result.rarity.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  result.description,
+                  style: const TextStyle(color: Colors.white70, fontSize: 15),
+                ),
+                if (result.location != null) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${result.location!.latitude.toStringAsFixed(6)}, ${result.location!.longitude.toStringAsFixed(6)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Foto capturada')));
+      ).showSnackBar(SnackBar(content: Text('Error análisis: $e')));
     }
   }
 
@@ -579,6 +757,43 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         break;
     }
     return ColorFilter.matrix(matrix);
+  }
+
+  Color _getRarityColor(String rarity) {
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        return const Color(0xFFFFD700); // Gold
+      case 'epic':
+        return const Color(0xFF9C27B0); // Purple
+      case 'rare':
+        return const Color(0xFF2196F3); // Blue
+      case 'uncommon':
+        return const Color(0xFF4CAF50); // Green
+      case 'common':
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'landmark':
+        return Icons.landscape;
+      case 'animal':
+        return Icons.pets;
+      case 'food':
+        return Icons.restaurant;
+      case 'building':
+        return Icons.business;
+      case 'nature':
+        return Icons.nature;
+      case 'product':
+        return Icons.shopping_bag;
+      case 'vehicle':
+        return Icons.directions_car;
+      default:
+        return Icons.category;
+    }
   }
 
   @override

@@ -13,4 +13,5 @@ class Env {
 
   static String get googleMapsApiKey => _get('GOOGLE_MAPS_API_KEY');
   static String get googleVisionApiKey => _get('GOOGLE_VISION_API_KEY');
+  static String get googleGeminiApiKey => _get('GOOGLE_GEMINI_API_KEY');
 }
