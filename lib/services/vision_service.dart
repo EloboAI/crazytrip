@@ -71,6 +71,14 @@ class VisionService {
 
         locationContext +=
             '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location and camera direction to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
+        locationContext +=
+            '\n\nIMPORTANT FOR SPECIES IDENTIFICATION:\n- Trees/Plants: Geographic location is CRITICAL. Many trees look similar but are different species depending on the country. Example: "Ceiba" in Costa Rica vs "Kapok" in Asia - same family, different species. Use country/region to identify the EXACT species name and local name.';
+        locationContext +=
+            '\n- Animals: Some animals have regional variations or subspecies. Example: "Tucán Pico Iris" in Central America vs other toucan species in South America. Always specify the regional species.';
+        locationContext +=
+            '\n- Fruits: Many tropical fruits have regional names and varieties. Example: "Guanábana" in Costa Rica, "Soursop" elsewhere, "Graviola" in Brazil - botanically Annona muricata. Use the LOCAL name for the country.';
+        locationContext +=
+            '\n- Regional Endemic Species: If the species is endemic or native to this specific region/country, mention it in the description (e.g., "Endémico de Costa Rica").';
       }
 
       final prompt =
@@ -79,6 +87,8 @@ class VisionService {
 
 Examples:
 - Animal: {"name": "Perro", "type": "Pomerania", "category": "animal", "description": "Peludo y adorable", "rarity": "common"}
+- Tree with GPS (Costa Rica): {"name": "Ceiba", "type": "Ceiba pentandra", "category": "nature", "description": "Árbol sagrado maya nativo de Centroamérica", "rarity": "rare"}
+- Animal with GPS (Costa Rica): {"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave nacional de Belice, común en Costa Rica", "rarity": "uncommon"}
 - Landmark with GPS: {"name": "Volcán Arenal", "type": "Volcán estratovolcán", "category": "landmark", "description": "Volcán activo en Costa Rica", "rarity": "epic"}
 - Food: {"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles costarricense", "rarity": "uncommon"}''';
 
