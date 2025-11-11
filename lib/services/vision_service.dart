@@ -72,6 +72,12 @@ class VisionService {
         locationContext +=
             '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location and camera direction to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
         locationContext +=
+            '\n\nIMPORTANT FOR LANDMARKS AND MONUMENTS:\n- Real vs Replica: If you see a famous monument (e.g., Eiffel Tower, Statue of Liberty) but GPS shows it\'s NOT in the original location, identify it as a REPLICA. Example: Eiffel Tower photo in Las Vegas = "Torre Eiffel (Réplica de Las Vegas)", NOT "Torre Eiffel".';
+        locationContext +=
+            '\n- Miniatures/Souvenirs: If the scale/context suggests it\'s a miniature, keychain, or souvenir (visible hands holding it, indoor setting, small size), identify it as such. Example: "Torre Eiffel (Llavero/Miniatura)", NOT the real monument.';
+        locationContext +=
+            '\n- Local Replicas: Many countries have replicas of famous monuments. Always specify the location. Example: "Torre Eiffel (Réplica en Parque de la Paz, Guatemala)" or "Estatua de la Libertad (Réplica en Tokio, Japón)".';
+        locationContext +=
             '\n\nIMPORTANT FOR SPECIES IDENTIFICATION:\n- Trees/Plants: Geographic location is CRITICAL. Many trees look similar but are different species depending on the country. Example: "Ceiba" in Costa Rica vs "Kapok" in Asia - same family, different species. Use country/region to identify the EXACT species name and local name.';
         locationContext +=
             '\n- Animals: Some animals have regional variations or subspecies. Example: "Tucán Pico Iris" in Central America vs other toucan species in South America. Always specify the regional species.';
@@ -87,6 +93,9 @@ class VisionService {
 
 Examples:
 - Animal: {"name": "Perro", "type": "Pomerania", "category": "animal", "description": "Peludo y adorable", "rarity": "common"}
+- Real Landmark (Paris, France): {"name": "Torre Eiffel", "type": "Monumento icónico", "category": "landmark", "description": "Torre de hierro de 330m en París", "rarity": "legendary"}
+- Replica (Las Vegas, USA): {"name": "Torre Eiffel (Réplica)", "type": "Réplica a escala 1:2", "category": "landmark", "description": "Réplica del Hotel Paris en Las Vegas", "rarity": "rare"}
+- Miniature/Souvenir: {"name": "Torre Eiffel (Llavero)", "type": "Souvenir miniatura", "category": "product", "description": "Llavero decorativo de la Torre Eiffel", "rarity": "common"}
 - Tree with GPS (Costa Rica): {"name": "Ceiba", "type": "Ceiba pentandra", "category": "nature", "description": "Árbol sagrado maya nativo de Centroamérica", "rarity": "rare"}
 - Animal with GPS (Costa Rica): {"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave nacional de Belice, común en Costa Rica", "rarity": "uncommon"}
 - Landmark with GPS: {"name": "Volcán Arenal", "type": "Volcán estratovolcán", "category": "landmark", "description": "Volcán activo en Costa Rica", "rarity": "epic"}
