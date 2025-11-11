@@ -8,6 +8,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
+import '../services/geocoding_service.dart';
 import '../models/camera_settings.dart';
 import '../services/filter_service.dart';
 import '../models/image_filter.dart';
@@ -269,9 +270,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       // Obtener ubicación actual
       final location = await LocationService.getCurrentLocation();
 
+      // Obtener información de ubicación (país, provincia, ciudad)
+      LocationInfo? locationInfo;
+      if (location != null) {
+        locationInfo = await GeocodingService().getLocationInfo(location);
+      }
+
       final result = await _visionService.detectBestMatch(
         file,
         location: location,
+        locationInfo: locationInfo,
       );
       if (!mounted) return;
 
@@ -285,19 +293,20 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       await showModalBottomSheet(
         context: context,
         backgroundColor: Colors.black87,
-        isScrollControlled: false,
+        isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         builder: (c) {
           final icon = _getCategoryIcon(result.category);
 
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -322,15 +331,26 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   ],
                 ),
                 const Divider(color: Colors.white24, height: 32),
+                // Imagen capturada
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    result.imageFile,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.white12,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(icon, color: Colors.white, size: 32),
+                      child: Icon(icon, color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -387,8 +407,49 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   result.description,
                   style: const TextStyle(color: Colors.white70, fontSize: 15),
                 ),
+
+                // Información de ubicación detallada
+                if (result.locationInfo != null) ...[
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Ubicación',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLocationItem(
+                    Icons.public,
+                    'País',
+                    result.locationInfo!.country,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildLocationItem(
+                    Icons.map,
+                    'Provincia',
+                    result.locationInfo!.state,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildLocationItem(
+                    Icons.location_city,
+                    'Ciudad',
+                    result.locationInfo!.city,
+                  ),
+                  if (result.locationInfo!.placeName != null) ...[
+                    const SizedBox(height: 8),
+                    _buildLocationItem(
+                      Icons.place,
+                      'Lugar',
+                      result.locationInfo!.placeName!,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                ],
+
+                // Coordenadas GPS
                 if (result.location != null) ...[
-                  const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -398,7 +459,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.location_on,
+                          Icons.my_location,
                           color: Colors.white70,
                           size: 20,
                         ),
@@ -409,6 +470,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
+                              fontFamily: 'monospace',
                             ),
                           ),
                         ),
@@ -416,8 +478,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
               ],
+            ),
             ),
           );
         },
@@ -794,6 +857,29 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       default:
         return Icons.category;
     }
+  }
+
+  Widget _buildLocationItem(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white54, size: 18),
+        const SizedBox(width: 10),
+        Text(
+          '$label: ',
+          style: const TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override

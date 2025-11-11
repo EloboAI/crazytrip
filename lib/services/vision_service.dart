@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'env.dart';
+import 'geocoding_service.dart';
 
 class VisionResult {
   final String name;
@@ -13,6 +14,8 @@ class VisionResult {
   final String description;
   final String rarity;
   final Position? location;
+  final LocationInfo? locationInfo;
+  final File imageFile;
 
   VisionResult({
     required this.name,
@@ -20,7 +23,9 @@ class VisionResult {
     required this.category,
     required this.description,
     required this.rarity,
+    required this.imageFile,
     this.location,
+    this.locationInfo,
   });
 }
 
@@ -33,20 +38,33 @@ class VisionService {
   Future<VisionResult?> detectBestMatch(
     File imageFile, {
     Position? location,
-    Duration timeout = const Duration(seconds: 8),
+    LocationInfo? locationInfo,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     try {
       final apiKey = Env.googleGeminiApiKey;
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
 
+      // Construir contexto de ubicación si existe
+      String locationContext = '';
+      if (location != null && locationInfo != null) {
+        locationContext =
+            '\n\nIMPORTANT CONTEXT - Photo taken at:\nLocation: ${locationInfo.fullLocation}\nCoordinates: ${location.latitude}, ${location.longitude}';
+        if (locationInfo.placeName != null) {
+          locationContext += '\nNearby place: ${locationInfo.placeName}';
+        }
+        locationContext +=
+            '\n\nIf this is a landmark, building, mountain, river, or famous place, use the GPS location to identify its EXACT name. For example, if coordinates are near "Volcán Arenal" in Costa Rica, identify it as "Volcán Arenal", not just "Volcán".';
+      }
+
       final prompt =
           '''Identify the main object in this image and respond ONLY with this JSON (no markdown, no code blocks):
-{"name": "specific object name", "type": "specific type/breed/model", "category": "landmark|animal|food|building|nature|product|vehicle|other", "description": "brief description in Spanish", "rarity": "common|uncommon|rare|epic|legendary"}
+{"name": "specific object name", "type": "specific type/breed/model", "category": "landmark|animal|food|building|nature|product|vehicle|other", "description": "brief description in Spanish", "rarity": "common|uncommon|rare|epic|legendary"}$locationContext
 
 Examples:
 - Animal: {"name": "Perro", "type": "Pomerania", "category": "animal", "description": "Peludo y adorable", "rarity": "common"}
-- Landmark: {"name": "Torre Eiffel", "type": "Monumento histórico", "category": "landmark", "description": "Icónica torre de París", "rarity": "legendary"}
+- Landmark with GPS: {"name": "Volcán Arenal", "type": "Volcán estratovolcán", "category": "landmark", "description": "Volcán activo en Costa Rica", "rarity": "epic"}
 - Food: {"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles costarricense", "rarity": "uncommon"}''';
 
       final body = jsonEncode({
@@ -64,7 +82,7 @@ Examples:
           'temperature': 0.2,
           'topK': 1,
           'topP': 0.8,
-          'maxOutputTokens': 500,
+          'maxOutputTokens': 600,
         },
       });
 
@@ -132,7 +150,9 @@ Examples:
         category: category,
         description: description,
         rarity: rarity,
+        imageFile: imageFile,
         location: location,
+        locationInfo: locationInfo,
       );
     } on TimeoutException {
       debugPrint('VisionService timeout');
