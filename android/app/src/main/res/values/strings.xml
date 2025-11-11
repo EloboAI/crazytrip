@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">crazytrip</string>
+    <!-- Placeholder value; real key injected from .env at build time -->
+    <string name="google_maps_api_key">REPLACE_AT_BUILD</string>
+</resources>
