@@ -64,18 +64,20 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   }
 
   void _startOrientationStream() {
-    _orientationSubscription = _orientationService.getOrientationStream().listen(
-      (orientation) {
-        if (mounted) {
-          setState(() {
-            _currentOrientation = orientation;
-          });
-        }
-      },
-      onError: (error) {
-        debugPrint('Orientation stream error: $error');
-      },
-    );
+    _orientationSubscription = _orientationService
+        .getOrientationStream()
+        .listen(
+          (orientation) {
+            if (mounted) {
+              setState(() {
+                _currentOrientation = orientation;
+              });
+            }
+          },
+          onError: (error) {
+            debugPrint('Orientation stream error: $error');
+          },
+        );
   }
 
   Future<void> _initializeCamera() async {

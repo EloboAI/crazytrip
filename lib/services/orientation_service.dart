@@ -58,7 +58,7 @@ class OrientationService {
       // Tomar múltiples lecturas y promediarlas para mayor precisión
       final readings = <double>[];
       CompassEvent? lastEvent;
-      
+
       await for (final event in FlutterCompass.events!.take(5)) {
         if (event.heading != null) {
           readings.add(event.heading!);
@@ -116,7 +116,7 @@ class OrientationService {
 
     // Convertir de vuelta a bearing
     var avgBearing = _toDegrees(math.atan2(avgSin, avgCos));
-    
+
     // Normalizar a 0-360
     if (avgBearing < 0) {
       avgBearing += 360;
