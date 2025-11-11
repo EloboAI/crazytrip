@@ -19,6 +19,7 @@ class VisionResult {
   final String? broaderContext; // e.g., "Parte de la Cordillera de Talamanca"
   final String
   encounterRarity; // easy|medium|hard|epic - qué tan raro es ver esto AQUÍ
+  final String authenticity; // real|screen|print|unknown - autenticidad de la imagen
   final Position? location;
   final LocationInfo? locationInfo;
   final CameraOrientation? orientation;
@@ -34,6 +35,7 @@ class VisionResult {
     required this.specificityLevel,
     this.broaderContext,
     required this.encounterRarity,
+    this.authenticity = 'unknown', // Default si no viene en respuesta
     required this.imageFile,
     this.location,
     this.locationInfo,
@@ -84,6 +86,11 @@ class VisionService {
             '\n- Species: Use LOCAL regional names based on country (e.g., "Tucán Pico Iris" in Costa Rica)';
         locationContext +=
             '\n- Encounter rarity: Consider if object is geographically common/rare HERE (arctic animal in tropics=epic)';
+      } else if (location == null) {
+        // Modo degradado: sin GPS
+        debugPrint('⚠️ Vision API - No location context available (GPS disabled)');
+        locationContext =
+            '\n\nNOTE: GPS unavailable. Identify without geographic context. Use generic international names for species/landmarks.';
       }
 
       final prompt =
@@ -101,6 +108,23 @@ ENCOUNTER RARITY (how rare to see THIS object HERE):
 - hard: Rare here (jaguar in Costa Rica)
 - epic: Geographically impossible/extreme (polar bear in tropics)
 
+AUTHENTICITY CHECK (detect if image is real or reproduced):
+LOOK FOR:
+- Screen pixels: Digital display grid, pixel patterns, refresh lines, backlight glow
+- Printer dots: CMYK dot matrix, halftone patterns, ink bleeding, paper texture
+- Flat surface: No depth parallax, uniform lighting, lack of natural shadows
+- Frame borders: Phone/monitor bezels, TV edges, computer screen frame
+- Glare patterns: Unnatural reflections from glass surfaces (screens, frames)
+- Color uniformicity: Digital color clipping, unnatural saturation
+
+CLASSIFY AS:
+- "real": Direct capture of physical 3D object/scene with natural depth and lighting
+- "screen": Photo of digital display (phone, TV, monitor, tablet)
+- "print": Photo of printed image (magazine, poster, photo paper)
+- "unknown": Cannot determine (low quality, extreme angle, unclear source)
+
+DEFAULT: If no screen/print indicators present → "real"
+
 RESPONSE (JSON only, no markdown):
 {
   "name": "specific name OR 'Objeto no identificado'",
@@ -111,14 +135,15 @@ RESPONSE (JSON only, no markdown):
   "confidence": 0.0-1.0,
   "specificity_level": "specific|general|group|unknown",
   "broader_context": "optional context",
-  "encounter_rarity": "easy|medium|hard|epic"
+  "encounter_rarity": "easy|medium|hard|epic",
+  "authenticity": "real|screen|print|unknown"
 }$locationContext
 
 EXAMPLES:
-{"name": "Volcán Turrialba", "type": "Volcán estratovolcán activo", "category": "landmark", "description": "Volcán activo de 3340m en Costa Rica", "rarity": "epic", "confidence": 0.95, "specificity_level": "specific", "broader_context": "Cordillera Volcánica Central", "encounter_rarity": "medium"}
-{"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave emblemática de Centroamérica", "rarity": "uncommon", "confidence": 0.93, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "medium"}
-{"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles tradicional", "rarity": "uncommon", "confidence": 0.91, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "easy"}
-{"name": "Jaguar", "type": "Panthera onca", "category": "animal", "description": "Felino en peligro de extinción", "rarity": "legendary", "confidence": 0.89, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "epic"}''';
+{"name": "Volcán Turrialba", "type": "Volcán estratovolcán activo", "category": "landmark", "description": "Volcán activo de 3340m en Costa Rica", "rarity": "epic", "confidence": 0.95, "specificity_level": "specific", "broader_context": "Cordillera Volcánica Central", "encounter_rarity": "medium", "authenticity": "real"}
+{"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave emblemática de Centroamérica", "rarity": "uncommon", "confidence": 0.93, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "medium", "authenticity": "real"}
+{"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles tradicional", "rarity": "uncommon", "confidence": 0.91, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "easy", "authenticity": "screen"}
+{"name": "Jaguar", "type": "Panthera onca", "category": "animal", "description": "Felino en peligro de extinción", "rarity": "legendary", "confidence": 0.89, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "epic", "authenticity": "print"}''';
 
       final body = jsonEncode({
         'contents': [
@@ -199,9 +224,10 @@ EXAMPLES:
           result['specificity_level'] as String? ?? 'unknown';
       final broaderContext = result['broader_context'] as String?;
       final encounterRarity = result['encounter_rarity'] as String? ?? 'easy';
+      final authenticity = result['authenticity'] as String? ?? 'unknown';
 
       debugPrint(
-        '✅ Detected: $name ($type) - $rarity (confidence: ${(confidence * 100).toStringAsFixed(0)}%, specificity: $specificityLevel, encounter: $encounterRarity)',
+        '✅ Detected: $name ($type) - $rarity (confidence: ${(confidence * 100).toStringAsFixed(0)}%, specificity: $specificityLevel, encounter: $encounterRarity, authenticity: $authenticity)',
       );
 
       return VisionResult(
@@ -214,6 +240,7 @@ EXAMPLES:
         specificityLevel: specificityLevel,
         broaderContext: broaderContext,
         encounterRarity: encounterRarity,
+        authenticity: authenticity,
         imageFile: imageFile,
         location: location,
         locationInfo: locationInfo,

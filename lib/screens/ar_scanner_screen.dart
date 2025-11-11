@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -15,6 +16,7 @@ import '../services/filter_service.dart';
 import '../models/image_filter.dart';
 import '../widgets/filter_selector.dart';
 import '../widgets/compass_indicator.dart';
+import '../widgets/compass_calibration_banner.dart';
 import 'camera_settings_screen.dart';
 import 'video_preview_screen.dart';
 import '../services/vision_service.dart';
@@ -41,6 +43,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   bool _showFilters = false;
   bool _isScanning = false;
   bool _ghostCompass = false; // si true, mostrar estilo fantasma
+  bool _showCalibrationBanner = false; // Banner de calibración de brújula
   CameraOrientation? _currentOrientation;
   StreamSubscription<CameraOrientation>? _orientationSubscription;
   CameraSettings _cameraSettings = const CameraSettings();
@@ -72,6 +75,10 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             if (mounted) {
               setState(() {
                 _currentOrientation = orientation;
+                
+                // Mostrar banner si la brújula es unreliable
+                // Ocultar banner si vuelve a ser reliable
+                _showCalibrationBanner = !orientation.isReliable;
               });
             }
           },
@@ -114,7 +121,62 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
   }
 
-  @override
+  /// Muestra diálogo informativo cuando el GPS está deshabilitado
+  /// Retorna true si el usuario decide continuar sin GPS, false si cancela
+  Future<bool> _showGPSDisabledDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.location_off,
+                color: AppColors.warningColor,
+                size: AppSpacing.iconLarge,
+              ),
+              SizedBox(width: AppSpacing.xs),
+              const Expanded(
+                child: Text('GPS Desactivado'),
+              ),
+            ],
+          ),
+          content: const Text(
+            'El GPS está desactivado. Para identificar landmarks con precisión, '
+            'se recomienda activar la ubicación.\n\n'
+            '¿Deseas continuar de todos modos?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Abrir configuración de ubicación
+                await LocationService.openLocationSettings();
+                if (context.mounted) {
+                  Navigator.of(context).pop(false);
+                }
+              },
+              child: const Text('Activar GPS'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Continuar sin GPS'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false; // Si se cierra el diálogo sin respuesta, retornar false
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -281,6 +343,19 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   Future<void> _analyzePhoto(XFile image) async {
     try {
+      // Verificar si GPS está activo ANTES de procesar
+      final isGPSEnabled = await LocationService.isLocationServiceEnabled();
+      
+      if (!isGPSEnabled && mounted) {
+        // Mostrar diálogo informativo si GPS está deshabilitado
+        final shouldContinue = await _showGPSDisabledDialog();
+        if (!shouldContinue) {
+          // Usuario decidió no continuar sin GPS
+          return;
+        }
+        // Si shouldContinue es true, continuar en modo degradado (sin GPS)
+      }
+      
       // Convertir XFile a File (si proviene de bytes, crear temporal)
       File file;
       if (image.path.isEmpty) {
@@ -294,13 +369,19 @@ class _ARScannerScreenState extends State<ARScannerScreen>
         file = File(image.path);
       }
 
-      // Obtener ubicación actual
-      final location = await LocationService.getCurrentLocation();
-
-      // Obtener información de ubicación (país, provincia, ciudad)
+      // Obtener ubicación actual (puede ser null si GPS está deshabilitado)
+      Position? location;
       LocationInfo? locationInfo;
-      if (location != null) {
-        locationInfo = await GeocodingService().getLocationInfo(location);
+      
+      if (isGPSEnabled) {
+        location = await LocationService.getCurrentLocation();
+        
+        // Obtener información de ubicación (país, provincia, ciudad)
+        if (location != null) {
+          locationInfo = await GeocodingService().getLocationInfo(location);
+        }
+      } else {
+        debugPrint('⚠️ Scanning without GPS - location context disabled');
       }
 
       // Obtener orientación de la cámara (hacia dónde apunta)
@@ -496,6 +577,41 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                                       const SizedBox(width: 4),
                                       Text(
                                         result.encounterRarity.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Authenticity indicator
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _getAuthenticityColor(
+                                      result.authenticity,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getAuthenticityIcon(
+                                          result.authenticity,
+                                        ),
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        result.authenticity.toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 11,
@@ -1304,6 +1420,34 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     }
   }
 
+  Color _getAuthenticityColor(String authenticity) {
+    switch (authenticity.toLowerCase()) {
+      case 'real':
+        return const Color(0xFF4CAF50); // Verde - Foto genuina
+      case 'screen':
+        return const Color(0xFFFFA726); // Naranja - Foto de pantalla
+      case 'print':
+        return const Color(0xFFFFA726); // Naranja - Foto impresa
+      case 'unknown':
+      default:
+        return Colors.grey; // Gris - No se pudo verificar
+    }
+  }
+
+  IconData _getAuthenticityIcon(String authenticity) {
+    switch (authenticity.toLowerCase()) {
+      case 'real':
+        return Icons.verified; // Verificado como real
+      case 'screen':
+        return Icons.screenshot; // Foto de pantalla
+      case 'print':
+        return Icons.print; // Foto impresa
+      case 'unknown':
+      default:
+        return Icons.help_outline; // No determinado
+    }
+  }
+
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
       case 'landmark':
@@ -1393,6 +1537,23 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   ),
                 ),
               ),
+            
+            // Banner de calibración de brújula
+            if (_showCalibrationBanner)
+              Positioned(
+                top: 70,
+                left: 0,
+                right: 0,
+                child: CompassCalibrationBanner(
+                  autoHide: true,
+                  onDismiss: () {
+                    if (mounted) {
+                      setState(() => _showCalibrationBanner = false);
+                    }
+                  },
+                ),
+              ),
+            
             Positioned(
               top: 8,
               left: 8,

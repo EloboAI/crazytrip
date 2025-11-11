@@ -7,8 +7,25 @@ class CameraOrientation {
   final double bearing; // Dirección hacia donde apunta (0-360°, 0=Norte)
   final double pitch; // Inclinación vertical (-90 a 90°, 0=horizontal)
   final double? accuracy; // Precisión de la brújula
+  final bool isReliable; // Si la brújula es confiable (accuracy suficiente)
 
-  CameraOrientation({required this.bearing, this.pitch = 0.0, this.accuracy});
+  CameraOrientation({
+    required this.bearing,
+    this.pitch = 0.0,
+    this.accuracy,
+  }) : isReliable = _isAccuracyReliable(accuracy);
+
+  /// Define si el accuracy del sensor es suficiente para ser confiable
+  /// iOS: accuracy de -1 a 1 (1 = más preciso)
+  /// Android: accuracy de 0 a 3 (3 = alta precisión, 0 = sin calibración)
+  static bool _isAccuracyReliable(double? accuracy) {
+    if (accuracy == null) return false;
+    
+    // En Android, accuracy < 2 indica que necesita calibración
+    // En iOS, accuracy < 0.5 indica baja precisión
+    // Usamos umbral conservador: >= 2 para Android (medio-alta precisión)
+    return accuracy >= 2.0;
+  }
 
   /// Convierte bearing a dirección cardinal
   String get cardinalDirection {
@@ -36,7 +53,7 @@ class CameraOrientation {
 
   @override
   String toString() =>
-      'CameraOrientation(bearing: ${bearing.toStringAsFixed(1)}°, pitch: ${pitch.toStringAsFixed(1)}°, direction: $cardinalDirection)';
+      'CameraOrientation(bearing: ${bearing.toStringAsFixed(1)}°, pitch: ${pitch.toStringAsFixed(1)}°, direction: $cardinalDirection, reliable: $isReliable)';
 }
 
 /// Servicio para obtener la orientación de la cámara
@@ -82,11 +99,20 @@ class OrientationService {
         '🧭 Average bearing: ${bearing.toStringAsFixed(1)}° (accuracy: ${accuracy?.toStringAsFixed(1) ?? "unknown"})',
       );
 
-      _lastOrientation = CameraOrientation(
+      final orientation = CameraOrientation(
         bearing: bearing,
         pitch: 0.0, // TODO: Implementar pitch con acelerómetro si se necesita
         accuracy: accuracy,
       );
+
+      // Log de advertencia si el sensor es unreliable
+      if (!orientation.isReliable) {
+        debugPrint(
+          '⚠️ Compass sensor is unreliable (accuracy: ${accuracy?.toStringAsFixed(1) ?? "unknown"}). Calibration needed.',
+        );
+      }
+
+      _lastOrientation = orientation;
 
       return _lastOrientation;
     } catch (e) {
@@ -135,11 +161,20 @@ class OrientationService {
       }
       final accuracy = event.accuracy;
 
-      _lastOrientation = CameraOrientation(
+      final orientation = CameraOrientation(
         bearing: bearing,
         pitch: 0.0,
         accuracy: accuracy,
       );
+
+      // Log de advertencia si el sensor es unreliable (solo primera vez)
+      if (!orientation.isReliable && (_lastOrientation?.isReliable ?? true)) {
+        debugPrint(
+          '⚠️ Compass sensor became unreliable (accuracy: ${accuracy?.toStringAsFixed(1) ?? "unknown"}). Calibration needed.',
+        );
+      }
+
+      _lastOrientation = orientation;
 
       return _lastOrientation!;
     });
