@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
+import 'dart:io';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -11,11 +12,13 @@ import '../providers/theme_provider.dart';
 import '../models/promotion.dart';
 import '../models/crazydex_item.dart';
 import '../models/discovery.dart';
+import '../models/vision_capture.dart';
 import '../services/location_service.dart';
+import '../services/database_service.dart';
 
 enum MapViewMode { map, list }
 
-enum MapFilter { promotions, items, places, contests, events }
+enum MapFilter { promotions, items, places, contests, events, captures }
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -30,6 +33,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     MapFilter.promotions,
     MapFilter.items,
     MapFilter.places,
+    MapFilter.captures,
   };
   double _searchRadius = 5.0; // km por defecto
   String _searchQuery = '';
@@ -62,12 +66,17 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   late List<Promotion> _promotions;
   late List<CrazyDexItem> _items;
   late List<Discovery> _places;
+  
+  // Capturas reales desde DB
+  List<VisionCapture> _captures = [];
+  final DatabaseService _dbService = DatabaseService();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadMapData();
+    _loadCaptures();
     _loadMapStyles();
     _getUserLocation();
     _startLocationTracking();
@@ -446,6 +455,21 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     _updateContentMarkers();
   }
 
+  /// Carga las capturas guardadas desde la base de datos
+  Future<void> _loadCaptures() async {
+    try {
+      final captures = await _dbService.getAllCaptures();
+      if (mounted) {
+        setState(() {
+          _captures = captures;
+        });
+        _updateContentMarkers();
+      }
+    } catch (e) {
+      debugPrint('Error loading captures: $e');
+    }
+  }
+
   List<dynamic> get _filteredContent {
     List<dynamic> content = [];
 
@@ -475,6 +499,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (_activeFilters.contains(MapFilter.places)) {
       content.addAll(_places);
     }
+    if (_activeFilters.contains(MapFilter.captures)) {
+      content.addAll(_captures);
+    }
 
     // Filtrar por búsqueda
     if (_searchQuery.isNotEmpty) {
@@ -487,6 +514,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
             } else if (item is CrazyDexItem) {
               return item.name.toLowerCase().contains(query);
             } else if (item is Discovery) {
+              return item.name.toLowerCase().contains(query) ||
+                  item.category.toLowerCase().contains(query);
+            } else if (item is VisionCapture) {
               return item.name.toLowerCase().contains(query) ||
                   item.category.toLowerCase().contains(query);
             }
@@ -513,11 +543,56 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         _addItemMarker(item, i);
       } else if (item is Discovery) {
         _addPlaceMarker(item, i);
+      } else if (item is VisionCapture) {
+        _addCaptureMarker(item, i);
       }
     }
 
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  /// Agrega un marcador para una captura guardada
+  void _addCaptureMarker(VisionCapture capture, int index) {
+    // Solo mostrar si tiene ubicación
+    if (capture.location == null) return;
+    
+    final lat = capture.location!['latitude'] as double?;
+    final lon = capture.location!['longitude'] as double?;
+    if (lat == null || lon == null) return;
+
+    final marker = Marker(
+      markerId: MarkerId('capture_$index'),
+      position: LatLng(lat, lon),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+      infoWindow: InfoWindow(
+        title: '📸 ${capture.name}',
+        snippet: '${capture.rarity} - Capturado ${_formatTimeAgo(capture.timestamp)}',
+      ),
+      onTap: () {
+        setState(() {
+          _selectedItem = capture;
+        });
+      },
+    );
+    _markers.add(marker);
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 7) {
+      return 'hace ${(difference.inDays / 7).floor()} semanas';
+    } else if (difference.inDays > 0) {
+      return 'hace ${difference.inDays} días';
+    } else if (difference.inHours > 0) {
+      return 'hace ${difference.inHours} horas';
+    } else if (difference.inMinutes > 0) {
+      return 'hace ${difference.inMinutes} minutos';
+    } else {
+      return 'recién';
     }
   }
 
@@ -810,6 +885,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           _buildFilterChip(label: '🏆 Concursos', filter: MapFilter.contests),
           _buildFilterChip(label: '🔍 Items', filter: MapFilter.items),
           _buildFilterChip(label: '📍 Lugares', filter: MapFilter.places),
+          _buildFilterChip(label: '📸 Capturas', filter: MapFilter.captures),
           _buildFilterChip(label: '🎉 Eventos', filter: MapFilter.events),
         ],
       ),
@@ -944,6 +1020,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           return _buildItemListCard(item);
         } else if (item is Discovery) {
           return _buildPlaceListCard(item);
+        } else if (item is VisionCapture) {
+          return _buildCaptureListCard(item);
         }
         return const SizedBox.shrink();
       },
@@ -1024,8 +1102,146 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       return _buildItemDetailCard(item);
     } else if (item is Discovery) {
       return _buildPlaceDetailCard(item);
+    } else if (item is VisionCapture) {
+      return _buildCaptureDetailCard(item);
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _buildCaptureDetailCard(VisionCapture capture) {
+    final stars = _getRarityStars(capture.rarity);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Imagen de la captura
+        Center(
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+              child: Image.file(
+                File(capture.imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported, size: 50),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Nombre y rareza
+        Center(
+          child: Text(
+            capture.name,
+            style: AppTextStyles.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Center(child: Text(stars, style: const TextStyle(fontSize: 20))),
+        const SizedBox(height: AppSpacing.m),
+        // Categoría y tipo
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+            ),
+            child: Text(
+              '${capture.category} • ${capture.visionResult['type'] ?? ''}',
+              style: AppTextStyles.titleMedium.copyWith(
+                color: AppColors.secondaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Timestamp
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.access_time,
+              size: 16,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Capturado ${_formatTimeAgo(capture.timestamp)}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.m),
+        // Descripción
+        if (capture.visionResult['description'] != null)
+          Text(
+            capture.visionResult['description'] as String,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        const SizedBox(height: AppSpacing.m),
+        // Botón de acción
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {
+              // Navegar a detalles completos en CrazyDex
+              Navigator.pop(context);
+              // TODO: Navegar a la tab de CrazyDex
+            },
+            icon: const Icon(Icons.visibility),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+            ),
+            label: const Text('Ver detalles completos'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getRarityStars(String rarity) {
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        return '⭐⭐⭐⭐⭐';
+      case 'epic':
+        return '⭐⭐⭐⭐';
+      case 'rare':
+        return '⭐⭐⭐';
+      case 'uncommon':
+        return '⭐⭐';
+      default:
+        return '⭐';
+    }
   }
 
   Widget _buildPromotionDetailCard(Promotion promotion) {
@@ -1564,6 +1780,103 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.tertiaryColor,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaptureListCard(VisionCapture capture) {
+    final stars = _getRarityStars(capture.rarity);
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.m),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+        onTap: () {
+          setState(() {
+            _selectedItem = capture;
+            _viewMode = MapViewMode.map;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Row(
+            children: [
+              // Miniatura
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                  child: Image.file(
+                    File(capture.imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppColors.primaryColor.withOpacity(0.1),
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 30,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.m),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            capture.name,
+                            style: AppTextStyles.titleMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(stars, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      capture.category,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          _formatTimeAgo(capture.timestamp),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
                           ),
                         ),
                       ],

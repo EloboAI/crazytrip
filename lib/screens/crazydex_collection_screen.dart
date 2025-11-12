@@ -21,6 +21,9 @@ class CrazyDexCollectionScreen extends StatefulWidget {
 
 class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   CrazyDexCategory? _selectedCategory;
+  String? _selectedCountry;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   List<VisionCapture> _captures = [];
   bool _isLoading = true;
   final DatabaseService _dbService = DatabaseService();
@@ -28,7 +31,18 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
     _loadCaptures();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCaptures() async {
@@ -86,6 +100,58 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   /// Calcula XP basado en rarity
   int _calculateXP(String rarity) {
     return _getRarityNumber(rarity) * 100;
+  }
+
+  /// Obtiene lista única de países de las capturas
+  List<String> _getAvailableCountries() {
+    final countries = <String>{};
+    for (final capture in _captures) {
+      if (capture.locationInfo != null) {
+        final country = capture.locationInfo!['country'] as String?;
+        if (country != null && country.isNotEmpty) {
+          countries.add(country);
+        }
+      }
+    }
+    return countries.toList()..sort();
+  }
+
+  /// Filtra items por búsqueda, categoría y país
+  List<CrazyDexItem> _filterItems(List<CrazyDexItem> items) {
+    var filtered = items;
+
+    // Filtro por categoría
+    if (_selectedCategory != null) {
+      filtered = filtered.where((item) => item.category == _selectedCategory).toList();
+    }
+
+    // Filtro por país
+    if (_selectedCountry != null) {
+      filtered = filtered.where((item) {
+        // Buscar la captura original por ID
+        final captureId = int.tryParse(item.id);
+        if (captureId == null) return false;
+        
+        final capture = _captures.firstWhere(
+          (c) => c.id == captureId,
+          orElse: () => _captures.first,
+        );
+        
+        final country = capture.locationInfo?['country'] as String?;
+        return country == _selectedCountry;
+      }).toList();
+    }
+
+    // Filtro por búsqueda
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((item) {
+        return item.name.toLowerCase().contains(_searchQuery) ||
+               item.description.toLowerCase().contains(_searchQuery) ||
+               item.category.displayName.toLowerCase().contains(_searchQuery);
+      }).toList();
+    }
+
+    return filtered;
   }
 
   /// Task #268: Muestra VisionResultCard (misma vista que al capturar)
@@ -200,19 +266,9 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     final discovered = allItems.where((item) => item.isDiscovered).toList();
     final locked = allItems.where((item) => !item.isDiscovered).toList();
 
-    // Filter by category if selected
-    final filteredDiscovered =
-        _selectedCategory == null
-            ? discovered
-            : discovered
-                .where((item) => item.category == _selectedCategory)
-                .toList();
-    final filteredLocked =
-        _selectedCategory == null
-            ? locked
-            : locked
-                .where((item) => item.category == _selectedCategory)
-                .toList();
+    // Aplicar filtros (categoría, país, búsqueda)
+    final filteredDiscovered = _filterItems(discovered);
+    final filteredLocked = _filterItems(locked);
 
     final progress = calculateProgress(allItems);
 
@@ -239,8 +295,14 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
           // Progress Header
           _buildProgressHeader(progress),
 
+          // Search Bar
+          _buildSearchBar(),
+
           // Category Filter
           _buildCategoryFilter(),
+
+          // Country Filter
+          _buildCountryFilter(),
 
           // Items List con pull-to-refresh (Task #264)
           Expanded(
@@ -364,6 +426,32 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar por nombre, descripción o categoría...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryFilter() {
     return SizedBox(
       height: 60,
@@ -417,6 +505,68 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         showCheckmark: false,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : AppColors.primaryColor,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountryFilter() {
+    final countries = _getAvailableCountries();
+    if (countries.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.m),
+        children: [
+          _buildCountryChip(null, 'Todos los países', Icons.public),
+          ...countries.map((country) {
+            return _buildCountryChip(
+              country,
+              country,
+              Icons.flag,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryChip(
+    String? country,
+    String label,
+    IconData icon,
+  ) {
+    final isSelected = _selectedCountry == country;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(right: AppSpacing.s),
+      child: FilterChip(
+        selected: isSelected,
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : colorScheme.primary,
+            ),
+            SizedBox(width: AppSpacing.xs),
+            Text(label),
+          ],
+        ),
+        onSelected: (selected) {
+          setState(() {
+            _selectedCountry = selected ? country : null;
+          });
+        },
+        backgroundColor: colorScheme.surface,
+        selectedColor: colorScheme.primary,
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : colorScheme.primary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
