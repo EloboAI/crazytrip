@@ -465,6 +465,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   ),
                   const SizedBox(height: 16),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -499,130 +500,172 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getRarityColor(result.rarity),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    result.rarity.toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
                                 // Confidence indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                                GestureDetector(
+                                  onTap: () => _showInfoDialog(
+                                    context,
+                                    'Confianza de IA',
+                                    '${(result.confidence * 100).toStringAsFixed(0)}%',
+                                    'Nivel de seguridad de la inteligencia artificial en la identificación del objeto. Mayor porcentaje indica mayor certeza.',
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _getConfidenceColor(
-                                      result.confidence,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _getConfidenceIcon(result.confidence),
-                                        size: 12,
-                                        color: Colors.white,
+                                    decoration: BoxDecoration(
+                                      color: _getConfidenceColor(
+                                        result.confidence,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${(result.confidence * 100).toStringAsFixed(0)}%',
-                                        style: const TextStyle(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _getConfidenceIcon(result.confidence),
+                                          size: 12,
                                           color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${(result.confidence * 100).toStringAsFixed(0)}%',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 // Encounter rarity indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                                GestureDetector(
+                                  onTap: () => _showInfoDialog(
+                                    context,
+                                    'Dificultad de Encuentro',
+                                    result.encounterRarity.toUpperCase(),
+                                    _getEncounterRarityDescription(result.encounterRarity),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _getEncounterRarityColor(
-                                      result.encounterRarity,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _getEncounterRarityIcon(
-                                          result.encounterRarity,
-                                        ),
-                                        size: 12,
-                                        color: Colors.white,
+                                    decoration: BoxDecoration(
+                                      color: _getEncounterRarityColor(
+                                        result.encounterRarity,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        result.encounterRarity.toUpperCase(),
-                                        style: const TextStyle(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _getEncounterRarityIcon(
+                                            result.encounterRarity,
+                                          ),
+                                          size: 12,
                                           color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          result.encounterRarity.toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 // Authenticity indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                                GestureDetector(
+                                  onTap: () => _showInfoDialog(
+                                    context,
+                                    'Autenticidad',
+                                    result.authenticity.toUpperCase(),
+                                    _getAuthenticityDescription(result.authenticity),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _getAuthenticityColor(
-                                      result.authenticity,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _getAuthenticityIcon(
-                                          result.authenticity,
-                                        ),
-                                        size: 12,
-                                        color: Colors.white,
+                                    decoration: BoxDecoration(
+                                      color: _getAuthenticityColor(
+                                        result.authenticity,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        result.authenticity.toUpperCase(),
-                                        style: const TextStyle(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _getAuthenticityIcon(
+                                            result.authenticity,
+                                          ),
+                                          size: 12,
                                           color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          result.authenticity.toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Rarity medal (vertical)
+                      GestureDetector(
+                        onTap: () => _showInfoDialog(
+                          context,
+                          'Rareza Global',
+                          result.rarity.toUpperCase(),
+                          _getRarityDescription(result.rarity),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _getRarityMedalGradient(result.rarity),
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getRarityMedalColor(result.rarity)
+                                    .withOpacity(0.4),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.emoji_events,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ),
                       ),
                     ],
@@ -1349,20 +1392,152 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     return ColorFilter.matrix(matrix);
   }
 
-  Color _getRarityColor(String rarity) {
+  Color _getRarityMedalColor(String rarity) {
     switch (rarity.toLowerCase()) {
       case 'legendary':
         return const Color(0xFFFFD700); // Gold
       case 'epic':
-        return const Color(0xFF9C27B0); // Purple
+        return const Color(0xFFC0C0C0); // Silver
       case 'rare':
-        return const Color(0xFF2196F3); // Blue
+        return const Color(0xFFCD7F32); // Bronze
       case 'uncommon':
-        return const Color(0xFF4CAF50); // Green
+        return const Color(0xFFB87333); // Copper
       case 'common':
       default:
-        return Colors.grey;
+        return const Color(0xFF808080); // Stone/Gray
     }
+  }
+
+  List<Color> _getRarityMedalGradient(String rarity) {
+    final baseColor = _getRarityMedalColor(rarity);
+    return [
+      baseColor,
+      Color.lerp(baseColor, Colors.black, 0.3)!,
+    ];
+  }
+
+  String _getRarityDescription(String rarity) {
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        return 'Objeto extremadamente raro y valioso en el mundo. Muy difícil de encontrar.';
+      case 'epic':
+        return 'Objeto muy raro con alto valor. Requiere condiciones especiales.';
+      case 'rare':
+        return 'Objeto poco común. No se encuentra fácilmente.';
+      case 'uncommon':
+        return 'Objeto algo común pero con cierto valor especial.';
+      case 'common':
+      default:
+        return 'Objeto común que se encuentra con frecuencia.';
+    }
+  }
+
+  String _getEncounterRarityDescription(String encounterRarity) {
+    switch (encounterRarity.toLowerCase()) {
+      case 'easy':
+        return 'Muy común en esta ubicación. Fácil de encontrar aquí.';
+      case 'medium':
+        return 'Algo común en esta zona. Requiere algo de suerte encontrarlo.';
+      case 'hard':
+        return 'Raro en esta ubicación específica. Difícil de ver aquí.';
+      case 'epic':
+        return 'Extremadamente raro en este lugar. ¡Encuentro excepcional!';
+      default:
+        return 'Frecuencia de encuentro desconocida en esta ubicación.';
+    }
+  }
+
+  String _getAuthenticityDescription(String authenticity) {
+    switch (authenticity.toLowerCase()) {
+      case 'real':
+        return 'Foto genuina capturada directamente del objeto/escena real.';
+      case 'screen':
+        return '⚠️ Posible foto de pantalla digital (teléfono, TV, monitor).';
+      case 'print':
+        return '⚠️ Posible foto de imagen impresa (revista, póster, papel fotográfico).';
+      case 'unknown':
+      default:
+        return 'No se pudo determinar la autenticidad de la imagen.';
+    }
+  }
+
+  void _showInfoDialog(
+    BuildContext context,
+    String title,
+    String value,
+    String description,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue[300], size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue[700]?.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              description,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Entendido',
+              style: TextStyle(
+                color: Colors.blue,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getConfidenceColor(double confidence) {
