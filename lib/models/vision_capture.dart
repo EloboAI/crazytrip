@@ -135,6 +135,10 @@ class VisionCapture {
   String get authenticity =>
       visionResult['authenticity'] as String? ?? 'unknown';
 
+  /// Obtiene encounter_rarity desde visionResult (qué tan difícil es ver esto AQUÍ)
+  String get encounterRarity =>
+      visionResult['encounter_rarity'] as String? ?? 'easy';
+
   /// Obtiene la latitud desde location
   double? get latitude => location?['latitude'] as double?;
 

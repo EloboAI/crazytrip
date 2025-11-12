@@ -75,12 +75,29 @@ class VisionService {
         if (orientation != null) {
           locationContext +=
               '\nCamera: ${orientation.bearing.toStringAsFixed(0)}° ${orientation.cardinalDirection}';
+          locationContext += '\n\n🔍 CRITICAL FOR MOUNTAINS/PEAKS:';
           locationContext +=
-              '\nUse bearing to identify landmarks (e.g., volcano, mountain) in that direction by EXACT name.';
+              '\n- Use GPS + bearing to identify EXACT peak names by triangulation';
+          locationContext +=
+              '\n- Analyze peak shapes, ridges, and silhouettes visible from this viewpoint';
+          locationContext +=
+              '\n- Cross-reference visible peaks with known mountains in that direction';
+          locationContext +=
+              '\n- If multiple peaks visible, identify the most prominent/central one';
+          locationContext +=
+              '\n- Include elevation if known for identified peak';
+          locationContext +=
+              '\n- Example: From San José (9.93°N, -84.08°W) looking N (0°) → "Volcán Barva"';
+          locationContext +=
+              '\n- Example: From Cartago (9.86°N, -83.92°W) looking NE (45°) → "Volcán Irazú"';
         }
 
         locationContext +=
-            '\n\nRULES:\n- Landmarks: Use GPS+bearing for EXACT names (not generic terms)';
+            '\n\nRULES:\n- Mountains/Peaks: MANDATORY use GPS+bearing for triangulation and EXACT peak names';
+        locationContext +=
+            '\n- Never use generic terms like "Cordillera" or "Montaña" - identify SPECIFIC peaks';
+        locationContext +=
+            '\n- Landmarks: Use GPS+bearing for EXACT names (not generic terms)';
         locationContext +=
             '\n- Replicas: If monument GPS doesn\'t match origin, mark as replica';
         locationContext +=
@@ -97,56 +114,49 @@ class VisionService {
       }
 
       final prompt =
-          '''Identify objects/landmarks with precision. Analyze image and provide JSON response.
+          '''Identify and analyze. Return ONLY valid JSON, no markdown.
 
-RULES:
-- Use GPS+bearing for EXACT landmark names ("Volcán Turrialba" not "Cordillera")
-- If uncertain (confidence<0.6): name="Objeto no identificado"
-- Prefer specific over general identification
-- Never guess
+GPS+BEARING: Use for EXACT landmark/mountain names via triangulation.
+CONFIDENCE<0.6: name="Objeto no identificado"
 
-ENCOUNTER RARITY (how rare to see THIS object HERE):
-- easy: Very common here (gallo pinto in Costa Rica)
-- medium: Somewhat common, needs luck (toucan in Costa Rica)
-- hard: Rare here (jaguar in Costa Rica)
-- epic: Geographically impossible/extreme (polar bear in tropics)
+ENCOUNTER_RARITY (how rare HERE): easy|medium|hard|epic
 
-AUTHENTICITY CHECK (detect if image is real or reproduced):
-LOOK FOR:
-- Screen pixels: Digital display grid, pixel patterns, refresh lines, backlight glow
-- Printer dots: CMYK dot matrix, halftone patterns, ink bleeding, paper texture
-- Flat surface: No depth parallax, uniform lighting, lack of natural shadows
-- Frame borders: Phone/monitor bezels, TV edges, computer screen frame
-- Glare patterns: Unnatural reflections from glass surfaces (screens, frames)
-- Color uniformicity: Digital color clipping, unnatural saturation
+AUTHENTICITY (real scene vs screen/print):
+- real: Direct 3D capture
+- screen: Digital display photo
+- print: Printed image photo
+- unknown: Cannot determine
 
-CLASSIFY AS:
-- "real": Direct capture of physical 3D object/scene with natural depth and lighting
-- "screen": Photo of digital display (phone, TV, monitor, tablet)
-- "print": Photo of printed image (magazine, poster, photo paper)
-- "unknown": Cannot determine (low quality, extreme angle, unclear source)
+CATEGORY_METADATA (include relevant fields):
 
-DEFAULT: If no screen/print indicators present → "real"
+ANIMAL: {"species":"Scientific name","conservation_status":"LC|NT|VU|EN|CR","conservation_label":"Spanish label","habitat":"Description","is_endemic":bool,"endemic_region":"Region or null"}
 
-RESPONSE (JSON only, no markdown):
+VEHICLE: {"brand":"Brand","model":"Model","year_range":"Year","vehicle_type":"Type","is_electric":bool,"sustainability_note":"Note or null"}
+
+BUILDING: {"building_type":"Type","certifications":["Bandera Azul","LEED"] or null,"sustainability_features":"Features or null"}
+
+FOOD: {"cuisine":"Type","is_traditional":bool,"main_ingredients":["list"],"dietary_info":["vegetarian","vegan"] or null}
+
+NATURE: {"nature_type":"mountain|volcano|peak|plant|etc","elevation_meters":int or null,"mountain_range":"Range or null","volcanic_status":"active|dormant|extinct|not_applicable","last_eruption":"Year or null","visible_peaks":["Peak1","Peak2"] or null,"identification_method":"GPS+bearing triangulation|visual|database"}
+
+LANDMARK: {"cultural_significance":"Description","unesco_status":bool,"construction_year":"Year or null"}
+
+PRODUCT: {"brand":"Brand or null","is_handmade":bool,"sustainability_note":"Note or null"}
+
+RESPONSE:
 {
-  "name": "specific name OR 'Objeto no identificado'",
-  "type": "specific type/species OR 'Desconocido'",
+  "name": "Specific name or 'Objeto no identificado'",
+  "type": "Specific type or 'Desconocido'",
   "category": "landmark|animal|food|building|nature|product|vehicle|other|unknown",
-  "description": "brief Spanish description",
+  "description": "Brief Spanish description",
   "rarity": "common|uncommon|rare|epic|legendary",
   "confidence": 0.0-1.0,
   "specificity_level": "specific|general|group|unknown",
-  "broader_context": "optional context",
+  "broader_context": "Context or null",
   "encounter_rarity": "easy|medium|hard|epic",
-  "authenticity": "real|screen|print|unknown"
-}$locationContext
-
-EXAMPLES:
-{"name": "Volcán Turrialba", "type": "Volcán estratovolcán activo", "category": "landmark", "description": "Volcán activo de 3340m en Costa Rica", "rarity": "epic", "confidence": 0.95, "specificity_level": "specific", "broader_context": "Cordillera Volcánica Central", "encounter_rarity": "medium", "authenticity": "real"}
-{"name": "Tucán Pico Iris", "type": "Ramphastos sulfuratus", "category": "animal", "description": "Ave emblemática de Centroamérica", "rarity": "uncommon", "confidence": 0.93, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "medium", "authenticity": "real"}
-{"name": "Gallo Pinto", "type": "Plato típico", "category": "food", "description": "Arroz con frijoles tradicional", "rarity": "uncommon", "confidence": 0.91, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "easy", "authenticity": "screen"}
-{"name": "Jaguar", "type": "Panthera onca", "category": "animal", "description": "Felino en peligro de extinción", "rarity": "legendary", "confidence": 0.89, "specificity_level": "specific", "broader_context": null, "encounter_rarity": "epic", "authenticity": "print"}''';
+  "authenticity": "real|screen|print|unknown",
+  "category_metadata": {}
+}$locationContext''';
 
       final body = jsonEncode({
         'contents': [
@@ -163,7 +173,7 @@ EXAMPLES:
           'temperature': 0.1, // Más determinístico para mayor precisión
           'topK': 1,
           'topP': 0.8,
-          'maxOutputTokens': 2048,
+          'maxOutputTokens': 5000, // Reducido para prompt más conciso
         },
       });
 
@@ -194,6 +204,19 @@ EXAMPLES:
       final firstCandidate = candidates.first as Map<String, dynamic>;
       debugPrint('🔍 First candidate: $firstCandidate');
 
+      // Check finish reason
+      final finishReason = firstCandidate['finishReason'] as String?;
+      if (finishReason != null && finishReason != 'STOP') {
+        debugPrint('⚠️ Response finished with reason: $finishReason');
+        if (finishReason == 'MAX_TOKENS') {
+          debugPrint('💡 Hint: Prompt too long, response truncated');
+        } else if (finishReason == 'SAFETY') {
+          debugPrint('💡 Hint: Content blocked by safety filters');
+        } else if (finishReason == 'RECITATION') {
+          debugPrint('💡 Hint: Content flagged as recitation');
+        }
+      }
+
       final content = firstCandidate['content'] as Map<String, dynamic>?;
       final parts = content?['parts'] as List<dynamic>?;
       final text = (parts?.first as Map<String, dynamic>?)?['text'] as String?;
@@ -202,19 +225,52 @@ EXAMPLES:
         debugPrint('⚠️ Empty response text');
         debugPrint('🔍 Content: $content');
         debugPrint('🔍 Parts: $parts');
+        debugPrint('🔍 Finish reason: $finishReason');
+
+        // Check for safety ratings
+        final safetyRatings = firstCandidate['safetyRatings'] as List?;
+        if (safetyRatings != null) {
+          debugPrint('🔍 Safety ratings: $safetyRatings');
+        }
+
         return null;
       }
 
       debugPrint('📝 Gemini response: $text');
 
-      // Extraer JSON del texto (puede venir con markdown)
-      final jsonMatch = RegExp(r'\{[^\}]+\}').firstMatch(text);
-      if (jsonMatch == null) {
+      // Extraer JSON del texto (puede venir con markdown o texto adicional)
+      // Buscar el JSON completo balanceando llaves
+      String? jsonText;
+      final firstBrace = text.indexOf('{');
+
+      if (firstBrace == -1) {
         debugPrint('⚠️ No JSON found in response');
         return null;
       }
 
-      final jsonText = jsonMatch.group(0)!;
+      // Extraer JSON balanceando llaves
+      int braceCount = 0;
+      int startIndex = firstBrace;
+      int endIndex = startIndex;
+
+      for (int i = startIndex; i < text.length; i++) {
+        if (text[i] == '{') {
+          braceCount++;
+        } else if (text[i] == '}') {
+          braceCount--;
+          if (braceCount == 0) {
+            endIndex = i + 1;
+            break;
+          }
+        }
+      }
+
+      if (braceCount != 0) {
+        debugPrint('⚠️ Unbalanced JSON braces in response');
+        return null;
+      }
+
+      jsonText = text.substring(startIndex, endIndex);
       final result = jsonDecode(jsonText) as Map<String, dynamic>;
 
       final name = result['name'] as String? ?? 'Objeto no identificado';

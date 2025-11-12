@@ -1,17 +1,10 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../models/crazydex_item.dart';
 import '../models/vision_capture.dart';
 import '../services/database_service.dart';
-import '../services/vision_service.dart';
-import '../widgets/camera/vision_result_card.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
-import '../theme/app_text_styles.dart';
 import 'map_screen.dart';
 
-/// Screen showing user's complete CrazyDex collection across all discoveries
+/// Vista principal del CrazyDex - Colección de capturas del usuario
 class CrazyDexCollectionScreen extends StatefulWidget {
   const CrazyDexCollectionScreen({super.key});
 
@@ -21,25 +14,27 @@ class CrazyDexCollectionScreen extends StatefulWidget {
 }
 
 class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
-  CrazyDexCategory? _selectedCategory;
-  String? _selectedCountry;
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final DatabaseService _dbService = DatabaseService();
   List<VisionCapture> _captures = [];
   bool _isLoading = true;
-  bool _showFilters = false;
+
+  // Filtros
+  String _searchQuery = '';
+  String? _selectedCategory;
+  String? _selectedCountry;
+  final TextEditingController _searchController = TextEditingController();
   bool _showSearch = false;
-  final DatabaseService _dbService = DatabaseService();
+  bool _showFilters = false;
 
   @override
   void initState() {
     super.initState();
+    _loadCaptures();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
-    _loadCaptures();
   }
 
   @override
@@ -49,7 +44,6 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   }
 
   Future<void> _loadCaptures() async {
-    setState(() => _isLoading = true);
     try {
       final captures = await _dbService.getAllCaptures();
       if (mounted) {
@@ -59,112 +53,17 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading captures: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  /// Mapea el category string de VisionResult a CrazyDexCategory
-  CrazyDexCategory _mapCategoryFromString(String category) {
-    switch (category.toLowerCase()) {
-      case 'landmark':
-        return CrazyDexCategory.landmarks;
-      case 'animal':
-        return CrazyDexCategory.fauna;
-      case 'nature':
-        return CrazyDexCategory.flora;
-      case 'building':
-        return CrazyDexCategory.buildings;
-      case 'food':
-        return CrazyDexCategory.food;
-      default:
-        return CrazyDexCategory.landmarks;
-    }
-  }
-
-  /// Convierte string de rarity a número
-  int _getRarityNumber(String rarity) {
-    switch (rarity.toLowerCase()) {
-      case 'legendary':
-        return 5;
-      case 'epic':
-        return 4;
-      case 'rare':
-        return 3;
-      case 'uncommon':
-        return 2;
-      default:
-        return 1;
-    }
-  }
-
-  /// Calcula XP basado en rarity
-  int _calculateXP(String rarity) {
-    return _getRarityNumber(rarity) * 100;
-  }
-
-  /// Muestra menú contextual para un item
-  void _showItemMenu(CrazyDexItem item) {
-    final captureId = int.tryParse(item.id);
-    if (captureId == null) return;
-    // Evitar crash si la lista está vacía o no se encuentra la captura
-    VisionCapture? capture;
-    for (final c in _captures) {
-      if (c.id == captureId) {
-        capture = c;
-        break;
-      }
-    }
-    if (capture == null) {
-      // No encontrada: mostrar mensaje y salir
-      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Captura no encontrada')));
+        ).showSnackBar(SnackBar(content: Text('Error cargando capturas: \$e')));
       }
-      return;
     }
-
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (context) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('Ver detalles'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showCaptureDetail(item);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.map_outlined),
-                  title: const Text('Ver en mapa'),
-                  enabled: capture!.location != null,
-                  onTap:
-                      (capture.location != null)
-                          ? () {
-                            Navigator.pop(context);
-                            _showCaptureInMap(capture!);
-                          }
-                          : null,
-                  subtitle:
-                      (capture.location == null)
-                          ? const Text('Sin ubicación GPS')
-                          : null,
-                ),
-              ],
-            ),
-          ),
-    );
   }
 
-  /// Obtiene lista única de países de las capturas
   List<String> _getAvailableCountries() {
     final countries = <String>{};
     for (final capture in _captures) {
@@ -178,29 +77,21 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     return countries.toList()..sort();
   }
 
-  /// Filtra items por búsqueda, categoría y país
-  List<CrazyDexItem> _filterItems(List<CrazyDexItem> items) {
-    var filtered = items;
+  List<VisionCapture> get _filteredCaptures {
+    var filtered = _captures;
 
     // Filtro por categoría
     if (_selectedCategory != null) {
       filtered =
-          filtered.where((item) => item.category == _selectedCategory).toList();
+          filtered
+              .where((capture) => capture.category == _selectedCategory)
+              .toList();
     }
 
     // Filtro por país
     if (_selectedCountry != null) {
       filtered =
-          filtered.where((item) {
-            // Buscar la captura original por ID
-            final captureId = int.tryParse(item.id);
-            if (captureId == null) return false;
-
-            final capture = _captures.firstWhere(
-              (c) => c.id == captureId,
-              orElse: () => _captures.first,
-            );
-
+          filtered.where((capture) {
             final country = capture.locationInfo?['country'] as String?;
             return country == _selectedCountry;
           }).toList();
@@ -209,17 +100,18 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     // Filtro por búsqueda
     if (_searchQuery.isNotEmpty) {
       filtered =
-          filtered.where((item) {
-            return item.name.toLowerCase().contains(_searchQuery) ||
-                item.description.toLowerCase().contains(_searchQuery) ||
-                item.category.displayName.toLowerCase().contains(_searchQuery);
+          filtered.where((capture) {
+            return capture.name.toLowerCase().contains(_searchQuery) ||
+                capture.category.toLowerCase().contains(_searchQuery) ||
+                (capture.visionResult['description'] as String? ?? '')
+                    .toLowerCase()
+                    .contains(_searchQuery);
           }).toList();
     }
 
     return filtered;
   }
 
-  /// Navegar al mapa mostrando solo esta captura
   void _showCaptureInMap(VisionCapture capture) {
     if (capture.location == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -241,12 +133,9 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     );
   }
 
-  /// Navegar al mapa mostrando todas las capturas
   void _showAllCapturesInMap() {
-    final capturesWithLocation =
-        _captures.where((c) => c.location != null).toList();
-
-    if (capturesWithLocation.isEmpty) {
+    final hasGPS = _captures.any((c) => c.location != null);
+    if (!hasGPS) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No hay capturas con ubicación GPS'),
@@ -264,22 +153,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     );
   }
 
-  /// Task #268: Muestra VisionResultCard (misma vista que al capturar)
-  Future<void> _showCaptureDetail(CrazyDexItem item) async {
-    // Buscar la VisionCapture original usando el ID
-    final captureId = int.tryParse(item.id);
-    if (captureId == null) return;
-    VisionCapture? capture;
-    for (final c in _captures) {
-      if (c.id == captureId) {
-        capture = c;
-        break;
-      }
-    }
-    if (capture == null) return; // No encontrada
-
+  /// Muestra el preview de una captura con diseño Material Design 3 optimizado
+  Future<void> _showCapturePreview(VisionCapture capture) async {
     try {
-      // Cargar imagen desde archivo
+      // Cargar imagen
       final imageFile = File(capture.imagePath);
       if (!await imageFile.exists()) {
         if (mounted) {
@@ -290,62 +167,282 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         return;
       }
 
-      final imageBytes = await imageFile.readAsBytes();
-      final codec = await ui.instantiateImageCodec(imageBytes);
-      final frame = await codec.getNextFrame();
-      final uiImage = frame.image;
-
-      // Crear VisionResult desde VisionCapture manualmente
-      final vrMap = capture.visionResult;
-      final visionResult = VisionResult(
-        name: vrMap['name'] as String? ?? 'Desconocido',
-        type: vrMap['type'] as String? ?? '',
-        category: vrMap['category'] as String? ?? 'unknown',
-        description: vrMap['description'] as String? ?? '',
-        rarity: vrMap['rarity'] as String? ?? 'common',
-        confidence: (vrMap['confidence'] as num?)?.toDouble() ?? 0.0,
-        specificityLevel: vrMap['specificity_level'] as String? ?? 'general',
-        broaderContext: vrMap['broader_context'] as String?,
-        encounterRarity: vrMap['encounter_rarity'] as String? ?? 'medium',
-        authenticity: vrMap['authenticity'] as String? ?? 'unknown',
-        imageFile: imageFile,
-        // TODO: Reconstruir Position, LocationInfo, CameraOrientation desde Maps si es necesario
-        location: null,
-        locationInfo: null,
-        orientation: null,
-      );
-
       if (!mounted) return;
 
-      // Mostrar VisionResultCard (misma vista que al capturar)
+      // Mostrar modal con diseño optimizado
       await showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
         isDismissible: true,
+        enableDrag: true,
         builder: (context) {
-          return Stack(
-            children: [
-              VisionResultCard(
-                image: uiImage,
-                imageBytes: imageBytes,
-                result: visionResult,
-              ),
-              if (capture!.location != null)
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: FloatingActionButton.small(
-                    heroTag: 'map_capture_${capture.id}',
-                    onPressed: () {
-                      Navigator.pop(context); // Cerrar detalle
-                      _showCaptureInMap(capture!); // Abrir mapa solo con esta
-                    },
-                    tooltip: 'Ver solo esta en mapa',
-                    child: const Icon(Icons.map_outlined),
+          return DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
                   ),
                 ),
-            ],
+                child: Column(
+                  children: [
+                    // Header fijo con SafeArea
+                    SafeArea(
+                      bottom: false,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Drag handle
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Container(
+                              width: 32,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Header con título y acciones
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        capture.name,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        capture.category,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.copyWith(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Botón de mapa (solo si tiene GPS)
+                                if (capture.location != null)
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showCaptureInMap(capture);
+                                    },
+                                    icon: const Icon(Icons.map_outlined),
+                                    tooltip: 'Ver en mapa',
+                                    style: IconButton.styleFrom(
+                                      backgroundColor:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.secondaryContainer,
+                                      foregroundColor:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                // Botón de cerrar
+                                IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.close),
+                                  tooltip: 'Cerrar',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                        ],
+                      ),
+                    ),
+                    // Contenido scrolleable
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Imagen con tap para expandir
+                            Hero(
+                              tag: 'capture_${capture.id}',
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => _FullScreenImage(
+                                            imageFile: imageFile,
+                                            heroTag: 'capture_${capture.id}',
+                                            captureName: capture.name,
+                                          ),
+                                    ),
+                                  );
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.file(
+                                          imageFile,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        // Indicador de que se puede expandir
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: const Icon(
+                                              Icons.zoom_out_map,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Descripción
+                            if (capture.visionResult['description'] != null &&
+                                (capture.visionResult['description'] as String)
+                                    .isNotEmpty) ...[
+                              Text(
+                                'Descripción',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                capture.visionResult['description'] as String,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                            // Información específica por categoría
+                            ..._buildCategoryMetadata(context, capture),
+                            // Información de ubicación
+                            if (capture.locationInfo != null) ...[
+                              _buildInfoSection(context, 'Ubicación', [
+                                if ((capture.locationInfo!['country']
+                                            as String?)
+                                        ?.isNotEmpty ??
+                                    false)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.flag,
+                                    capture.locationInfo!['country'] as String,
+                                  ),
+                                if ((capture.locationInfo!['placeName']
+                                            as String?)
+                                        ?.isNotEmpty ??
+                                    false)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.place,
+                                    capture.locationInfo!['placeName']
+                                        as String,
+                                  ),
+                                if (capture.latitude != null &&
+                                    capture.longitude != null)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.my_location,
+                                    '${capture.latitude!.toStringAsFixed(4)}, ${capture.longitude!.toStringAsFixed(4)}',
+                                  ),
+                              ]),
+                              const SizedBox(height: 24),
+                            ],
+                            // Información de orientación de cámara
+                            if (capture.orientation != null) ...[
+                              _buildInfoSection(
+                                context,
+                                'Orientación de la cámara',
+                                [
+                                  if (capture
+                                          .orientation!['cardinalDirection'] !=
+                                      null)
+                                    _buildInfoChip(
+                                      context,
+                                      Icons.explore,
+                                      capture.orientation!['cardinalDirection']
+                                          as String,
+                                    ),
+                                  if (capture.orientation!['bearing'] != null)
+                                    _buildInfoChip(
+                                      context,
+                                      Icons.navigation,
+                                      '${(capture.orientation!['bearing'] as num).toStringAsFixed(1)}°',
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                            // Metadata
+                            _buildInfoSection(context, 'Detalles', [
+                              _buildRarityChip(context, capture.rarity),
+                              _buildInfoChip(
+                                context,
+                                Icons.calendar_today,
+                                _formatDate(capture.timestamp),
+                              ),
+                              _buildInfoChip(
+                                context,
+                                Icons.remove_red_eye,
+                                _getRarityLabel(capture.encounterRarity),
+                              ),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           );
         },
       );
@@ -353,8 +450,743 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al cargar captura: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error al cargar captura: \$e')));
       }
+    }
+  }
+
+  Widget _buildInfoSection(
+    BuildContext context,
+    String title,
+    List<Widget> chips,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: chips),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
+    return Chip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSecondaryContainer,
+      ),
+      label: Text(label),
+      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+      labelStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSecondaryContainer,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
+  }
+
+  Widget _buildRarityChip(BuildContext context, String rarity) {
+    // Colores sutiles según rareza
+    Color backgroundColor;
+    Color foregroundColor;
+    IconData icon;
+    String label;
+
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        backgroundColor = Theme.of(context).colorScheme.tertiaryContainer;
+        foregroundColor = Theme.of(context).colorScheme.onTertiaryContainer;
+        icon = Icons.auto_awesome;
+        label = 'Legendario';
+        break;
+      case 'epic':
+        backgroundColor = Theme.of(context).colorScheme.primaryContainer;
+        foregroundColor = Theme.of(context).colorScheme.onPrimaryContainer;
+        icon = Icons.workspace_premium;
+        label = 'Épico';
+        break;
+      case 'rare':
+        backgroundColor = Theme.of(context).colorScheme.secondaryContainer;
+        foregroundColor = Theme.of(context).colorScheme.onSecondaryContainer;
+        icon = Icons.stars;
+        label = 'Raro';
+        break;
+      case 'uncommon':
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+        foregroundColor = Theme.of(context).colorScheme.onSurface;
+        icon = Icons.star_half;
+        label = 'Poco común';
+        break;
+      default: // common
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+        foregroundColor = Theme.of(context).colorScheme.onSurface;
+        icon = Icons.circle;
+        label = 'Común';
+    }
+
+    return Chip(
+      avatar: Icon(icon, size: 18, color: foregroundColor),
+      label: Text(label),
+      backgroundColor: backgroundColor,
+      labelStyle: TextStyle(
+        color: foregroundColor,
+        fontWeight: FontWeight.w600,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
+  }
+
+  String _getRarityLabel(String encounterRarity) {
+    switch (encounterRarity.toLowerCase()) {
+      case 'epic':
+        return 'Muy difícil de ver';
+      case 'hard':
+        return 'Difícil de ver';
+      case 'medium':
+        return 'Moderado';
+      case 'easy':
+      default:
+        return 'Fácil de ver';
+    }
+  }
+
+  /// Construye información específica según la categoría del objeto
+  List<Widget> _buildCategoryMetadata(
+    BuildContext context,
+    VisionCapture capture,
+  ) {
+    final metadata =
+        capture.visionResult['category_metadata'] as Map<String, dynamic>?;
+    if (metadata == null || metadata.isEmpty) return [];
+
+    final category = capture.category.toLowerCase();
+    final widgets = <Widget>[];
+
+    switch (category) {
+      case 'animal':
+        widgets.add(_buildAnimalMetadata(context, metadata));
+        break;
+      case 'vehicle':
+        widgets.add(_buildVehicleMetadata(context, metadata));
+        break;
+      case 'building':
+        widgets.add(_buildBuildingMetadata(context, metadata));
+        break;
+      case 'food':
+        widgets.add(_buildFoodMetadata(context, metadata));
+        break;
+      case 'nature':
+        widgets.add(_buildNatureMetadata(context, metadata));
+        break;
+      case 'landmark':
+        widgets.add(_buildLandmarkMetadata(context, metadata));
+        break;
+      case 'product':
+        widgets.add(_buildProductMetadata(context, metadata));
+        break;
+      default:
+        // Para 'other' o 'unknown', mostrar metadata genérica si existe
+        if (metadata['object_type'] != null) {
+          widgets.add(_buildGenericMetadata(context, metadata));
+        }
+    }
+
+    return widgets;
+  }
+
+  Widget _buildAnimalMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['species'] != null) {
+      chips.add(
+        _buildInfoChip(context, Icons.science, metadata['species'] as String),
+      );
+    }
+
+    if (metadata['conservation_label'] != null) {
+      final status = metadata['conservation_status'] as String?;
+      final label = metadata['conservation_label'] as String;
+      Color? backgroundColor;
+      Color? foregroundColor;
+
+      // Colores según estado de conservación
+      switch (status) {
+        case 'CR': // En Peligro Crítico
+        case 'EN': // En Peligro
+          backgroundColor = Theme.of(context).colorScheme.errorContainer;
+          foregroundColor = Theme.of(context).colorScheme.onErrorContainer;
+          break;
+        case 'VU': // Vulnerable
+          backgroundColor = Theme.of(context).colorScheme.tertiaryContainer;
+          foregroundColor = Theme.of(context).colorScheme.onTertiaryContainer;
+          break;
+        case 'NT': // Casi Amenazado
+          backgroundColor = Theme.of(context).colorScheme.secondaryContainer;
+          foregroundColor = Theme.of(context).colorScheme.onSecondaryContainer;
+          break;
+        default: // LC, etc.
+          backgroundColor =
+              Theme.of(context).colorScheme.surfaceContainerHighest;
+          foregroundColor = Theme.of(context).colorScheme.onSurface;
+      }
+
+      chips.add(
+        Chip(
+          avatar: Icon(Icons.favorite, size: 18, color: foregroundColor),
+          label: Text(label),
+          backgroundColor: backgroundColor,
+          labelStyle: TextStyle(
+            color: foregroundColor,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+    }
+
+    if (metadata['habitat'] != null) {
+      chips.add(
+        _buildInfoChip(context, Icons.forest, metadata['habitat'] as String),
+      );
+    }
+
+    if (metadata['is_endemic'] == true && metadata['endemic_region'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.location_on,
+          'Endémico: ${metadata['endemic_region']}',
+        ),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información de la Especie', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildVehicleMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['brand'] != null || metadata['model'] != null) {
+      final brand = metadata['brand'] as String? ?? '';
+      final model = metadata['model'] as String? ?? '';
+      chips.add(
+        _buildInfoChip(context, Icons.drive_eta, '$brand $model'.trim()),
+      );
+    }
+
+    if (metadata['year_range'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.calendar_today,
+          metadata['year_range'] as String,
+        ),
+      );
+    }
+
+    if (metadata['is_electric'] == true) {
+      chips.add(
+        Chip(
+          avatar: const Icon(Icons.ev_station, size: 18, color: Colors.green),
+          label: Text(
+            metadata['sustainability_note'] as String? ?? 'Vehículo Eléctrico',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer
+              .withValues(red: 0.8, green: 1.0, blue: 0.8),
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+    }
+
+    if (metadata['classic_value'] == 'classic') {
+      chips.add(_buildInfoChip(context, Icons.star, 'Clásico'));
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información del Vehículo', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildBuildingMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['architectural_style'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.architecture,
+          metadata['architectural_style'] as String,
+        ),
+      );
+    }
+
+    if (metadata['certifications'] != null) {
+      final certs = metadata['certifications'] as List;
+      for (final cert in certs) {
+        chips.add(
+          Chip(
+            avatar: const Icon(Icons.eco, size: 18, color: Colors.blue),
+            label: Text(cert as String),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer
+                .withValues(red: 0.8, green: 0.9, blue: 1.0),
+            labelStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
+        );
+      }
+    }
+
+    if (metadata['sustainability_features'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.energy_savings_leaf,
+          metadata['sustainability_features'] as String,
+        ),
+      );
+    }
+
+    if (metadata['construction_period'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.history,
+          metadata['construction_period'] as String,
+        ),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información del Edificio', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildFoodMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['cuisine'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.restaurant,
+          metadata['cuisine'] as String,
+        ),
+      );
+    }
+
+    if (metadata['is_traditional'] == true) {
+      chips.add(_buildInfoChip(context, Icons.star, 'Plato Tradicional'));
+    }
+
+    if (metadata['main_ingredients'] != null) {
+      final ingredients = (metadata['main_ingredients'] as List)
+          .map((e) => e as String)
+          .join(', ');
+      chips.add(_buildInfoChip(context, Icons.restaurant_menu, ingredients));
+    }
+
+    if (metadata['dietary_info'] != null) {
+      final dietary = (metadata['dietary_info'] as List)
+          .map((e) => e as String)
+          .join(', ');
+      chips.add(_buildInfoChip(context, Icons.eco, dietary));
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información del Plato', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildNatureMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    // Elevación (para montañas/picos)
+    if (metadata['elevation_meters'] != null) {
+      chips.add(
+        Chip(
+          avatar: const Icon(Icons.trending_up, size: 18, color: Colors.brown),
+          label: Text('${metadata['elevation_meters']} msnm'),
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onTertiaryContainer,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+    }
+
+    // Cordillera/Rango montañoso
+    if (metadata['mountain_range'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.landscape,
+          metadata['mountain_range'] as String,
+        ),
+      );
+    }
+
+    // Estado volcánico
+    if (metadata['volcanic_status'] != null &&
+        metadata['volcanic_status'] != 'not_applicable') {
+      final status = metadata['volcanic_status'] as String;
+      Color avatarColor;
+      String label;
+
+      switch (status) {
+        case 'active':
+          avatarColor = Colors.red;
+          label = 'Volcán Activo';
+          break;
+        case 'dormant':
+          avatarColor = Colors.orange;
+          label = 'Volcán Durmiente';
+          break;
+        case 'extinct':
+          avatarColor = Colors.grey;
+          label = 'Volcán Extinto';
+          break;
+        default:
+          avatarColor = Colors.grey;
+          label = status;
+      }
+
+      chips.add(
+        Chip(
+          avatar: Icon(Icons.volcano, size: 18, color: avatarColor),
+          label: Text(label),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onErrorContainer,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+
+      // Última erupción
+      if (metadata['last_eruption'] != null) {
+        chips.add(
+          _buildInfoChip(
+            context,
+            Icons.history,
+            'Última erupción: ${metadata['last_eruption']}',
+          ),
+        );
+      }
+    }
+
+    // Picos visibles
+    if (metadata['visible_peaks'] != null) {
+      final peaks = metadata['visible_peaks'] as List;
+      if (peaks.isNotEmpty && peaks.length > 1) {
+        chips.add(
+          _buildInfoChip(
+            context,
+            Icons.visibility,
+            'Picos visibles: ${peaks.length}',
+          ),
+        );
+      }
+    }
+
+    // Método de identificación (importante para montañas)
+    if (metadata['identification_method'] != null) {
+      final method = metadata['identification_method'] as String;
+      if (method.contains('GPS+bearing')) {
+        chips.add(
+          Chip(
+            avatar: const Icon(
+              Icons.gps_fixed,
+              size: 18,
+              color: Colors.blueAccent,
+            ),
+            label: const Text('Identificado por GPS+Brújula'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer
+                .withValues(red: 0.8, green: 0.9, blue: 1.0),
+            labelStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
+        );
+      }
+    }
+
+    if (metadata['scientific_name'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.science,
+          metadata['scientific_name'] as String,
+        ),
+      );
+    }
+
+    if (metadata['geological_type'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.terrain,
+          metadata['geological_type'] as String,
+        ),
+      );
+    }
+
+    if (metadata['protected_status'] != null) {
+      chips.add(
+        Chip(
+          avatar: const Icon(Icons.shield, size: 18, color: Colors.green),
+          label: Text(metadata['protected_status'] as String),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer
+              .withValues(red: 0.8, green: 1.0, blue: 0.8),
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+    }
+
+    if (metadata['ecological_importance'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.eco,
+          metadata['ecological_importance'] as String,
+        ),
+      );
+    }
+
+    if (metadata['best_season'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.wb_sunny,
+          metadata['best_season'] as String,
+        ),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información Natural', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildLandmarkMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['cultural_significance'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.location_city,
+          metadata['cultural_significance'] as String,
+        ),
+      );
+    }
+
+    if (metadata['unesco_status'] == true) {
+      chips.add(
+        Chip(
+          avatar: const Icon(Icons.star, size: 18, color: Colors.amber),
+          label: const Text('Patrimonio UNESCO'),
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onTertiaryContainer,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      );
+    }
+
+    if (metadata['construction_year'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.calendar_today,
+          'Construido: ${metadata['construction_year']}',
+        ),
+      );
+    }
+
+    if (metadata['famous_for'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.info_outline,
+          metadata['famous_for'] as String,
+        ),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información del Lugar', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildProductMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['brand'] != null) {
+      chips.add(
+        _buildInfoChip(context, Icons.business, metadata['brand'] as String),
+      );
+    }
+
+    if (metadata['is_handmade'] == true) {
+      chips.add(_buildInfoChip(context, Icons.handyman, 'Hecho a mano'));
+    }
+
+    if (metadata['sustainability_note'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.eco,
+          metadata['sustainability_note'] as String,
+        ),
+      );
+    }
+
+    if (metadata['origin_country'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.flag,
+          'Origen: ${metadata['origin_country']}',
+        ),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información del Producto', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  Widget _buildGenericMetadata(
+    BuildContext context,
+    Map<String, dynamic> metadata,
+  ) {
+    final chips = <Widget>[];
+
+    if (metadata['object_type'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.category,
+          metadata['object_type'] as String,
+        ),
+      );
+    }
+
+    if (metadata['common_use'] != null) {
+      chips.add(
+        _buildInfoChip(
+          context,
+          Icons.info_outline,
+          metadata['common_use'] as String,
+        ),
+      );
+    }
+
+    if (metadata['material'] != null) {
+      chips.add(
+        _buildInfoChip(context, Icons.texture, metadata['material'] as String),
+      );
+    }
+
+    return chips.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+          children: [
+            _buildInfoSection(context, 'Información Adicional', chips),
+            const SizedBox(height: 24),
+          ],
+        );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      return 'Hoy';
+    } else if (diff.inDays == 1) {
+      return 'Ayer';
+    } else if (diff.inDays < 7) {
+      return 'Hace ${diff.inDays} días';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
     }
   }
 
@@ -362,53 +1194,17 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Mi CrazyDex')),
+        appBar: AppBar(title: const Text('CrazyDex')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Convertir capturas a CrazyDexItems para compatibilidad con UI existente
-    final allItems =
-        _captures.map((capture) {
-          final category = _mapCategoryFromString(capture.category);
-          final rarityNum = _getRarityNumber(capture.rarity);
-          return CrazyDexItem(
-            id: capture.id.toString(),
-            name: capture.name,
-            imageUrl: capture.imagePath,
-            category: category,
-            description: capture.visionResult['description'] as String? ?? '',
-            funFact:
-                capture.visionResult['broader_context'] as String? ??
-                'Descubrimiento único',
-            rarity: rarityNum,
-            xpReward: _calculateXP(capture.rarity),
-            aiLabels: [capture.name, capture.category],
-            isDiscovered: true, // Todas las capturas en DB están descubiertas
-            discoveredAt: capture.timestamp,
-            userPhotos: [capture.imagePath],
-          );
-        }).toList();
-
-    // Agregar items locked (mock para mostrar lo que falta descubrir)
-    final mockLocked =
-        getMockCrazyDexItems().where((item) => !item.isDiscovered).toList();
-    allItems.addAll(mockLocked);
-
-    final discovered = allItems.where((item) => item.isDiscovered).toList();
-    final locked = allItems.where((item) => !item.isDiscovered).toList();
-
-    // Aplicar filtros (categoría, país, búsqueda)
-    final filteredDiscovered = _filterItems(discovered);
-    final filteredLocked = _filterItems(locked);
-
-    final progress = calculateProgress(allItems);
+    final filteredCaptures = _filteredCaptures;
 
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            // AppBar compacto con stats inline
             SliverAppBar(
               floating: true,
               snap: true,
@@ -426,11 +1222,11 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                           hintStyle: TextStyle(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.5),
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
                       )
-                      : Text('CrazyDex', style: AppTextStyles.headlineSmall),
+                      : const Text('CrazyDex'),
               actions: [
                 if (_showSearch)
                   IconButton(
@@ -446,6 +1242,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                   IconButton(
                     icon: const Icon(Icons.map_outlined),
                     onPressed: _showAllCapturesInMap,
+                    tooltip: 'Ver todas en mapa',
                   ),
                   IconButton(
                     icon: const Icon(Icons.search),
@@ -454,6 +1251,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                         _showSearch = true;
                       });
                     },
+                    tooltip: 'Buscar',
                   ),
                   IconButton(
                     icon: Icon(
@@ -466,6 +1264,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                         _showFilters = !_showFilters;
                       });
                     },
+                    tooltip: 'Filtros',
                   ),
                 ],
               ],
@@ -475,15 +1274,63 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   color: Theme.of(context).colorScheme.surface,
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildCategoryFilter(),
-                      if (_getAvailableCountries().isNotEmpty)
-                        _buildCountryFilter(),
-                      Divider(
-                        height: 1,
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                      // Filtro por categoría
+                      DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        decoration: const InputDecoration(
+                          labelText: 'Categoría',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Todas'),
+                          ),
+                          ..._captures
+                              .map((c) => c.category)
+                              .toSet()
+                              .map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat),
+                                ),
+                              ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // Filtro por país
+                      DropdownButtonFormField<String>(
+                        value: _selectedCountry,
+                        decoration: const InputDecoration(
+                          labelText: 'País',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Todos'),
+                          ),
+                          ..._getAvailableCountries().map(
+                            (country) => DropdownMenuItem(
+                              value: country,
+                              child: Text(country),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCountry = value;
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -492,759 +1339,228 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
           ];
         },
         body:
-            filteredDiscovered.isEmpty && filteredLocked.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
-                  onRefresh: _loadCaptures,
-                  child: CustomScrollView(
-                    slivers: [
-                      if (filteredDiscovered.isNotEmpty) ...[
-                        SliverPadding(
-                          padding: EdgeInsets.all(AppSpacing.s),
-                          sliver: SliverGrid(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 4,
-                                  mainAxisSpacing: 4,
-                                ),
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              return _buildGridItem(
-                                filteredDiscovered[index],
-                                isDiscovered: true,
-                              );
-                            }, childCount: filteredDiscovered.length),
-                          ),
+            filteredCaptures.isEmpty
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.catching_pokemon,
+                        size: 80,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _captures.isEmpty
+                            ? 'No hay capturas aún'
+                            : 'No se encontraron resultados',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _captures.isEmpty
+                            ? 'Empieza a escanear el mundo'
+                            : 'Intenta con otros filtros',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                      ],
-                      if (filteredLocked.isNotEmpty) ...[
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              AppSpacing.m,
-                              AppSpacing.l,
-                              AppSpacing.m,
-                              AppSpacing.s,
-                            ),
-                            child: Text(
-                              'Por descubrir (${filteredLocked.length})',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: Theme.of(context).colorScheme.outline,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppSpacing.s,
-                          ),
-                          sliver: SliverGrid(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 4,
-                                  mainAxisSpacing: 4,
-                                ),
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              return _buildGridItem(
-                                filteredLocked[index],
-                                isDiscovered: false,
-                              );
-                            }, childCount: filteredLocked.length),
-                          ),
-                        ),
-                      ],
-                      SliverToBoxAdapter(child: SizedBox(height: AppSpacing.l)),
+                      ),
                     ],
                   ),
+                )
+                : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: filteredCaptures.length,
+                  itemBuilder: (context, index) {
+                    final capture = filteredCaptures[index];
+                    return _buildGridItem(capture);
+                  },
                 ),
       ),
     );
   }
 
-  Widget _buildCompactStat(int discovered, int total) {
-    final percentage = ((discovered / total) * 100).toInt();
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.photo_library, size: 16, color: AppColors.primaryColor),
-          SizedBox(width: AppSpacing.xxs),
-          Text(
-            '$discovered/$total',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryColor,
-            ),
-          ),
-          SizedBox(width: AppSpacing.xxs),
-          Text(
-            '($percentage%)',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 11,
-              color: AppColors.primaryColor.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressHeader(CrazyDexProgress progress) {
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primaryColor,
-            AppColors.primaryColor.withOpacity(0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatColumn(
-                'Total',
-                progress.totalItems.toString(),
-                Icons.list,
-              ),
-              _buildStatColumn(
-                'Descubiertos',
-                progress.discoveredItems.toString(),
-                Icons.check_circle,
-              ),
-              _buildStatColumn(
-                'Progreso',
-                '${progress.completionPercentage}%',
-                Icons.emoji_events,
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.m),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress.discoveredItems / progress.totalItems,
-              minHeight: 12,
-              backgroundColor: Colors.white.withOpacity(0.3),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
-          SizedBox(height: AppSpacing.s),
-          Text(
-            'Rango: ${progress.rank}',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatColumn(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 32),
-        SizedBox(height: AppSpacing.xs),
-        Text(
-          value,
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withOpacity(0.9),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.m,
-        vertical: AppSpacing.s,
-      ),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Buscar por nombre, descripción o categoría...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon:
-              _searchQuery.isNotEmpty
-                  ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                    },
-                  )
-                  : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surface,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryFilter() {
-    return SizedBox(
-      height: 50,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.s,
-          vertical: AppSpacing.xs,
-        ),
-        children: [
-          _buildCategoryChip(null, 'Todos', Icons.apps),
-          ...CrazyDexCategory.values.map((category) {
-            return _buildCategoryChip(
-              category,
-              category.displayName,
-              _getCategoryIcon(category),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(
-    CrazyDexCategory? category,
-    String label,
-    IconData icon,
-  ) {
-    final isSelected = _selectedCategory == category;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: EdgeInsets.only(right: AppSpacing.xs),
-      child: FilterChip(
-        selected: isSelected,
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? Colors.white : colorScheme.primary,
-            ),
-            SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 12)),
-          ],
-        ),
-        onSelected: (selected) {
-          setState(() {
-            _selectedCategory = selected ? category : null;
-          });
-        },
-        backgroundColor: colorScheme.surfaceContainerHighest,
-        selectedColor: colorScheme.primary,
-        showCheckmark: false,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : colorScheme.primary,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 12,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 4),
-      ),
-    );
-  }
-
-  Widget _buildCountryFilter() {
-    final countries = _getAvailableCountries();
-    if (countries.isEmpty) return const SizedBox.shrink();
-
-    return SizedBox(
-      height: 50,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.s,
-          vertical: AppSpacing.xs,
-        ),
-        children: [
-          _buildCountryChip(null, 'Todos los países', Icons.public),
-          ...countries.map((country) {
-            return _buildCountryChip(country, country, Icons.flag);
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCountryChip(String? country, String label, IconData icon) {
-    final isSelected = _selectedCountry == country;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: EdgeInsets.only(right: AppSpacing.s),
-      child: FilterChip(
-        selected: isSelected,
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : colorScheme.primary,
-            ),
-            SizedBox(width: AppSpacing.xs),
-            Text(label),
-          ],
-        ),
-        onSelected: (selected) {
-          setState(() {
-            _selectedCountry = selected ? country : null;
-          });
-        },
-        backgroundColor: colorScheme.surface,
-        selectedColor: colorScheme.primary,
-        showCheckmark: false,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : colorScheme.primary,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(CrazyDexCategory category) {
-    switch (category) {
-      case CrazyDexCategory.fauna:
-        return Icons.pets;
-      case CrazyDexCategory.flora:
-        return Icons.local_florist;
-      case CrazyDexCategory.mountains:
-        return Icons.terrain;
-      case CrazyDexCategory.waterBodies:
-        return Icons.water;
-      case CrazyDexCategory.buildings:
-        return Icons.apartment;
-      case CrazyDexCategory.food:
-        return Icons.restaurant;
-      case CrazyDexCategory.art:
-        return Icons.palette;
-      case CrazyDexCategory.culture:
-        return Icons.theater_comedy;
-      case CrazyDexCategory.landmarks:
-        return Icons.location_city;
-      case CrazyDexCategory.transportation:
-        return Icons.directions_bus;
-    }
-  }
-
-  Widget _buildSectionHeader(String title, int count) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: AppTextStyles.headlineMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(width: AppSpacing.xs),
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.s,
-            vertical: AppSpacing.xxs,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            count.toString(),
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGridItem(CrazyDexItem item, {required bool isDiscovered}) {
+  Widget _buildGridItem(VisionCapture capture) {
     return GestureDetector(
-      onTap: isDiscovered ? () => _showCaptureDetail(item) : null,
-      onLongPress: isDiscovered ? () => _showItemMenu(item) : null,
+      onTap: () => _showCapturePreview(capture),
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Imagen o placeholder
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child:
-                  isDiscovered
-                      ? Image.file(
-                        File(item.imageUrl),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                          );
-                        },
-                      )
-                      : Center(
-                        child: Icon(
-                          Icons.lock,
-                          size: 32,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-            ),
-            // Overlay con info
-            if (isDiscovered)
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Imagen
+              Image.file(
+                File(capture.imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  );
+                },
+              ),
+              // Overlay con gradient
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withValues(alpha: 0.7),
                         Colors.transparent,
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
-                    ),
                   ),
-                  padding: EdgeInsets.all(AppSpacing.xs),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.name,
-                        style: AppTextStyles.bodySmall.copyWith(
+                  child: Text(
+                    capture.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget para mostrar imagen en pantalla completa con zoom
+class _FullScreenImage extends StatefulWidget {
+  final File imageFile;
+  final String heroTag;
+  final String captureName;
+
+  const _FullScreenImage({
+    required this.imageFile,
+    required this.heroTag,
+    required this.captureName,
+  });
+
+  @override
+  State<_FullScreenImage> createState() => _FullScreenImageState();
+}
+
+class _FullScreenImageState extends State<_FullScreenImage> {
+  final TransformationController _transformationController =
+      TransformationController();
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Imagen con zoom interactivo
+          Center(
+            child: Hero(
+              tag: widget.heroTag,
+              child: InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.file(widget.imageFile, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+          // Header con nombre y botón cerrar
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Text(
+                        widget.captureName,
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.5),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        item.rarityStars,
-                        style: const TextStyle(fontSize: 10, height: 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            // Badge de raridad en esquina superior derecha
-            if (isDiscovered && item.rarity >= 4)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color:
-                        item.rarity == 5
-                            ? Colors.amber.withOpacity(0.9)
-                            : Colors.purple.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    item.rarity == 5 ? Icons.star : Icons.auto_awesome,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildItemCard(CrazyDexItem item, {required bool isDiscovered}) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    // Task #268: Wrap discovered items in InkWell to open detail card
-    final cardContent = Padding(
-      padding: EdgeInsets.all(AppSpacing.m),
-      child: Row(
-        children: [
-          // Image/Icon
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color:
-                  isDiscovered
-                      ? AppColors.primaryColor.withOpacity(0.1)
-                      : colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child:
-                  isDiscovered
-                      ? Image.file(
-                        File(item.imageUrl),
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          // Si falla cargar la imagen, mostrar icono
-                          return Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 32,
-                              color: colorScheme.outline,
-                            ),
-                          );
-                        },
-                      )
-                      : Center(
-                        child: Icon(
-                          Icons.lock,
-                          size: 32,
-                          color: colorScheme.outline,
-                        ),
-                      ),
-            ),
-          ),
-          SizedBox(width: AppSpacing.m),
-
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isDiscovered ? item.name : '???',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color:
-                        isDiscovered
-                            ? colorScheme.onSurface
-                            : colorScheme.outline,
-                  ),
-                ),
-                SizedBox(height: AppSpacing.xxs),
-                Text(item.rarityStars, style: const TextStyle(fontSize: 12)),
-                SizedBox(height: AppSpacing.xxs),
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isDiscovered
-                                ? _getCategoryColor(item.category)
-                                : colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        item.category.displayName,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          fontSize: 10,
-                          color:
-                              isDiscovered ? Colors.white : colorScheme.outline,
-                        ),
-                      ),
                     ),
-                    SizedBox(width: AppSpacing.s),
-                    Icon(
-                      Icons.star,
-                      size: 12,
-                      color: isDiscovered ? Colors.amber : colorScheme.outline,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withValues(alpha: 0.6),
                     ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '+${item.xpReward} XP',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color:
-                            isDiscovered
-                                ? Colors.amber.shade700
-                                : colorScheme.outline,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                if (isDiscovered && item.discoveredAt != null) ...[
-                  SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    'Descubierto hace ${_getTimeAgo(item.discoveredAt!)}',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 10,
-                    ),
+                    tooltip: 'Cerrar',
                   ),
                 ],
-              ],
+              ),
             ),
           ),
-
-          if (isDiscovered)
-            Icon(Icons.check_circle, color: Colors.green, size: 24)
-          else
-            Icon(Icons.help_outline, color: colorScheme.outline, size: 24),
+          // Indicador de zoom en la parte inferior
+          Positioned(
+            bottom: 32,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Pellizca para hacer zoom',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
-    );
-
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.m),
-      color:
-          isDiscovered
-              ? colorScheme.surface
-              : colorScheme.surfaceContainerHighest,
-      child:
-          isDiscovered
-              ? InkWell(
-                onTap: () => _showCaptureDetail(item),
-                borderRadius: BorderRadius.circular(12),
-                child: cardContent,
-              )
-              : cardContent,
-    );
-  }
-
-  Color _getCategoryColor(CrazyDexCategory category) {
-    switch (category) {
-      case CrazyDexCategory.fauna:
-        return Colors.green;
-      case CrazyDexCategory.flora:
-        return Colors.blue;
-      case CrazyDexCategory.mountains:
-        return Colors.brown;
-      case CrazyDexCategory.waterBodies:
-        return Colors.cyan;
-      case CrazyDexCategory.buildings:
-        return Colors.grey;
-      case CrazyDexCategory.food:
-        return Colors.orange;
-      case CrazyDexCategory.art:
-        return Colors.purple;
-      case CrazyDexCategory.culture:
-        return Colors.pink;
-      case CrazyDexCategory.landmarks:
-        return Colors.indigo;
-      case CrazyDexCategory.transportation:
-        return Colors.teal;
-    }
-  }
-
-  Widget _buildEmptyState() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.l),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 64, color: colorScheme.outline),
-            SizedBox(height: AppSpacing.m),
-            Text(
-              'No hay items en esta categoría',
-              style: AppTextStyles.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppSpacing.s),
-            Text(
-              'Visita diferentes lugares y usa tu cámara para descubrir nuevos items',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays} día${difference.inDays > 1 ? 's' : ''}';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hora${difference.inHours > 1 ? 's' : ''}';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minuto${difference.inMinutes > 1 ? 's' : ''}';
-    } else {
-      return 'recién';
-    }
-  }
-
-  void _showInfoDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('¿Qué es el CrazyDex?'),
-            content: const Text(
-              'El CrazyDex es tu colección personal de descubrimientos. '
-              'Cada lugar que visitas tiene items únicos que puedes identificar '
-              'usando tu cámara.\n\n'
-              'Colecciona flora, fauna, monumentos, comida típica y más. '
-              '¡Completa categorías para desbloquear logros especiales!',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Entendido'),
-              ),
-            ],
-          ),
     );
   }
 }
