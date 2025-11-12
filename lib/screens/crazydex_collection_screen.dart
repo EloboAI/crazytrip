@@ -26,6 +26,8 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   String _searchQuery = '';
   List<VisionCapture> _captures = [];
   bool _isLoading = true;
+  bool _showFilters = false;
+  bool _showSearch = false;
   final DatabaseService _dbService = DatabaseService();
 
   @override
@@ -276,73 +278,196 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     final progress = calculateProgress(allItems);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Mi CrazyDex',
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              _showInfoDialog(context);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Progress Header
-          _buildProgressHeader(progress),
-
-          // Search Bar
-          _buildSearchBar(),
-
-          // Category Filter
-          _buildCategoryFilter(),
-
-          // Country Filter
-          _buildCountryFilter(),
-
-          // Items List con pull-to-refresh (Task #264)
-          Expanded(
-            child:
-                filteredDiscovered.isEmpty && filteredLocked.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                      onRefresh: _loadCaptures,
-                      child: ListView(
-                        padding: EdgeInsets.all(AppSpacing.m),
-                        children: [
-                          if (filteredDiscovered.isNotEmpty) ...[
-                            _buildSectionHeader(
-                              'Descubiertos',
-                              filteredDiscovered.length,
-                            ),
-                            SizedBox(height: AppSpacing.m),
-                            ...filteredDiscovered.map(
-                              (item) =>
-                                  _buildItemCard(item, isDiscovered: true),
-                            ),
-                            SizedBox(height: AppSpacing.l),
-                          ],
-                          if (filteredLocked.isNotEmpty) ...[
-                            _buildSectionHeader(
-                              'Por descubrir',
-                              filteredLocked.length,
-                            ),
-                            SizedBox(height: AppSpacing.m),
-                            ...filteredLocked.map(
-                              (item) =>
-                                  _buildItemCard(item, isDiscovered: false),
-                            ),
-                          ],
-                        ],
-                      ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            // AppBar compacto con stats inline
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              title:
+                  _showSearch
+                      ? TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      )
+                      : Text('CrazyDex', style: AppTextStyles.headlineSmall),
+              actions: [
+                if (_showSearch)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _showSearch = false;
+                        _searchController.clear();
+                      });
+                    },
+                  )
+                else ...[
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _showSearch = true;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _showFilters
+                          ? Icons.filter_alt
+                          : Icons.filter_alt_outlined,
                     ),
+                    onPressed: () {
+                      setState(() {
+                        _showFilters = !_showFilters;
+                      });
+                    },
+                  ),
+                ],
+              ],
+            ),
+            // Filtros colapsables
+            if (_showFilters)
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCategoryFilter(),
+                      if (_getAvailableCountries().isNotEmpty)
+                        _buildCountryFilter(),
+                      Divider(
+                        height: 1,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ];
+        },
+        body:
+            filteredDiscovered.isEmpty && filteredLocked.isEmpty
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                  onRefresh: _loadCaptures,
+                  child: CustomScrollView(
+                    slivers: [
+                      if (filteredDiscovered.isNotEmpty) ...[
+                        SliverPadding(
+                          padding: EdgeInsets.all(AppSpacing.s),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 4,
+                                  mainAxisSpacing: 4,
+                                ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              return _buildGridItem(
+                                filteredDiscovered[index],
+                                isDiscovered: true,
+                              );
+                            }, childCount: filteredDiscovered.length),
+                          ),
+                        ),
+                      ],
+                      if (filteredLocked.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.m,
+                              AppSpacing.l,
+                              AppSpacing.m,
+                              AppSpacing.s,
+                            ),
+                            child: Text(
+                              'Por descubrir (${filteredLocked.length})',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s,
+                          ),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 4,
+                                  mainAxisSpacing: 4,
+                                ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              return _buildGridItem(
+                                filteredLocked[index],
+                                isDiscovered: false,
+                              );
+                            }, childCount: filteredLocked.length),
+                          ),
+                        ),
+                      ],
+                      SliverToBoxAdapter(child: SizedBox(height: AppSpacing.l)),
+                    ],
+                  ),
+                ),
+      ),
+    );
+  }
+
+  Widget _buildCompactStat(int discovered, int total) {
+    final percentage = ((discovered / total) * 100).toInt();
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.photo_library, size: 16, color: AppColors.primaryColor),
+          SizedBox(width: AppSpacing.xxs),
+          Text(
+            '$discovered/$total',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          SizedBox(width: AppSpacing.xxs),
+          Text(
+            '($percentage%)',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 11,
+              color: AppColors.primaryColor.withOpacity(0.7),
+            ),
           ),
         ],
       ),
@@ -459,10 +584,13 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
   Widget _buildCategoryFilter() {
     return SizedBox(
-      height: 60,
+      height: 50,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.m),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.s,
+          vertical: AppSpacing.xs,
+        ),
         children: [
           _buildCategoryChip(null, 'Todos', Icons.apps),
           ...CrazyDexCategory.values.map((category) {
@@ -485,19 +613,21 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     final isSelected = _selectedCategory == category;
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: EdgeInsets.only(right: AppSpacing.s),
+      padding: EdgeInsets.only(right: AppSpacing.xs),
       child: FilterChip(
         selected: isSelected,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 16,
-              color: isSelected ? Colors.white : AppColors.primaryColor,
+              size: 14,
+              color: isSelected ? Colors.white : colorScheme.primary,
             ),
-            SizedBox(width: AppSpacing.xs),
-            Text(label),
+            SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
           ],
         ),
         onSelected: (selected) {
@@ -505,13 +635,15 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
             _selectedCategory = selected ? category : null;
           });
         },
-        backgroundColor: colorScheme.surface,
-        selectedColor: AppColors.primaryColor,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primary,
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppColors.primaryColor,
+          color: isSelected ? Colors.white : colorScheme.primary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
         ),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 4),
       ),
     );
   }
@@ -524,7 +656,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
       height: 50,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.m),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.s,
+          vertical: AppSpacing.xs,
+        ),
         children: [
           _buildCountryChip(null, 'Todos los países', Icons.public),
           ...countries.map((country) {
@@ -623,6 +758,120 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGridItem(CrazyDexItem item, {required bool isDiscovered}) {
+    return GestureDetector(
+      onTap: isDiscovered ? () => _showCaptureDetail(item) : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Imagen o placeholder
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child:
+                  isDiscovered
+                      ? Image.file(
+                        File(item.imageUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          );
+                        },
+                      )
+                      : Center(
+                        child: Icon(
+                          Icons.lock,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+            ),
+            // Overlay con info
+            if (isDiscovered)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
+                  ),
+                  padding: EdgeInsets.all(AppSpacing.xs),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        item.rarityStars,
+                        style: const TextStyle(fontSize: 10, height: 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            // Badge de raridad en esquina superior derecha
+            if (isDiscovered && item.rarity >= 4)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color:
+                        item.rarity == 5
+                            ? Colors.amber.withOpacity(0.9)
+                            : Colors.purple.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    item.rarity == 5 ? Icons.star : Icons.auto_awesome,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
