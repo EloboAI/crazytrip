@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,6 +19,8 @@ import '../models/image_filter.dart';
 import '../widgets/filter_selector.dart';
 import '../widgets/compass_indicator.dart';
 import '../widgets/compass_calibration_banner.dart';
+import '../widgets/camera/ai_analysis_overlay.dart';
+import '../widgets/camera/vision_result_card.dart';
 import 'camera_settings_screen.dart';
 import 'video_preview_screen.dart';
 import '../services/vision_service.dart';
@@ -342,514 +346,185 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   Future<void> _analyzePhoto(XFile image) async {
     try {
-      // Verificar si GPS está activo ANTES de procesar
-      final isGPSEnabled = await LocationService.isLocationServiceEnabled();
+      // 1. Convertir imagen a ui.Image para el overlay
+      final Uint8List bytes = await image.readAsBytes();
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo frame = await codec.getNextFrame();
+      final ui.Image uiImage = frame.image;
 
-      if (!isGPSEnabled && mounted) {
-        // Mostrar diálogo informativo si GPS está deshabilitado
-        final shouldContinue = await _showGPSDisabledDialog();
-        if (!shouldContinue) {
-          // Usuario decidió no continuar sin GPS
-          return;
-        }
-        // Si shouldContinue es true, continuar en modo degradado (sin GPS)
-      }
+      // 2. Pausar la cámara para ahorrar recursos
+      _cameraController?.pausePreview();
 
-      // Convertir XFile a File (si proviene de bytes, crear temporal)
-      File file;
-      if (image.path.isEmpty) {
-        final dir = await getTemporaryDirectory();
-        final tmpPath =
-            '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final bytes = await image.readAsBytes();
-        file = File(tmpPath);
-        await file.writeAsBytes(bytes, flush: true);
-      } else {
-        file = File(image.path);
-      }
-
-      // Obtener ubicación actual (puede ser null si GPS está deshabilitado)
-      Position? location;
-      LocationInfo? locationInfo;
-
-      if (isGPSEnabled) {
-        location = await LocationService.getCurrentLocation();
-
-        // Obtener información de ubicación (país, provincia, ciudad)
-        if (location != null) {
-          locationInfo = await GeocodingService().getLocationInfo(location);
-        }
-      } else {
-        debugPrint('⚠️ Scanning without GPS - location context disabled');
-      }
-
-      // Obtener orientación de la cámara (hacia dónde apunta)
-      final orientationService = OrientationService();
-      final orientation = await orientationService.getCurrentOrientation();
-
-      if (orientation != null) {
-        debugPrint('🧭 Camera orientation: ${orientation.description}');
-      } else {
-        debugPrint('⚠️ Could not get camera orientation');
-      }
-
-      final result = await _visionService.detectBestMatch(
-        file,
-        location: location,
-        locationInfo: locationInfo,
-        orientation: orientation,
-      );
+      // 3. Mostrar AIAnalysisOverlay con Navigator.push (reemplaza la cámara)
       if (!mounted) return;
 
-      if (result == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo identificar el objeto')),
-        );
-        return;
-      }
+      // Variable para controlar el overlay
+      String? errorMessage;
+      VisionResult? result;
 
-      await showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.black87,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (c) {
-          final icon = _getCategoryIcon(result.category);
+      // Función para realizar el análisis
+      Future<void> performAnalysis() async {
+        try {
+          errorMessage = null;
+          
+          // Actualizar el overlay para mostrar estado de análisis
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => AIAnalysisOverlay(
+                  image: uiImage,
+                  errorMessage: null,
+                  onCancel: () {
+                    Navigator.of(context).pop();
+                    _cameraController?.resumePreview();
+                  },
+                ),
+              ),
+            );
+          }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.auto_awesome,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Vision AI',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(c),
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white24, height: 32),
-                  // Imagen capturada
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      result.imageFile,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(icon, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              result.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              result.type,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                // Confidence indicator
-                                GestureDetector(
-                                  onTap:
-                                      () => _showInfoDialog(
-                                        context,
-                                        'Confianza de IA',
-                                        '${(result.confidence * 100).toStringAsFixed(0)}%',
-                                        'Nivel de seguridad de la inteligencia artificial en la identificación del objeto. Mayor porcentaje indica mayor certeza.',
-                                      ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getConfidenceColor(
-                                        result.confidence,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _getConfidenceIcon(result.confidence),
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${(result.confidence * 100).toStringAsFixed(0)}%',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Encounter rarity indicator
-                                GestureDetector(
-                                  onTap:
-                                      () => _showInfoDialog(
-                                        context,
-                                        'Dificultad de Encuentro',
-                                        result.encounterRarity.toUpperCase(),
-                                        _getEncounterRarityDescription(
-                                          result.encounterRarity,
-                                        ),
-                                      ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getEncounterRarityColor(
-                                        result.encounterRarity,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _getEncounterRarityIcon(
-                                            result.encounterRarity,
-                                          ),
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          result.encounterRarity.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Authenticity indicator
-                                GestureDetector(
-                                  onTap:
-                                      () => _showInfoDialog(
-                                        context,
-                                        'Autenticidad',
-                                        result.authenticity.toUpperCase(),
-                                        _getAuthenticityDescription(
-                                          result.authenticity,
-                                        ),
-                                      ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getAuthenticityColor(
-                                        result.authenticity,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _getAuthenticityIcon(
-                                            result.authenticity,
-                                          ),
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          result.authenticity.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Rarity medal (vertical)
-                      GestureDetector(
-                        onTap:
-                            () => _showInfoDialog(
-                              context,
-                              'Rareza Global',
-                              result.rarity.toUpperCase(),
-                              _getRarityDescription(result.rarity),
-                            ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _getRarityMedalGradient(result.rarity),
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _getRarityMedalColor(
-                                  result.rarity,
-                                ).withOpacity(0.4),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.emoji_events,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    result.description,
-                    style: const TextStyle(color: Colors.white70, fontSize: 15),
-                  ),
+          // 3. Verificar si GPS está activo ANTES de procesar
+          final isGPSEnabled = await LocationService.isLocationServiceEnabled();
 
-                  // Broader context if available
-                  if (result.broaderContext != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.15),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            color: Colors.white60,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              result.broaderContext!,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          if (!isGPSEnabled && mounted) {
+            // Mostrar diálogo informativo si GPS está deshabilitado
+            final shouldContinue = await _showGPSDisabledDialog();
+            if (!shouldContinue) {
+              // Usuario decidió no continuar sin GPS
+              if (mounted) {
+                Navigator.of(context).pop();
+                _cameraController?.resumePreview();
+              }
+              return;
+            }
+          }
 
-                  // Información de ubicación detallada
-                  if (result.locationInfo != null) ...[
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Ubicación',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildLocationItem(
-                      Icons.public,
-                      'País',
-                      result.locationInfo!.country,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildLocationItem(
-                      Icons.map,
-                      'Provincia',
-                      result.locationInfo!.state,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildLocationItem(
-                      Icons.location_city,
-                      'Ciudad',
-                      result.locationInfo!.city,
-                    ),
-                    if (result.locationInfo!.placeName != null) ...[
-                      const SizedBox(height: 8),
-                      _buildLocationItem(
-                        Icons.place,
-                        'Lugar',
-                        result.locationInfo!.placeName!,
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                  ],
+          // Convertir XFile a File
+          File file;
+          if (image.path.isEmpty) {
+            final dir = await getTemporaryDirectory();
+            final tmpPath =
+                '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            final fileBytes = await image.readAsBytes();
+            file = File(tmpPath);
+            await file.writeAsBytes(fileBytes, flush: true);
+          } else {
+            file = File(image.path);
+          }
 
-                  // Orientación de la cámara
-                  if (result.orientation != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withAlpha(30),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue.withAlpha(60),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.explore,
-                            color: Colors.lightBlue,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Orientación',
-                                  style: TextStyle(
-                                    color: Colors.lightBlue,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${result.orientation!.cardinalDirection} (${result.orientation!.bearing.toStringAsFixed(0)}°)',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          // Obtener ubicación actual
+          Position? location;
+          LocationInfo? locationInfo;
 
-                  // Coordenadas GPS
-                  if (result.location != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white12,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.my_location,
-                            color: Colors.white70,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${result.location!.latitude.toStringAsFixed(6)}, ${result.location!.longitude.toStringAsFixed(6)}',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                ],
+          if (isGPSEnabled) {
+            location = await LocationService.getCurrentLocation();
+            if (location != null) {
+              locationInfo = await GeocodingService().getLocationInfo(location);
+            }
+          }
+
+          // Obtener orientación de la cámara
+          final orientationService = OrientationService();
+          final orientation = await orientationService.getCurrentOrientation();
+
+          // Realizar análisis
+          result = await _visionService.detectBestMatch(
+            file,
+            location: location,
+            locationInfo: locationInfo,
+            orientation: orientation,
+          );
+
+          if (!mounted) return;
+
+          if (result == null) {
+            // Mostrar error en el overlay
+            errorMessage = 'No se pudo identificar el objeto. Intenta con mejor iluminación o desde otro ángulo.';
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => AIAnalysisOverlay(
+                  image: uiImage,
+                  errorMessage: errorMessage,
+                  onCancel: () {
+                    Navigator.of(context).pop();
+                    _cameraController?.resumePreview();
+                  },
+                  onRetry: () {
+                    performAnalysis();
+                  },
+                ),
+              ),
+            );
+            return;
+          }
+
+          // 4. Cerrar overlay y mostrar resultado
+          Navigator.of(context).pop();
+
+          // 5. Mostrar VisionResultCard con Hero transition
+          await showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            isDismissible: true,
+            builder: (context) => VisionResultCard(
+              image: uiImage,
+              imageBytes: bytes,
+              result: result!,
+            ),
+          );
+
+          // 6. Resumir cámara cuando se cierra el bottom sheet
+          _cameraController?.resumePreview();
+          
+        } catch (e, stackTrace) {
+          debugPrint('❌ Error en análisis: $e');
+          debugPrint('Stack trace: $stackTrace');
+          
+          if (!mounted) return;
+          
+          // Mostrar error en el overlay
+          errorMessage = 'Error al analizar la imagen: ${e.toString()}';
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => AIAnalysisOverlay(
+                image: uiImage,
+                errorMessage: errorMessage,
+                onCancel: () {
+                  Navigator.of(context).pop();
+                  _cameraController?.resumePreview();
+                },
+                onRetry: () {
+                  performAnalysis();
+                },
               ),
             ),
           );
-        },
+        }
+      }
+
+      // Mostrar overlay inicial y comenzar análisis
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AIAnalysisOverlay(
+            image: uiImage,
+            onCancel: () {
+              Navigator.of(context).pop();
+              _cameraController?.resumePreview();
+            },
+          ),
+        ),
       );
+
+      // Ejecutar análisis
+      await performAnalysis();
+      
     } catch (e) {
       if (!mounted) return;
+      // Cerrar overlay si está abierto
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Resumir cámara
+      _cameraController?.resumePreview();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error análisis: $e')));
