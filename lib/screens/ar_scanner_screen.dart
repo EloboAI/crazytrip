@@ -502,12 +502,13 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                               children: [
                                 // Confidence indicator
                                 GestureDetector(
-                                  onTap: () => _showInfoDialog(
-                                    context,
-                                    'Confianza de IA',
-                                    '${(result.confidence * 100).toStringAsFixed(0)}%',
-                                    'Nivel de seguridad de la inteligencia artificial en la identificación del objeto. Mayor porcentaje indica mayor certeza.',
-                                  ),
+                                  onTap:
+                                      () => _showInfoDialog(
+                                        context,
+                                        'Confianza de IA',
+                                        '${(result.confidence * 100).toStringAsFixed(0)}%',
+                                        'Nivel de seguridad de la inteligencia artificial en la identificación del objeto. Mayor porcentaje indica mayor certeza.',
+                                      ),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -543,12 +544,15 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                                 const SizedBox(width: 8),
                                 // Encounter rarity indicator
                                 GestureDetector(
-                                  onTap: () => _showInfoDialog(
-                                    context,
-                                    'Dificultad de Encuentro',
-                                    result.encounterRarity.toUpperCase(),
-                                    _getEncounterRarityDescription(result.encounterRarity),
-                                  ),
+                                  onTap:
+                                      () => _showInfoDialog(
+                                        context,
+                                        'Dificultad de Encuentro',
+                                        result.encounterRarity.toUpperCase(),
+                                        _getEncounterRarityDescription(
+                                          result.encounterRarity,
+                                        ),
+                                      ),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -586,12 +590,15 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                                 const SizedBox(width: 8),
                                 // Authenticity indicator
                                 GestureDetector(
-                                  onTap: () => _showInfoDialog(
-                                    context,
-                                    'Autenticidad',
-                                    result.authenticity.toUpperCase(),
-                                    _getAuthenticityDescription(result.authenticity),
-                                  ),
+                                  onTap:
+                                      () => _showInfoDialog(
+                                        context,
+                                        'Autenticidad',
+                                        result.authenticity.toUpperCase(),
+                                        _getAuthenticityDescription(
+                                          result.authenticity,
+                                        ),
+                                      ),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -634,12 +641,13 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                       const SizedBox(width: 12),
                       // Rarity medal (vertical)
                       GestureDetector(
-                        onTap: () => _showInfoDialog(
-                          context,
-                          'Rareza Global',
-                          result.rarity.toUpperCase(),
-                          _getRarityDescription(result.rarity),
-                        ),
+                        onTap:
+                            () => _showInfoDialog(
+                              context,
+                              'Rareza Global',
+                              result.rarity.toUpperCase(),
+                              _getRarityDescription(result.rarity),
+                            ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -654,8 +662,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: _getRarityMedalColor(result.rarity)
-                                    .withOpacity(0.4),
+                                color: _getRarityMedalColor(
+                                  result.rarity,
+                                ).withOpacity(0.4),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -1410,10 +1419,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
   List<Color> _getRarityMedalGradient(String rarity) {
     final baseColor = _getRarityMedalColor(rarity);
-    return [
-      baseColor,
-      Color.lerp(baseColor, Colors.black, 0.3)!,
-    ];
+    return [baseColor, Color.lerp(baseColor, Colors.black, 0.3)!];
   }
 
   String _getRarityDescription(String rarity) {
@@ -1469,74 +1475,75 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   ) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.blue[300], size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[300], size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[700]?.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Entendido',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.blue[700]?.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              description,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Entendido',
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
