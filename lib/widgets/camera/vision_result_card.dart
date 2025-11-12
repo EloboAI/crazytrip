@@ -170,14 +170,16 @@ class VisionResultCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[900]
-                  : Colors.grey[100],
+              color:
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[900]
+                      : Colors.grey[100],
               border: Border(
                 top: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]!
-                      : Colors.grey[300]!,
+                  color:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]!
+                          : Colors.grey[300]!,
                   width: 1,
                 ),
               ),
@@ -241,98 +243,101 @@ class VisionResultCard extends StatelessWidget {
   void _showReportOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              child: Row(
-                children: [
-                  const Icon(Icons.flag_outlined, color: Colors.orange),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Reportar un problema',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+      builder:
+          (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.m),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.flag_outlined, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Reportar un problema',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const Divider(height: 1),
+
+                // Opción 1: Rechazar identificación
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.red,
+                    child: Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                  title: const Text('No es correcto'),
+                  subtitle: const Text(
+                    'Esta identificación no coincide con la imagen',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Cerrar bottom sheet
+                    _handleRejectIdentification(context);
+                  },
+                ),
+
+                // Opción 2: Sugerir corrección
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.edit, color: Colors.white, size: 20),
+                  ),
+                  title: const Text('Sugerir corrección'),
+                  subtitle: const Text(
+                    'Proponer el nombre y descripción correctos',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Cerrar bottom sheet
+                    _handleSuggestCorrection(context);
+                  },
+                ),
+
+                const SizedBox(height: AppSpacing.m),
+              ],
             ),
-            const Divider(height: 1),
-            
-            // Opción 1: Rechazar identificación
-            ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.red,
-                child: Icon(Icons.close, color: Colors.white, size: 20),
-              ),
-              title: const Text('No es correcto'),
-              subtitle: const Text('Esta identificación no coincide con la imagen'),
-              onTap: () {
-                Navigator.pop(context); // Cerrar bottom sheet
-                _handleRejectIdentification(context);
-              },
-            ),
-            
-            // Opción 2: Sugerir corrección
-            ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.blue,
-                child: Icon(Icons.edit, color: Colors.white, size: 20),
-              ),
-              title: const Text('Sugerir corrección'),
-              subtitle: const Text('Proponer el nombre y descripción correctos'),
-              onTap: () {
-                Navigator.pop(context); // Cerrar bottom sheet
-                _handleSuggestCorrection(context);
-              },
-            ),
-            
-            const SizedBox(height: AppSpacing.m),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   void _handleRejectIdentification(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Rechazar identificación'),
-        content: const Text(
-          '¿Estás seguro de que esta identificación no es correcta?\n\n'
-          'Esto cerrará la tarjeta y volverás a la cámara.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); // Cerrar diálogo
-              Navigator.of(context).pop(); // Cerrar tarjeta
-              
-              // Mostrar mensaje de confirmación
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Identificación rechazada'),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red[700],
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Rechazar identificación'),
+            content: const Text(
+              '¿Estás seguro de que esta identificación no es correcta?\n\n'
+              'Esto cerrará la tarjeta y volverás a la cámara.',
             ),
-            child: const Text('Rechazar'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                  Navigator.of(context).pop(); // Cerrar tarjeta
+
+                  // Mostrar mensaje de confirmación
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Identificación rechazada'),
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(backgroundColor: Colors.red[700]),
+                child: const Text('Rechazar'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -340,17 +345,18 @@ class VisionResultCard extends StatelessWidget {
     // Abrir diálogo de pantalla completa para sugerencia
     final suggestion = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute(
-        builder: (context) => CorrectionSuggestionDialog(
-          originalName: result.name,
-          originalDescription: result.description,
-        ),
+        builder:
+            (context) => CorrectionSuggestionDialog(
+              originalName: result.name,
+              originalDescription: result.description,
+            ),
         fullscreenDialog: true,
       ),
     );
 
     if (suggestion != null) {
       debugPrint('📝 Corrección sugerida: $suggestion');
-      
+
       // Mostrar confirmación
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -362,10 +368,9 @@ class VisionResultCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Sugerencia enviada. ¡Gracias por ayudarnos!',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.white),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   ),
                 ),
               ],

@@ -45,13 +45,14 @@ class _CorrectionSuggestionDialogState
         actions: [
           TextButton(
             onPressed: _isSubmitting ? null : _handleSubmit,
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('ENVIAR'),
+            child:
+                _isSubmitting
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Text('ENVIAR'),
           ),
         ],
       ),
@@ -87,9 +88,9 @@ class _CorrectionSuggestionDialogState
             Text(
               'Identificación actual',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
             ),
             const SizedBox(height: AppSpacing.s),
             Container(
@@ -97,9 +98,7 @@ class _CorrectionSuggestionDialogState
               decoration: BoxDecoration(
                 color: Colors.orange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
-                ),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,15 +106,15 @@ class _CorrectionSuggestionDialogState
                   Text(
                     widget.originalName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     widget.originalDescription,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[700],
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -130,9 +129,9 @@ class _CorrectionSuggestionDialogState
             Text(
               'Tu corrección',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
             ),
             const SizedBox(height: AppSpacing.m),
 
@@ -210,9 +209,9 @@ class _CorrectionSuggestionDialogState
                   Expanded(
                     child: Text(
                       'Tu sugerencia se guardará de forma segura y podría usarse para mejorar nuestros modelos de AI.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[700],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
                     ),
                   ),
                 ],
