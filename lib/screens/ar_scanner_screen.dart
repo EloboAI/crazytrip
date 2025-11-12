@@ -63,6 +63,12 @@ class _ARScannerScreenState extends State<ARScannerScreen>
   double _baseZoom = 1.0;
   double _currentZoom = 1.0;
   int _pointers = 0; // contar dedos para pinch
+
+  // Cache de ubicación para captura rápida
+  Position? _cachedLocation;
+  LocationInfo? _cachedLocationInfo;
+  Timer? _locationCacheTimer;
+
   void initState() {
     super.initState();
     _scanAnim = AnimationController(
@@ -73,6 +79,35 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
     _startOrientationStream();
+    _startLocationCache(); // Iniciar cache de ubicación
+  }
+
+  // Actualizar ubicación en cache cada 5 segundos
+  void _startLocationCache() async {
+    final isGPSEnabled = await LocationService.isLocationServiceEnabled();
+    if (!isGPSEnabled) return;
+
+    // Primera actualización inmediata
+    _updateLocationCache();
+
+    // Actualizaciones periódicas cada 5 segundos
+    _locationCacheTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _updateLocationCache();
+    });
+  }
+
+  Future<void> _updateLocationCache() async {
+    try {
+      final location = await LocationService.getCurrentLocation();
+      if (location != null) {
+        _cachedLocation = location;
+        _cachedLocationInfo = await GeocodingService().getLocationInfo(
+          location,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating location cache: $e');
+    }
   }
 
   void _startOrientationStream() {
@@ -189,6 +224,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     WidgetsBinding.instance.removeObserver(this);
     _scanAnim.dispose();
     _recordingTimer?.cancel();
+    _locationCacheTimer?.cancel(); // Cancelar timer de ubicación
     _orientationSubscription?.cancel();
     _orientationService.dispose();
     _cameraController?.dispose();
@@ -261,20 +297,38 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     if (!_isCameraInitialized || _cameraController == null) return;
     try {
       if (_mode == CameraMode.scan) {
+        // Marcar como escaneando inmediatamente para feedback visual
         setState(() => _isScanning = true);
+
+        // Tomar foto INMEDIATAMENTE sin esperas
         final photo = await _cameraService.takePicture();
-        if (photo == null) return;
+        if (photo == null) {
+          if (mounted) setState(() => _isScanning = false);
+          return;
+        }
+
+        // Aplicar filtro en paralelo si es necesario
+        final XFile photoToAnalyze;
         if (_filterService.currentFilter.type != FilterType.none) {
           final bytes = await photo.readAsBytes();
           final filtered = await _filterService.applyFilterToBytes(
             bytes,
             _filterService.currentFilter,
           );
-          await _analyzePhoto(XFile.fromData(filtered));
+          photoToAnalyze = XFile.fromData(filtered);
         } else {
-          await _analyzePhoto(photo);
+          photoToAnalyze = photo;
         }
-        if (mounted) setState(() => _isScanning = false);
+
+        // Iniciar análisis SIN AWAIT - que se procese en background
+        _analyzePhoto(photoToAnalyze).catchError((e) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error en análisis: $e')));
+            setState(() => _isScanning = false);
+          }
+        });
       } else {
         if (!_isRecording) {
           await _startVideoRecording();
@@ -284,6 +338,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isScanning = false);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -346,6 +401,21 @@ class _ARScannerScreenState extends State<ARScannerScreen>
     });
   }
 
+  // Método helper para preparar archivo de imagen
+  Future<File> _prepareImageFile(XFile image) async {
+    if (image.path.isNotEmpty) {
+      return File(image.path);
+    }
+
+    final dir = await getTemporaryDirectory();
+    final tmpPath =
+        '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileBytes = await image.readAsBytes();
+    final file = File(tmpPath);
+    await file.writeAsBytes(fileBytes, flush: true);
+    return file;
+  }
+
   // Eliminado preview simple; ahora se analiza directamente la foto.
 
   Future<void> _analyzePhoto(XFile image) async {
@@ -388,8 +458,16 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             );
           }
 
-          // 3. Verificar si GPS está activo ANTES de procesar
-          final isGPSEnabled = await LocationService.isLocationServiceEnabled();
+          // OPTIMIZACIÓN: Obtener GPS, ubicación, orientación y preparar archivo EN PARALELO
+          final futures = await Future.wait([
+            LocationService.isLocationServiceEnabled(),
+            _prepareImageFile(image),
+            OrientationService().getCurrentOrientation(),
+          ]);
+
+          final isGPSEnabled = futures[0] as bool;
+          final file = futures[1] as File;
+          final orientation = futures[2] as CameraOrientation?;
 
           if (!isGPSEnabled && mounted) {
             // Mostrar diálogo informativo si GPS está deshabilitado (Task #257)
@@ -404,33 +482,20 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             }
           }
 
-          // Convertir XFile a File
-          File file;
-          if (image.path.isEmpty) {
-            final dir = await getTemporaryDirectory();
-            final tmpPath =
-                '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
-            final fileBytes = await image.readAsBytes();
-            file = File(tmpPath);
-            await file.writeAsBytes(fileBytes, flush: true);
-          } else {
-            file = File(image.path);
-          }
+          // Obtener ubicación: USAR CACHE si está disponible, sino obtener nueva
+          Position? location = _cachedLocation;
+          LocationInfo? locationInfo = _cachedLocationInfo;
 
-          // Obtener ubicación actual
-          Position? location;
-          LocationInfo? locationInfo;
-
-          if (isGPSEnabled) {
+          if (isGPSEnabled && (location == null || locationInfo == null)) {
+            // Si no hay cache, obtener ubicación actual
             location = await LocationService.getCurrentLocation();
             if (location != null) {
               locationInfo = await GeocodingService().getLocationInfo(location);
+              // Actualizar cache
+              _cachedLocation = location;
+              _cachedLocationInfo = locationInfo;
             }
           }
-
-          // Obtener orientación de la cámara
-          final orientationService = OrientationService();
-          final orientation = await orientationService.getCurrentOrientation();
 
           // Realizar análisis
           result = await _visionService.detectBestMatch(
@@ -469,6 +534,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
           final captureResult = result!;
 
           // 4. Guardar captura en base de datos (Task #261)
+          int? savedCaptureId;
+          String? savedImagePath;
+
           try {
             // Guardar imagen en directorio permanente
             final appDir = await getApplicationDocumentsDirectory();
@@ -480,6 +548,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final imagePath = '${capturesDir.path}/capture_$timestamp.jpg';
             await file.copy(imagePath);
+            savedImagePath = imagePath;
 
             // Crear VisionCapture con toda la metadata
             final capture = VisionCapture(
@@ -525,6 +594,7 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             // Guardar en base de datos
             final dbService = DatabaseService();
             final captureId = await dbService.insertCapture(capture);
+            savedCaptureId = captureId;
             debugPrint('💾 Capture saved with ID: $captureId');
           } catch (e) {
             debugPrint('⚠️ Error saving capture to database: $e');
@@ -563,6 +633,8 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                   image: uiImage,
                   imageBytes: bytes,
                   result: captureResult,
+                  captureId: savedCaptureId,
+                  imagePath: savedImagePath,
                 ),
           );
 

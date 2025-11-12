@@ -135,6 +135,12 @@ class VisionCapture {
   String get authenticity =>
       visionResult['authenticity'] as String? ?? 'unknown';
 
+  /// Obtiene la latitud desde location
+  double? get latitude => location?['latitude'] as double?;
+
+  /// Obtiene la longitud desde location
+  double? get longitude => location?['longitude'] as double?;
+
   /// Crea una copia con campos modificados
   VisionCapture copyWith({
     int? id,

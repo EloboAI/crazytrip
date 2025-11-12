@@ -9,6 +9,7 @@ import '../widgets/camera/vision_result_card.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import 'map_screen.dart';
 
 /// Screen showing user's complete CrazyDex collection across all discoveries
 class CrazyDexCollectionScreen extends StatefulWidget {
@@ -104,6 +105,65 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     return _getRarityNumber(rarity) * 100;
   }
 
+  /// Muestra menú contextual para un item
+  void _showItemMenu(CrazyDexItem item) {
+    final captureId = int.tryParse(item.id);
+    if (captureId == null) return;
+    // Evitar crash si la lista está vacía o no se encuentra la captura
+    VisionCapture? capture;
+    for (final c in _captures) {
+      if (c.id == captureId) {
+        capture = c;
+        break;
+      }
+    }
+    if (capture == null) {
+      // No encontrada: mostrar mensaje y salir
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Captura no encontrada')));
+      }
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('Ver detalles'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCaptureDetail(item);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.map_outlined),
+                  title: const Text('Ver en mapa'),
+                  enabled: capture!.location != null,
+                  onTap:
+                      (capture.location != null)
+                          ? () {
+                            Navigator.pop(context);
+                            _showCaptureInMap(capture!);
+                          }
+                          : null,
+                  subtitle:
+                      (capture.location == null)
+                          ? const Text('Sin ubicación GPS')
+                          : null,
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
   /// Obtiene lista única de países de las capturas
   List<String> _getAvailableCountries() {
     final countries = <String>{};
@@ -159,16 +219,64 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
     return filtered;
   }
 
+  /// Navegar al mapa mostrando solo esta captura
+  void _showCaptureInMap(VisionCapture capture) {
+    if (capture.location == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Esta captura no tiene ubicación GPS'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                MapScreen(initialCaptureId: capture.id, showOnlyCapture: true),
+      ),
+    );
+  }
+
+  /// Navegar al mapa mostrando todas las capturas
+  void _showAllCapturesInMap() {
+    final capturesWithLocation =
+        _captures.where((c) => c.location != null).toList();
+
+    if (capturesWithLocation.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay capturas con ubicación GPS'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MapScreen(showOnlyCapturesFilter: true),
+      ),
+    );
+  }
+
   /// Task #268: Muestra VisionResultCard (misma vista que al capturar)
   Future<void> _showCaptureDetail(CrazyDexItem item) async {
     // Buscar la VisionCapture original usando el ID
     final captureId = int.tryParse(item.id);
     if (captureId == null) return;
-
-    final capture = _captures.firstWhere(
-      (c) => c.id == captureId,
-      orElse: () => _captures.first, // Fallback, no debería pasar
-    );
+    VisionCapture? capture;
+    for (final c in _captures) {
+      if (c.id == captureId) {
+        capture = c;
+        break;
+      }
+    }
+    if (capture == null) return; // No encontrada
 
     try {
       // Cargar imagen desde archivo
@@ -215,12 +323,31 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
         isDismissible: true,
-        builder:
-            (context) => VisionResultCard(
-              image: uiImage,
-              imageBytes: imageBytes,
-              result: visionResult,
-            ),
+        builder: (context) {
+          return Stack(
+            children: [
+              VisionResultCard(
+                image: uiImage,
+                imageBytes: imageBytes,
+                result: visionResult,
+              ),
+              if (capture!.location != null)
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: FloatingActionButton.small(
+                    heroTag: 'map_capture_${capture.id}',
+                    onPressed: () {
+                      Navigator.pop(context); // Cerrar detalle
+                      _showCaptureInMap(capture!); // Abrir mapa solo con esta
+                    },
+                    tooltip: 'Ver solo esta en mapa',
+                    child: const Icon(Icons.map_outlined),
+                  ),
+                ),
+            ],
+          );
+        },
       );
     } catch (e) {
       if (mounted) {
@@ -316,6 +443,10 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
                     },
                   )
                 else ...[
+                  IconButton(
+                    icon: const Icon(Icons.map_outlined),
+                    onPressed: _showAllCapturesInMap,
+                  ),
                   IconButton(
                     icon: const Icon(Icons.search),
                     onPressed: () {
@@ -764,6 +895,7 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   Widget _buildGridItem(CrazyDexItem item, {required bool isDiscovered}) {
     return GestureDetector(
       onTap: isDiscovered ? () => _showCaptureDetail(item) : null,
+      onLongPress: isDiscovered ? () => _showItemMenu(item) : null,
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,

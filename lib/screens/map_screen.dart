@@ -21,7 +21,17 @@ enum MapViewMode { map, list }
 enum MapFilter { promotions, items, places, contests, events, captures }
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final int? initialCaptureId; // ID de captura específica a mostrar
+  final bool showOnlyCapture; // Si true, muestra solo esa captura
+  final bool
+  showOnlyCapturesFilter; // Si true, activa filtro de capturas por defecto
+
+  const MapScreen({
+    super.key,
+    this.initialCaptureId,
+    this.showOnlyCapture = false,
+    this.showOnlyCapturesFilter = false,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -75,6 +85,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Inicializar filtros según parámetros
+    if (widget.showOnlyCapturesFilter) {
+      // Solo mostrar capturas
+      _activeFilters.clear();
+      _activeFilters.add(MapFilter.captures);
+    }
+
     _loadMapData();
     _loadCaptures();
     _loadMapStyles();
@@ -464,6 +482,30 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           _captures = captures;
         });
         _updateContentMarkers();
+
+        // Si hay una captura inicial, centrar la cámara en ella
+        if (widget.initialCaptureId != null && _mapController != null) {
+          final capture = _captures.firstWhere(
+            (c) => c.id == widget.initialCaptureId,
+            orElse: () => _captures.first,
+          );
+
+          if (capture.latitude != null && capture.longitude != null) {
+            await _mapController!.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: LatLng(capture.latitude!, capture.longitude!),
+                  zoom: 16.0,
+                ),
+              ),
+            );
+
+            // Seleccionar automáticamente la captura
+            setState(() {
+              _selectedItem = capture;
+            });
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error loading captures: $e');
@@ -472,6 +514,21 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   List<dynamic> get _filteredContent {
     List<dynamic> content = [];
+
+    // Si showOnlyCapture, solo mostrar la captura específica
+    if (widget.showOnlyCapture && widget.initialCaptureId != null) {
+      // Buscar captura sin usar orElse que puede fallar si _captures está vacío
+      VisionCapture? capture;
+      for (final c in _captures) {
+        if (c.id == widget.initialCaptureId) {
+          capture = c;
+          break;
+        }
+      }
+      // Si no se encuentra, retornar lista vacía en lugar de crashear
+      if (capture == null) return [];
+      return [capture];
+    }
 
     // Prioridad 1: Promociones y Concursos (de paga)
     if (_activeFilters.contains(MapFilter.promotions)) {

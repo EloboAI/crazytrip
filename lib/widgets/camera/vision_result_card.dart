@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../services/vision_service.dart';
+import '../../services/database_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import 'image_fullscreen_viewer.dart';
@@ -13,12 +15,21 @@ class VisionResultCard extends StatelessWidget {
   final ui.Image image;
   final Uint8List imageBytes;
   final VisionResult result;
+  final int? captureId; // ID de la captura en BD (para eliminar si rechaza)
+  final String?
+  imagePath; // Ruta del archivo de imagen (para eliminar si rechaza)
+  final VoidCallback? onAccept; // Callback cuando acepta
+  final VoidCallback? onReject; // Callback cuando rechaza
 
   const VisionResultCard({
     super.key,
     required this.image,
     required this.imageBytes,
     required this.result,
+    this.captureId,
+    this.imagePath,
+    this.onAccept,
+    this.onReject,
   });
 
   @override
@@ -309,7 +320,7 @@ class VisionResultCard extends StatelessWidget {
             title: const Text('Rechazar identificación'),
             content: const Text(
               '¿Estás seguro de que esta identificación no es correcta?\n\n'
-              'Esto cerrará la tarjeta y volverás a la cámara.',
+              'La captura será eliminada y no aparecerá en tu CrazyDex.',
             ),
             actions: [
               TextButton(
@@ -317,21 +328,59 @@ class VisionResultCard extends StatelessWidget {
                 child: const Text('Cancelar'),
               ),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(dialogContext).pop(); // Cerrar diálogo
-                  Navigator.of(context).pop(); // Cerrar tarjeta
 
-                  // Mostrar mensaje de confirmación
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Identificación rechazada'),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  // Eliminar de base de datos y archivo
+                  try {
+                    if (captureId != null) {
+                      final dbService = DatabaseService();
+                      await dbService.deleteCapture(captureId!);
+                      debugPrint('🗑️ Capture deleted from DB: $captureId');
+                    }
+
+                    if (imagePath != null) {
+                      final file = File(imagePath!);
+                      if (await file.exists()) {
+                        await file.delete();
+                        debugPrint('🗑️ Image file deleted: $imagePath');
+                      }
+                    }
+
+                    // Llamar callback si existe
+                    onReject?.call();
+
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // Cerrar tarjeta
+
+                      // Mostrar mensaje de confirmación
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Captura eliminada correctamente'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('❌ Error deleting capture: $e');
+                    if (context.mounted) {
+                      Navigator.of(
+                        context,
+                      ).pop(); // Cerrar tarjeta de todos modos
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al eliminar: $e'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
                 },
                 style: FilledButton.styleFrom(backgroundColor: Colors.red[700]),
-                child: const Text('Rechazar'),
+                child: const Text('Rechazar y eliminar'),
               ),
             ],
           ),
