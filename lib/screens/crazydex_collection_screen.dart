@@ -1,5 +1,11 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../models/crazydex_item.dart';
+import '../models/vision_capture.dart';
+import '../services/database_service.dart';
+import '../services/vision_service.dart';
+import '../widgets/camera/vision_result_card.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -15,10 +21,182 @@ class CrazyDexCollectionScreen extends StatefulWidget {
 
 class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
   CrazyDexCategory? _selectedCategory;
+  List<VisionCapture> _captures = [];
+  bool _isLoading = true;
+  final DatabaseService _dbService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCaptures();
+  }
+
+  Future<void> _loadCaptures() async {
+    setState(() => _isLoading = true);
+    try {
+      final captures = await _dbService.getAllCaptures();
+      if (mounted) {
+        setState(() {
+          _captures = captures;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading captures: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Mapea el category string de VisionResult a CrazyDexCategory
+  CrazyDexCategory _mapCategoryFromString(String category) {
+    switch (category.toLowerCase()) {
+      case 'landmark':
+        return CrazyDexCategory.landmarks;
+      case 'animal':
+        return CrazyDexCategory.fauna;
+      case 'nature':
+        return CrazyDexCategory.flora;
+      case 'building':
+        return CrazyDexCategory.buildings;
+      case 'food':
+        return CrazyDexCategory.food;
+      default:
+        return CrazyDexCategory.landmarks;
+    }
+  }
+
+  /// Convierte string de rarity a número
+  int _getRarityNumber(String rarity) {
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        return 5;
+      case 'epic':
+        return 4;
+      case 'rare':
+        return 3;
+      case 'uncommon':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  /// Calcula XP basado en rarity
+  int _calculateXP(String rarity) {
+    return _getRarityNumber(rarity) * 100;
+  }
+
+  /// Task #268: Muestra VisionResultCard (misma vista que al capturar)
+  Future<void> _showCaptureDetail(CrazyDexItem item) async {
+    // Buscar la VisionCapture original usando el ID
+    final captureId = int.tryParse(item.id);
+    if (captureId == null) return;
+
+    final capture = _captures.firstWhere(
+      (c) => c.id == captureId,
+      orElse: () => _captures.first, // Fallback, no debería pasar
+    );
+
+    try {
+      // Cargar imagen desde archivo
+      final imageFile = File(capture.imagePath);
+      if (!await imageFile.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Imagen no encontrada')));
+        }
+        return;
+      }
+
+      final imageBytes = await imageFile.readAsBytes();
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final uiImage = frame.image;
+
+      // Crear VisionResult desde VisionCapture manualmente
+      final vrMap = capture.visionResult;
+      final visionResult = VisionResult(
+        name: vrMap['name'] as String? ?? 'Desconocido',
+        type: vrMap['type'] as String? ?? '',
+        category: vrMap['category'] as String? ?? 'unknown',
+        description: vrMap['description'] as String? ?? '',
+        rarity: vrMap['rarity'] as String? ?? 'common',
+        confidence: (vrMap['confidence'] as num?)?.toDouble() ?? 0.0,
+        specificityLevel: vrMap['specificity_level'] as String? ?? 'general',
+        broaderContext: vrMap['broader_context'] as String?,
+        encounterRarity: vrMap['encounter_rarity'] as String? ?? 'medium',
+        authenticity: vrMap['authenticity'] as String? ?? 'unknown',
+        imageFile: imageFile,
+        // TODO: Reconstruir Position, LocationInfo, CameraOrientation desde Maps si es necesario
+        location: null,
+        locationInfo: null,
+        orientation: null,
+      );
+
+      if (!mounted) return;
+
+      // Mostrar VisionResultCard (misma vista que al capturar)
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        isDismissible: true,
+        builder:
+            (context) => VisionResultCard(
+              image: uiImage,
+              imageBytes: imageBytes,
+              result: visionResult,
+            ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al cargar captura: $e')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final allItems = getMockCrazyDexItems();
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Mi CrazyDex')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Convertir capturas a CrazyDexItems para compatibilidad con UI existente
+    final allItems =
+        _captures.map((capture) {
+          final category = _mapCategoryFromString(capture.category);
+          final rarityNum = _getRarityNumber(capture.rarity);
+          return CrazyDexItem(
+            id: capture.id.toString(),
+            name: capture.name,
+            imageUrl: capture.imagePath,
+            category: category,
+            description: capture.visionResult['description'] as String? ?? '',
+            funFact:
+                capture.visionResult['broader_context'] as String? ??
+                'Descubrimiento único',
+            rarity: rarityNum,
+            xpReward: _calculateXP(capture.rarity),
+            aiLabels: [capture.name, capture.category],
+            isDiscovered: true, // Todas las capturas en DB están descubiertas
+            discoveredAt: capture.timestamp,
+            userPhotos: [capture.imagePath],
+          );
+        }).toList();
+
+    // Agregar items locked (mock para mostrar lo que falta descubrir)
+    final mockLocked =
+        getMockCrazyDexItems().where((item) => !item.isDiscovered).toList();
+    allItems.addAll(mockLocked);
+
     final discovered = allItems.where((item) => item.isDiscovered).toList();
     final locked = allItems.where((item) => !item.isDiscovered).toList();
 
@@ -64,36 +242,41 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
           // Category Filter
           _buildCategoryFilter(),
 
-          // Items List
+          // Items List con pull-to-refresh (Task #264)
           Expanded(
             child:
                 filteredDiscovered.isEmpty && filteredLocked.isEmpty
                     ? _buildEmptyState()
-                    : ListView(
-                      padding: EdgeInsets.all(AppSpacing.m),
-                      children: [
-                        if (filteredDiscovered.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'Descubiertos',
-                            filteredDiscovered.length,
-                          ),
-                          SizedBox(height: AppSpacing.m),
-                          ...filteredDiscovered.map(
-                            (item) => _buildItemCard(item, isDiscovered: true),
-                          ),
-                          SizedBox(height: AppSpacing.l),
+                    : RefreshIndicator(
+                      onRefresh: _loadCaptures,
+                      child: ListView(
+                        padding: EdgeInsets.all(AppSpacing.m),
+                        children: [
+                          if (filteredDiscovered.isNotEmpty) ...[
+                            _buildSectionHeader(
+                              'Descubiertos',
+                              filteredDiscovered.length,
+                            ),
+                            SizedBox(height: AppSpacing.m),
+                            ...filteredDiscovered.map(
+                              (item) =>
+                                  _buildItemCard(item, isDiscovered: true),
+                            ),
+                            SizedBox(height: AppSpacing.l),
+                          ],
+                          if (filteredLocked.isNotEmpty) ...[
+                            _buildSectionHeader(
+                              'Por descubrir',
+                              filteredLocked.length,
+                            ),
+                            SizedBox(height: AppSpacing.m),
+                            ...filteredLocked.map(
+                              (item) =>
+                                  _buildItemCard(item, isDiscovered: false),
+                            ),
+                          ],
                         ],
-                        if (filteredLocked.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'Por descubrir',
-                            filteredLocked.length,
-                          ),
-                          SizedBox(height: AppSpacing.m),
-                          ...filteredLocked.map(
-                            (item) => _buildItemCard(item, isDiscovered: false),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
           ),
         ],
@@ -298,127 +481,150 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
   Widget _buildItemCard(CrazyDexItem item, {required bool isDiscovered}) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Task #268: Wrap discovered items in InkWell to open detail card
+    final cardContent = Padding(
+      padding: EdgeInsets.all(AppSpacing.m),
+      child: Row(
+        children: [
+          // Image/Icon
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color:
+                  isDiscovered
+                      ? AppColors.primaryColor.withOpacity(0.1)
+                      : colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child:
+                  isDiscovered
+                      ? Image.file(
+                        File(item.imageUrl),
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Si falla cargar la imagen, mostrar icono
+                          return Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 32,
+                              color: colorScheme.outline,
+                            ),
+                          );
+                        },
+                      )
+                      : Center(
+                        child: Icon(
+                          Icons.lock,
+                          size: 32,
+                          color: colorScheme.outline,
+                        ),
+                      ),
+            ),
+          ),
+          SizedBox(width: AppSpacing.m),
+
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isDiscovered ? item.name : '???',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color:
+                        isDiscovered
+                            ? colorScheme.onSurface
+                            : colorScheme.outline,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xxs),
+                Text(item.rarityStars, style: const TextStyle(fontSize: 12)),
+                SizedBox(height: AppSpacing.xxs),
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s,
+                        vertical: AppSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isDiscovered
+                                ? _getCategoryColor(item.category)
+                                : colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        item.category.displayName,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 10,
+                          color:
+                              isDiscovered ? Colors.white : colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.s),
+                    Icon(
+                      Icons.star,
+                      size: 12,
+                      color: isDiscovered ? Colors.amber : colorScheme.outline,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '+${item.xpReward} XP',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color:
+                            isDiscovered
+                                ? Colors.amber.shade700
+                                : colorScheme.outline,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isDiscovered && item.discoveredAt != null) ...[
+                  SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    'Descubierto hace ${_getTimeAgo(item.discoveredAt!)}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          if (isDiscovered)
+            Icon(Icons.check_circle, color: Colors.green, size: 24)
+          else
+            Icon(Icons.help_outline, color: colorScheme.outline, size: 24),
+        ],
+      ),
+    );
+
     return Card(
       margin: EdgeInsets.only(bottom: AppSpacing.m),
       color:
           isDiscovered
               ? colorScheme.surface
               : colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.m),
-        child: Row(
-          children: [
-            // Image/Icon
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color:
-                    isDiscovered
-                        ? AppColors.primaryColor.withOpacity(0.1)
-                        : colorScheme.surfaceContainerHigh,
+      child:
+          isDiscovered
+              ? InkWell(
+                onTap: () => _showCaptureDetail(item),
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child:
-                    isDiscovered
-                        ? Text(
-                          item.imageUrl,
-                          style: const TextStyle(fontSize: 32),
-                        )
-                        : Icon(
-                          Icons.lock,
-                          size: 32,
-                          color: colorScheme.outline,
-                        ),
-              ),
-            ),
-            SizedBox(width: AppSpacing.m),
-
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isDiscovered ? item.name : '???',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDiscovered
-                              ? colorScheme.onSurface
-                              : colorScheme.outline,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.xxs),
-                  Text(item.rarityStars, style: const TextStyle(fontSize: 12)),
-                  SizedBox(height: AppSpacing.xxs),
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s,
-                          vertical: AppSpacing.xxs,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isDiscovered
-                                  ? _getCategoryColor(item.category)
-                                  : colorScheme.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          item.category.displayName,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontSize: 10,
-                            color:
-                                isDiscovered
-                                    ? Colors.white
-                                    : colorScheme.outline,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.s),
-                      Icon(
-                        Icons.star,
-                        size: 12,
-                        color:
-                            isDiscovered ? Colors.amber : colorScheme.outline,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '+${item.xpReward} XP',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color:
-                              isDiscovered
-                                  ? Colors.amber.shade700
-                                  : colorScheme.outline,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (isDiscovered && item.discoveredAt != null) ...[
-                    SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      'Descubierto hace ${_getTimeAgo(item.discoveredAt!)}',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            if (isDiscovered)
-              Icon(Icons.check_circle, color: Colors.green, size: 24)
-            else
-              Icon(Icons.help_outline, color: colorScheme.outline, size: 24),
-          ],
-        ),
-      ),
+                child: cardContent,
+              )
+              : cardContent,
     );
   }
 

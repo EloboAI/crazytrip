@@ -66,7 +66,7 @@ class VisionResultCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Imagen con Hero animation y tap para expandir
+                  // Imagen con Hero animation, tap para expandir y banderita para reportar
                   Hero(
                     tag: 'analysis_image_${image.hashCode}',
                     child: GestureDetector(
@@ -92,7 +92,7 @@ class VisionResultCard extends StatelessWidget {
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               ),
-                              // Indicador de tap para expandir
+                              // Indicador de tap para expandir (esquina inferior derecha)
                               Positioned(
                                 right: 8,
                                 bottom: 8,
@@ -106,6 +106,26 @@ class VisionResultCard extends StatelessWidget {
                                     Icons.fullscreen,
                                     color: Colors.white,
                                     size: 20,
+                                  ),
+                                ),
+                              ),
+                              // Banderita discreta para reportar (esquina superior derecha)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () => _showReportOptions(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.flag_outlined,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -128,11 +148,7 @@ class VisionResultCard extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.m),
 
-                  // Medalla de rareza
-                  if (result.rarity.isNotEmpty) ...[
-                    _buildRarityMedal(context),
-                    const SizedBox(height: AppSpacing.m),
-                  ],
+                  // Task #269: Medalla de rareza movida a _buildMainInfo (derecha de nombre/tipo)
 
                   // Descripción
                   if (result.description.isNotEmpty) ...[
@@ -184,36 +200,17 @@ class VisionResultCard extends StatelessWidget {
                 ),
               ),
             ),
-            child: Row(
-              children: [
-                // Botón Reportar error (abre menú con opciones)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showReportOptions(context),
-                    icon: const Icon(Icons.flag_outlined),
-                    label: const Text('Reportar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.orange[700],
-                      side: BorderSide(color: Colors.orange[700]!),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.check),
+                label: const Text('Aceptar'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                const SizedBox(width: AppSpacing.s),
-                // Botón Aceptar
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.check),
-                    label: const Text('Aceptar'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -423,6 +420,8 @@ class VisionResultCard extends StatelessWidget {
             ],
           ),
         ),
+        // Task #269: Medalla de rareza a la derecha (vertical)
+        if (result.rarity.isNotEmpty) _buildRarityMedal(context),
       ],
     );
   }
@@ -529,45 +528,52 @@ class VisionResultCard extends StatelessWidget {
     );
   }
 
+  /// Task #269: Medalla de rareza vertical con colores de materiales estándar y tooltip
   Widget _buildRarityMedal(BuildContext context) {
     final rarity = result.rarity.toLowerCase();
-    final colors = _getRarityColors(rarity);
+    final medalData = _getRarityMedalData(rarity);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors[0], colors[1]],
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.emoji_events, color: Colors.white, size: 32),
-          const SizedBox(width: AppSpacing.m),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rareza',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white70),
-                ),
-                Text(
-                  result.rarity,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+    return InkWell(
+      onTap:
+          () => _showInfoDialog(
+            context,
+            title: 'Rareza Global',
+            content:
+                'Nivel de rareza: ${medalData['name']}\n\n${medalData['description']}',
           ),
-        ],
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: medalData['colors'] as List<Color>,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: (medalData['colors'] as List<Color>)[0].withOpacity(0.3),
+              blurRadius: 4,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.emoji_events, color: Colors.white, size: 28),
+            const SizedBox(height: 2),
+            Text(
+              result.rarity,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -790,18 +796,51 @@ class VisionResultCard extends StatelessWidget {
     }
   }
 
-  List<Color> _getRarityColors(String rarity) {
+  /// Task #269: Retorna datos de la medalla (colores, nombre, descripción)
+  Map<String, dynamic> _getRarityMedalData(String rarity) {
     switch (rarity) {
       case 'legendary':
-        return [const Color(0xFFFFD700), const Color(0xFFFFA500)]; // Gold
+        return {
+          'colors': [const Color(0xFFFFD700), const Color(0xFFFFA500)], // Gold
+          'name': 'LEGENDARY',
+          'description':
+              'Objeto extremadamente raro y valioso en el mundo. Solo unos pocos existen.',
+        };
       case 'epic':
-        return [const Color(0xFFC0C0C0), const Color(0xFF808080)]; // Silver
+        return {
+          'colors': [
+            const Color(0xFFC0C0C0),
+            const Color(0xFF808080),
+          ], // Silver
+          'name': 'EPIC',
+          'description':
+              'Objeto muy raro y difícil de encontrar. Requiere dedicación.',
+        };
       case 'rare':
-        return [const Color(0xFFCD7F32), const Color(0xFF8B4513)]; // Bronze
+        return {
+          'colors': [
+            const Color(0xFFCD7F32),
+            const Color(0xFF8B4513),
+          ], // Bronze
+          'name': 'RARE',
+          'description': 'Objeto poco común que requiere búsqueda activa.',
+        };
       case 'uncommon':
-        return [const Color(0xFFB87333), const Color(0xFF996515)]; // Copper
+        return {
+          'colors': [
+            const Color(0xFFB87333),
+            const Color(0xFF996515),
+          ], // Copper
+          'name': 'UNCOMMON',
+          'description':
+              'Objeto ocasional que puede encontrarse con algo de suerte.',
+        };
       default:
-        return [Colors.grey[600]!, Colors.grey[800]!]; // Common
+        return {
+          'colors': [Colors.grey[600]!, Colors.grey[800]!], // Stone/Common
+          'name': 'COMMON',
+          'description': 'Objeto común y fácil de encontrar en la vida diaria.',
+        };
     }
   }
 }

@@ -21,9 +21,13 @@ import '../widgets/compass_indicator.dart';
 import '../widgets/compass_calibration_banner.dart';
 import '../widgets/camera/ai_analysis_overlay.dart';
 import '../widgets/camera/vision_result_card.dart';
+import '../widgets/warnings/authenticity_warning_banner.dart';
+import '../widgets/dialogs/gps_disabled_dialog.dart';
 import 'camera_settings_screen.dart';
 import 'video_preview_screen.dart';
 import '../services/vision_service.dart';
+import '../services/database_service.dart';
+import '../models/vision_capture.dart';
 
 enum CameraMode { scan, reel }
 
@@ -388,9 +392,9 @@ class _ARScannerScreenState extends State<ARScannerScreen>
           final isGPSEnabled = await LocationService.isLocationServiceEnabled();
 
           if (!isGPSEnabled && mounted) {
-            // Mostrar diálogo informativo si GPS está deshabilitado
-            final shouldContinue = await _showGPSDisabledDialog();
-            if (!shouldContinue) {
+            // Mostrar diálogo informativo si GPS está deshabilitado (Task #257)
+            final shouldContinue = await showGPSDisabledDialog(context);
+            if (shouldContinue != true) {
               // Usuario decidió no continuar sin GPS
               if (mounted) {
                 Navigator.of(context).pop();
@@ -461,10 +465,94 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             return;
           }
 
-          // 4. Cerrar overlay y mostrar resultado
+          // Ahora result está garantizado que no es null
+          final captureResult = result!;
+
+          // 4. Guardar captura en base de datos (Task #261)
+          try {
+            // Guardar imagen en directorio permanente
+            final appDir = await getApplicationDocumentsDirectory();
+            final capturesDir = Directory('${appDir.path}/captures');
+            if (!await capturesDir.exists()) {
+              await capturesDir.create(recursive: true);
+            }
+
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final imagePath = '${capturesDir.path}/capture_$timestamp.jpg';
+            await file.copy(imagePath);
+
+            // Crear VisionCapture con toda la metadata
+            final capture = VisionCapture(
+              visionResult: {
+                'name': captureResult.name,
+                'type': captureResult.type,
+                'category': captureResult.category,
+                'description': captureResult.description,
+                'rarity': captureResult.rarity,
+                'confidence': captureResult.confidence,
+                'specificity_level': captureResult.specificityLevel,
+                'broader_context': captureResult.broaderContext,
+                'encounter_rarity': captureResult.encounterRarity,
+                'authenticity': captureResult.authenticity,
+              },
+              imagePath: imagePath,
+              timestamp: DateTime.now(),
+              location:
+                  location != null
+                      ? {
+                        'latitude': location.latitude,
+                        'longitude': location.longitude,
+                      }
+                      : null,
+              locationInfo:
+                  locationInfo != null
+                      ? {
+                        'fullLocation': locationInfo.fullLocation,
+                        'placeName': locationInfo.placeName,
+                        'country': locationInfo.country,
+                      }
+                      : null,
+              orientation:
+                  orientation != null
+                      ? {
+                        'bearing': orientation.bearing,
+                        'pitch': orientation.pitch,
+                        'cardinalDirection': orientation.cardinalDirection,
+                      }
+                      : null,
+            );
+
+            // Guardar en base de datos
+            final dbService = DatabaseService();
+            final captureId = await dbService.insertCapture(capture);
+            debugPrint('💾 Capture saved with ID: $captureId');
+          } catch (e) {
+            debugPrint('⚠️ Error saving capture to database: $e');
+            // No bloquear el flujo si falla el guardado
+          }
+
+          // 5. Cerrar overlay y mostrar resultado
           Navigator.of(context).pop();
 
-          // 5. Mostrar VisionResultCard con Hero transition
+          // 6. Mostrar advertencia de autenticidad si no es "real" (Task #259)
+          if (mounted && captureResult.authenticity != 'real') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: AuthenticityWarningBanner(
+                  authenticity: captureResult.authenticity,
+                  isFloating: false,
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+                padding: EdgeInsets.zero,
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+          }
+
+          // 7. Mostrar VisionResultCard con Hero transition
           await showModalBottomSheet(
             context: context,
             backgroundColor: Colors.transparent,
@@ -474,11 +562,11 @@ class _ARScannerScreenState extends State<ARScannerScreen>
                 (context) => VisionResultCard(
                   image: uiImage,
                   imageBytes: bytes,
-                  result: result!,
+                  result: captureResult,
                 ),
           );
 
-          // 6. Resumir cámara cuando se cierra el bottom sheet
+          // 8. Resumir cámara cuando se cierra el bottom sheet
           _cameraController?.resumePreview();
         } catch (e, stackTrace) {
           debugPrint('❌ Error en análisis: $e');
