@@ -66,7 +66,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   late List<Promotion> _promotions;
   late List<CrazyDexItem> _items;
   late List<Discovery> _places;
-  
+
   // Capturas reales desde DB
   List<VisionCapture> _captures = [];
   final DatabaseService _dbService = DatabaseService();
@@ -557,7 +557,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void _addCaptureMarker(VisionCapture capture, int index) {
     // Solo mostrar si tiene ubicación
     if (capture.location == null) return;
-    
+
     final lat = capture.location!['latitude'] as double?;
     final lon = capture.location!['longitude'] as double?;
     if (lat == null || lon == null) return;
@@ -568,7 +568,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
       infoWindow: InfoWindow(
         title: '📸 ${capture.name}',
-        snippet: '${capture.rarity} - Capturado ${_formatTimeAgo(capture.timestamp)}',
+        snippet:
+            '${capture.rarity} - Capturado ${_formatTimeAgo(capture.timestamp)}',
       ),
       onTap: () {
         setState(() {
@@ -1829,10 +1830,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: AppColors.primaryColor.withOpacity(0.1),
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          size: 30,
-                        ),
+                        child: const Icon(Icons.image_not_supported, size: 30),
                       );
                     },
                   ),

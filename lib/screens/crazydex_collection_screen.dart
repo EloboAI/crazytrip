@@ -122,33 +122,36 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
     // Filtro por categoría
     if (_selectedCategory != null) {
-      filtered = filtered.where((item) => item.category == _selectedCategory).toList();
+      filtered =
+          filtered.where((item) => item.category == _selectedCategory).toList();
     }
 
     // Filtro por país
     if (_selectedCountry != null) {
-      filtered = filtered.where((item) {
-        // Buscar la captura original por ID
-        final captureId = int.tryParse(item.id);
-        if (captureId == null) return false;
-        
-        final capture = _captures.firstWhere(
-          (c) => c.id == captureId,
-          orElse: () => _captures.first,
-        );
-        
-        final country = capture.locationInfo?['country'] as String?;
-        return country == _selectedCountry;
-      }).toList();
+      filtered =
+          filtered.where((item) {
+            // Buscar la captura original por ID
+            final captureId = int.tryParse(item.id);
+            if (captureId == null) return false;
+
+            final capture = _captures.firstWhere(
+              (c) => c.id == captureId,
+              orElse: () => _captures.first,
+            );
+
+            final country = capture.locationInfo?['country'] as String?;
+            return country == _selectedCountry;
+          }).toList();
     }
 
     // Filtro por búsqueda
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((item) {
-        return item.name.toLowerCase().contains(_searchQuery) ||
-               item.description.toLowerCase().contains(_searchQuery) ||
-               item.category.displayName.toLowerCase().contains(_searchQuery);
-      }).toList();
+      filtered =
+          filtered.where((item) {
+            return item.name.toLowerCase().contains(_searchQuery) ||
+                item.description.toLowerCase().contains(_searchQuery) ||
+                item.category.displayName.toLowerCase().contains(_searchQuery);
+          }).toList();
     }
 
     return filtered;
@@ -428,23 +431,25 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
+      ),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Buscar por nombre, descripción o categoría...',
           prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          suffixIcon:
+              _searchQuery.isNotEmpty
+                  ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                    },
+                  )
+                  : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
           fillColor: Theme.of(context).colorScheme.surface,
         ),
@@ -523,22 +528,14 @@ class _CrazyDexCollectionScreenState extends State<CrazyDexCollectionScreen> {
         children: [
           _buildCountryChip(null, 'Todos los países', Icons.public),
           ...countries.map((country) {
-            return _buildCountryChip(
-              country,
-              country,
-              Icons.flag,
-            );
+            return _buildCountryChip(country, country, Icons.flag);
           }),
         ],
       ),
     );
   }
 
-  Widget _buildCountryChip(
-    String? country,
-    String label,
-    IconData icon,
-  ) {
+  Widget _buildCountryChip(String? country, String label, IconData icon) {
     final isSelected = _selectedCountry == country;
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
