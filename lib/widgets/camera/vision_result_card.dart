@@ -24,12 +24,11 @@ class VisionResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.black87
-            : Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(16),
-        ),
+        color:
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.black87
+                : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -41,9 +40,9 @@ class VisionResultCard extends StatelessWidget {
               children: [
                 Text(
                   'Vision AI',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -214,16 +213,16 @@ class VisionResultCard extends StatelessWidget {
             children: [
               Text(
                 result.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (result.type.isNotEmpty)
                 Text(
                   result.type,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
             ],
           ),
@@ -244,12 +243,13 @@ class VisionResultCard extends StatelessWidget {
             label: 'Confianza',
             value: '${(result.confidence * 100).toStringAsFixed(0)}%',
             color: _getConfidenceColor(result.confidence),
-            onTap: () => _showInfoDialog(
-              context,
-              title: 'Confianza',
-              content:
-                  'Indica qué tan seguro está el modelo de su identificación. Mayor porcentaje = mayor certeza.',
-            ),
+            onTap:
+                () => _showInfoDialog(
+                  context,
+                  title: 'Confianza',
+                  content:
+                      'Indica qué tan seguro está el modelo de su identificación. Mayor porcentaje = mayor certeza.',
+                ),
           ),
 
         // Encounter Rarity
@@ -259,12 +259,13 @@ class VisionResultCard extends StatelessWidget {
             label: 'Encuentro',
             value: _formatEncounterRarity(result.encounterRarity),
             color: _getEncounterRarityColor(result.encounterRarity),
-            onTap: () => _showInfoDialog(
-              context,
-              title: 'Rareza de Encuentro',
-              content:
-                  'Qué tan común es encontrar este objeto o ser vivo en la naturaleza o vida cotidiana.',
-            ),
+            onTap:
+                () => _showInfoDialog(
+                  context,
+                  title: 'Rareza de Encuentro',
+                  content:
+                      'Qué tan común es encontrar este objeto o ser vivo en la naturaleza o vida cotidiana.',
+                ),
           ),
 
         // Authenticity
@@ -274,12 +275,13 @@ class VisionResultCard extends StatelessWidget {
             label: 'Autenticidad',
             value: result.authenticity,
             color: _getAuthenticityColor(result.authenticity),
-            onTap: () => _showInfoDialog(
-              context,
-              title: 'Autenticidad',
-              content:
-                  'Indica si el objeto es real, una réplica, arte, o una representación digital.',
-            ),
+            onTap:
+                () => _showInfoDialog(
+                  context,
+                  title: 'Autenticidad',
+                  content:
+                      'Indica si el objeto es real, una réplica, arte, o una representación digital.',
+                ),
           ),
       ],
     );
@@ -310,16 +312,16 @@ class VisionResultCard extends StatelessWidget {
           children: [
             Text(
               '$label: ',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             Text(
               value,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (onTap != null) ...[
               const SizedBox(width: 4),
@@ -355,16 +357,16 @@ class VisionResultCard extends StatelessWidget {
               children: [
                 Text(
                   'Rareza',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                 ),
                 Text(
                   result.rarity,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -386,14 +388,17 @@ class VisionResultCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_outline,
-                  color: AppColors.primaryColor, size: 20),
+              Icon(
+                Icons.lightbulb_outline,
+                color: AppColors.primaryColor,
+                size: 20,
+              ),
               const SizedBox(width: AppSpacing.s),
               Text(
                 'Contexto',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -425,7 +430,10 @@ class VisionResultCard extends StatelessWidget {
           if (locationInfo.placeName != null &&
               locationInfo.placeName!.isNotEmpty)
             _buildInfoRow(
-                context, Icons.place_outlined, locationInfo.placeName!),
+              context,
+              Icons.place_outlined,
+              locationInfo.placeName!,
+            ),
           if (result.location != null)
             _buildInfoRow(
               context,
@@ -466,9 +474,9 @@ class VisionResultCard extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: AppSpacing.s),
         if (content is String)
@@ -487,10 +495,7 @@ class VisionResultCard extends StatelessWidget {
           Icon(icon, size: 18, color: Colors.grey[600]),
           const SizedBox(width: AppSpacing.s),
           Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -504,16 +509,17 @@ class VisionResultCard extends StatelessWidget {
   }) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Entendido'),
+      builder:
+          (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Entendido'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 

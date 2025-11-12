@@ -366,19 +366,20 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       Future<void> performAnalysis() async {
         try {
           errorMessage = null;
-          
+
           // Actualizar el overlay para mostrar estado de análisis
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => AIAnalysisOverlay(
-                  image: uiImage,
-                  errorMessage: null,
-                  onCancel: () {
-                    Navigator.of(context).pop();
-                    _cameraController?.resumePreview();
-                  },
-                ),
+                builder:
+                    (context) => AIAnalysisOverlay(
+                      image: uiImage,
+                      errorMessage: null,
+                      onCancel: () {
+                        Navigator.of(context).pop();
+                        _cameraController?.resumePreview();
+                      },
+                    ),
               ),
             );
           }
@@ -439,20 +440,22 @@ class _ARScannerScreenState extends State<ARScannerScreen>
 
           if (result == null) {
             // Mostrar error en el overlay
-            errorMessage = 'No se pudo identificar el objeto. Intenta con mejor iluminación o desde otro ángulo.';
+            errorMessage =
+                'No se pudo identificar el objeto. Intenta con mejor iluminación o desde otro ángulo.';
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => AIAnalysisOverlay(
-                  image: uiImage,
-                  errorMessage: errorMessage,
-                  onCancel: () {
-                    Navigator.of(context).pop();
-                    _cameraController?.resumePreview();
-                  },
-                  onRetry: () {
-                    performAnalysis();
-                  },
-                ),
+                builder:
+                    (context) => AIAnalysisOverlay(
+                      image: uiImage,
+                      errorMessage: errorMessage,
+                      onCancel: () {
+                        Navigator.of(context).pop();
+                        _cameraController?.resumePreview();
+                      },
+                      onRetry: () {
+                        performAnalysis();
+                      },
+                    ),
               ),
             );
             return;
@@ -467,37 +470,38 @@ class _ARScannerScreenState extends State<ARScannerScreen>
             backgroundColor: Colors.transparent,
             isScrollControlled: true,
             isDismissible: true,
-            builder: (context) => VisionResultCard(
-              image: uiImage,
-              imageBytes: bytes,
-              result: result!,
-            ),
+            builder:
+                (context) => VisionResultCard(
+                  image: uiImage,
+                  imageBytes: bytes,
+                  result: result!,
+                ),
           );
 
           // 6. Resumir cámara cuando se cierra el bottom sheet
           _cameraController?.resumePreview();
-          
         } catch (e, stackTrace) {
           debugPrint('❌ Error en análisis: $e');
           debugPrint('Stack trace: $stackTrace');
-          
+
           if (!mounted) return;
-          
+
           // Mostrar error en el overlay
           errorMessage = 'Error al analizar la imagen: ${e.toString()}';
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (context) => AIAnalysisOverlay(
-                image: uiImage,
-                errorMessage: errorMessage,
-                onCancel: () {
-                  Navigator.of(context).pop();
-                  _cameraController?.resumePreview();
-                },
-                onRetry: () {
-                  performAnalysis();
-                },
-              ),
+              builder:
+                  (context) => AIAnalysisOverlay(
+                    image: uiImage,
+                    errorMessage: errorMessage,
+                    onCancel: () {
+                      Navigator.of(context).pop();
+                      _cameraController?.resumePreview();
+                    },
+                    onRetry: () {
+                      performAnalysis();
+                    },
+                  ),
             ),
           );
         }
@@ -506,19 +510,19 @@ class _ARScannerScreenState extends State<ARScannerScreen>
       // Mostrar overlay inicial y comenzar análisis
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => AIAnalysisOverlay(
-            image: uiImage,
-            onCancel: () {
-              Navigator.of(context).pop();
-              _cameraController?.resumePreview();
-            },
-          ),
+          builder:
+              (context) => AIAnalysisOverlay(
+                image: uiImage,
+                onCancel: () {
+                  Navigator.of(context).pop();
+                  _cameraController?.resumePreview();
+                },
+              ),
         ),
       );
 
       // Ejecutar análisis
       await performAnalysis();
-      
     } catch (e) {
       if (!mounted) return;
       // Cerrar overlay si está abierto

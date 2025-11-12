@@ -20,9 +20,7 @@ class ImageFullscreenViewer extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Fondo negro con opacidad
-          Container(
-            color: Colors.black.withOpacity(0.95),
-          ),
+          Container(color: Colors.black.withOpacity(0.95)),
 
           // Imagen con InteractiveViewer para zoom/pan
           SafeArea(
@@ -32,10 +30,7 @@ class ImageFullscreenViewer extends StatelessWidget {
               child: Center(
                 child: Hero(
                   tag: heroTag,
-                  child: RawImage(
-                    image: image,
-                    fit: BoxFit.contain,
-                  ),
+                  child: RawImage(image: image, fit: BoxFit.contain),
                 ),
               ),
             ),
@@ -49,11 +44,7 @@ class ImageFullscreenViewer extends StatelessWidget {
               color: Colors.transparent,
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.6),
                   padding: const EdgeInsets.all(12),
@@ -80,17 +71,13 @@ class ImageFullscreenViewer extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.zoom_in,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+                    const Icon(Icons.zoom_in, color: Colors.white, size: 18),
                     const SizedBox(width: 8),
                     Text(
                       'Pellizca para hacer zoom',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.white),
                     ),
                   ],
                 ),
