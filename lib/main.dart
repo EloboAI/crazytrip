@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_screen.dart';
+import 'screens/login_screen.dart';
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,8 +48,11 @@ class CrazyTripApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: themeProvider,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {
           return MaterialApp(
@@ -56,7 +61,24 @@ class CrazyTripApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: theme.themeMode,
-            home: const MainScreen(),
+            home: Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                // Show loading while checking auth state
+                if (auth.isLoading) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                // Show login if not authenticated
+                if (!auth.isAuthenticated) {
+                  return const LoginScreen();
+                }
+
+                // Show main app if authenticated
+                return const MainScreen();
+              },
+            ),
           );
         },
       ),

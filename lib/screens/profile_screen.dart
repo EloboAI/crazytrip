@@ -8,6 +8,7 @@ import '../widgets/stat_card.dart';
 import '../widgets/menu_item_card.dart';
 import '../widgets/theme_settings_bottom_sheet.dart';
 import '../providers/theme_provider.dart';
+import '../providers/auth_provider.dart';
 import 'crazydex_collection_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -16,6 +17,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = UserProfile.getMockProfile();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
 
     return Scaffold(
       body: SafeArea(
@@ -52,14 +55,24 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.m),
 
-                    // Username
+                    // Username (use real username from auth)
                     Text(
-                      profile.username,
+                      user?.username ?? profile.username,
                       style: AppTextStyles.headlineMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: AppSpacing.xs),
+
+                    // Email (show authenticated user's email)
+                    if (user != null)
+                      Text(
+                        user.email,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
                     const SizedBox(height: AppSpacing.xs),
 
                     // Bio
@@ -223,13 +236,63 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.m),
 
                   // Logout Button
-                  OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.errorColor,
-                      side: const BorderSide(color: AppColors.errorColor),
-                    ),
-                    child: const Text('Log Out'),
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) {
+                      return OutlinedButton.icon(
+                        onPressed:
+                            auth.isLoading
+                                ? null
+                                : () async {
+                                  final shouldLogout = await showDialog<bool>(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text('Cerrar sesión'),
+                                          content: const Text(
+                                            '¿Estás seguro de que quieres cerrar sesión?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
+                                              child: const Text(
+                                                'Cerrar sesión',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+
+                                  if (shouldLogout == true && context.mounted) {
+                                    await auth.logout();
+                                  }
+                                },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.errorColor,
+                          side: const BorderSide(color: AppColors.errorColor),
+                        ),
+                        icon:
+                            auth.isLoading
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Icon(Icons.logout),
+                        label: const Text('Cerrar Sesión'),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.l),
