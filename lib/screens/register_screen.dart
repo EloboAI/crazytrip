@@ -40,9 +40,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Navigate back to main screen (login will be handled by main.dart)
-      Navigator.of(context).pop();
-      Navigator.of(context).pop(); // Pop login screen too
+      // Return to the root route so AuthProvider can render the home screen
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(

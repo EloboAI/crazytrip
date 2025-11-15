@@ -136,7 +136,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       // Permisos concedidos
-      if (_locationPermissionDenied && mounted) {
+      if (_locationPermissionDenied) {
+        if (!mounted) return;
         // El usuario activó los permisos, actualizar estado
         setState(() {
           _locationPermissionDenied = false;
@@ -150,7 +151,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       }
     } else {
       // Permisos aún denegados
-      if (!_locationPermissionDenied && mounted) {
+      if (!_locationPermissionDenied) {
+        if (!mounted) return;
         setState(() {
           _locationPermissionDenied = true;
         });
@@ -166,6 +168,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       _darkMapStyle = await rootBundle.loadString(
         'assets/map_styles/dark_map_style.json',
       );
+      if (!mounted) return;
       setState(() {});
     } catch (e) {
       debugPrint('Error loading map styles: $e');
@@ -174,6 +177,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   /// Obtiene la ubicación actual del usuario y la muestra en el mapa
   Future<void> _getUserLocation() async {
+    if (!mounted) return;
     setState(() {
       _isLoadingLocation = true;
     });
@@ -198,7 +202,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
       // Intentar obtener ubicación
       final position = await LocationService.getCurrentLocation();
-      if (position != null && mounted) {
+      if (position != null) {
+        if (!mounted) return;
         setState(() {
           _userPosition = position;
           _isLoadingLocation = false;
@@ -217,15 +222,15 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         }
       } else {
         // No se pudo obtener la ubicación por otro motivo
+        if (!mounted) return;
         setState(() {
           _isLoadingLocation = false;
         });
-        if (mounted) {
-          _showLocationServiceDisabledDialog();
-        }
+        _showLocationServiceDisabledDialog();
       }
     } catch (e) {
       debugPrint('Error getting user location: $e');
+      if (!mounted) return;
       setState(() {
         _isLoadingLocation = false;
       });
@@ -234,6 +239,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   /// Maneja el caso cuando los permisos de ubicación son denegados
   void _handleLocationPermissionDenied(bool permanent) {
+    if (!mounted) return;
     setState(() {
       _isLoadingLocation = false;
       _locationPermissionDenied = true;
@@ -370,7 +376,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     // Si no tenemos ubicación, intenta obtenerla nuevamente
     try {
       final position = await LocationService.getCurrentLocation();
-      if (position != null && mounted) {
+      if (position != null) {
+        if (!mounted) return;
         setState(() {
           _userPosition = position;
         });
@@ -459,6 +466,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       zIndex: 998,
     );
 
+    if (!mounted) return;
     setState(() {
       _markers.add(userMarker);
       _circles.add(accuracyCircle);
@@ -477,34 +485,34 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Future<void> _loadCaptures() async {
     try {
       final captures = await _dbService.getAllCaptures();
-      if (mounted) {
-        setState(() {
-          _captures = captures;
-        });
-        _updateContentMarkers();
+      if (!mounted) return;
+      setState(() {
+        _captures = captures;
+      });
+      _updateContentMarkers();
 
-        // Si hay una captura inicial, centrar la cámara en ella
-        if (widget.initialCaptureId != null && _mapController != null) {
-          final capture = _captures.firstWhere(
-            (c) => c.id == widget.initialCaptureId,
-            orElse: () => _captures.first,
+      // Si hay una captura inicial, centrar la cámara en ella
+      if (widget.initialCaptureId != null && _mapController != null) {
+        final capture = _captures.firstWhere(
+          (c) => c.id == widget.initialCaptureId,
+          orElse: () => _captures.first,
+        );
+
+        if (capture.latitude != null && capture.longitude != null) {
+          await _mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(capture.latitude!, capture.longitude!),
+                zoom: 16.0,
+              ),
+            ),
           );
 
-          if (capture.latitude != null && capture.longitude != null) {
-            await _mapController!.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: LatLng(capture.latitude!, capture.longitude!),
-                  zoom: 16.0,
-                ),
-              ),
-            );
-
-            // Seleccionar automáticamente la captura
-            setState(() {
-              _selectedItem = capture;
-            });
-          }
+          // Seleccionar automáticamente la captura
+          if (!mounted) return;
+          setState(() {
+            _selectedItem = capture;
+          });
         }
       }
     } catch (e) {
@@ -1975,7 +1983,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                               _searchRadius = value;
                             });
                             // Update parent state
-                            this.setState(() {});
+                            if (mounted) {
+                              this.setState(() {});
+                            }
                           },
                         ),
                       ),
