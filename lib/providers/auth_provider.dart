@@ -8,11 +8,13 @@ class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  bool _isInitializing = true;
   String? _error;
 
   User? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  bool get isInitializing => _isInitializing;
   String? get error => _error;
 
   AuthProvider() {
@@ -22,6 +24,7 @@ class AuthProvider with ChangeNotifier {
   /// Initialize authentication state from stored data
   Future<void> _initAuth() async {
     _isLoading = true;
+    _isInitializing = true;
     notifyListeners();
 
     try {
@@ -34,6 +37,7 @@ class AuthProvider with ChangeNotifier {
       debugPrint('Error initializing auth: $e');
     } finally {
       _isLoading = false;
+      _isInitializing = false;
       notifyListeners();
     }
   }

@@ -63,8 +63,8 @@ class CrazyTripApp extends StatelessWidget {
             themeMode: theme.themeMode,
             home: Consumer<AuthProvider>(
               builder: (context, auth, _) {
-                // Show loading while checking auth state
-                if (auth.isLoading) {
+                // Show loading only during initial auth check
+                if (auth.isInitializing) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );

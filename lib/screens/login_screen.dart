@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _loginError;
 
   @override
   void dispose() {
@@ -26,6 +27,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Hide keyboard
+    FocusScope.of(context).unfocus();
+
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.login(
       _emailController.text.trim(),
@@ -35,14 +39,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Navigation is handled by main.dart based on auth state
-      Navigator.of(context).pop();
+      // Navigation is handled by `main.dart` based on auth state.
+      // No explicit pop here so the top-level consumer will show MainScreen.
     } else {
-      // Show error
+      // Set error and show it
+      setState(() {
+        _loginError = authProvider.error ?? 'Error al iniciar sesión';
+      });
+
+      // Also show SnackBar for immediate feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.error ?? 'Login failed'),
+          content: Text(_loginError!),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -76,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Inicia sesión para continuar tu aventura',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -93,6 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  onChanged: (_) {
+                    if (_loginError != null) {
+                      setState(() {
+                        _loginError = null;
+                      });
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa tu email';
@@ -129,6 +146,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  onChanged: (_) {
+                    if (_loginError != null) {
+                      setState(() {
+                        _loginError = null;
+                      });
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa tu contraseña';
@@ -139,7 +163,30 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                // Error message
+                if (_loginError != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _loginError!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_loginError != null) const SizedBox(height: 16),
                 // Login button
                 Consumer<AuthProvider>(
                   builder: (context, auth, _) {
